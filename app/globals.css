@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 1; 
+    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+  }
+  50% { 
+    opacity: 0.7; 
+    text-shadow: 0 0 5px #fff, 0 0 10px #fff;
+  }
+}
+
+@keyframes subtle-sparkle {
+  0%, 100% { 
+    opacity: 0.9; 
+    text-shadow: 0 0 8px rgba(255,255,255,0.5);
+  }
+  50% { 
+    opacity: 1.5; 
+    text-shadow: 0 0 15px rgba(255,255,255,0.9), 0 0 25px rgba(255,255,255,0.5);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.animate-subtle-sparkle {
+  animation: subtle-sparkle 2s ease-in-out infinite;
+  display: inline-block;
+}
