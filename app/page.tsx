@@ -40,7 +40,8 @@ export default function Home() {
           <br />
           where humans and AI coexist in a shared future.
         </p>
-
+      </div>
+      
       <footer className="absolute bottom-8 text-white/60 text-sm z-10 font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
         © 2025 RPG for Humanity ✦ NYC
       </footer>
