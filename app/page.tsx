@@ -63,9 +63,3 @@ export default function Home() {
   );
 }
 ```
-
-Save with **Cmd + S**, then:
-```
-git add .
-git commit -m "Update landing page copy"
-git push
