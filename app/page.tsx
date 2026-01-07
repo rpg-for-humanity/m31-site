@@ -66,7 +66,7 @@ export default function Home() {
             Built by learners, for learners.
           </p>
           <p className="text-base md:text-lg text-white/80 leading-relaxed font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-            Recreate the conversation you wish you'd practiced: the landlord call, the yoga class in French, the way your mom asks if you've eaten.
+            Recreate real conversations. Build content others can learn from. Grow your habitat on M31. 
           </p>
           <p className="text-lg text-cyan-400 font-medium mt-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Anyone can build. Everyone can learn.
