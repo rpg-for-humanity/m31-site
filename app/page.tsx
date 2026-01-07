@@ -44,12 +44,12 @@ export default function Home() {
         <form 
           action="https://formspree.io/f/mjgknkoy" 
           method="POST"
-          className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8 max-w-md mx-auto"
+          className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6 max-w-md mx-auto"
         >
           <input 
             type="email" 
             name="email" 
-            placeholder="clair@rpg4h.com" 
+            placeholder="your@email.com" 
             required
             className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 w-full sm:w-64 focus:outline-none focus:border-cyan-400"
           />
@@ -61,12 +61,12 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="border-t border-white/20 pt-6 max-w-xl mx-auto">
+        <div className="border-t border-white/20 pt-4 max-w-xl mx-auto">
           <p className="text-lg md:text-xl text-white font-medium mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Built by learners, for learners.
           </p>
           <p className="text-base md:text-lg text-white/80 leading-relaxed font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-            Recreate real conversations. Build content others can learn from. Grow your habitat on M31. 
+            Recreate real conversations. Build content. Grow your habitat on M31.
           </p>
           <p className="text-lg text-cyan-400 font-medium mt-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Anyone can build. Everyone can learn.
@@ -74,7 +74,7 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="absolute bottom-8 text-white/60 text-sm z-10 font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+      <footer className="relative z-10 mt-8 mb-6 text-white/60 text-sm font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
         © 2025 RPG for Humanity ✦ NYC
       </footer>
     </main>
