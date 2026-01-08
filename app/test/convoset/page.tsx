@@ -790,11 +790,17 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay on image - bottom center */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center z-50">
-            <p className="text-yellow-400 text-3xl font-bold mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">Earth Investor</p>
-            <p className="text-white text-5xl font-bold mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
-            <p className="text-amber-300 text-xl mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">Can she take your order?</p>
+          {/* Text overlay on image - centered on Empire State Building area */}
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 text-center z-50">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <GoldCoin className="w-8 h-8" />
+              <span className="text-yellow-400 text-2xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
+            </div>
+            <p className="text-white text-4xl font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage} Can she take your orders, too?</p>
+          </div>
+
+          {/* Button at bottom */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50">
             <button
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
