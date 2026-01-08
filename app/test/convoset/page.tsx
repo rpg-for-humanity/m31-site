@@ -752,35 +752,53 @@ export default function ConvosetTest() {
 
       {/* Earth Investor Video Call - Full screen */}
       {gameState === 'investor' && (
-        <div className="fixed inset-0 z-40 flex flex-col bg-black">
-          {/* Image container - contain to show full image */}
-          <div className="relative flex-1 w-full flex items-center justify-center">
+        <div className="fixed inset-0 z-40 bg-black flex flex-col">
+          {/* HUD - visible on investor screen */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
+            <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-amber-500/30">
+              <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
+            </div>
+            <div className="flex gap-3">
+              <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2">
+                <GoldCoin className="w-6 h-6" />
+                <span className="text-yellow-400 font-mono font-bold text-lg">{coins}</span>
+              </div>
+              <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30">
+                <span className="text-purple-400 font-mono">Round {round}/3</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Coin flying animation to top right */}
+          <div className="absolute top-1/2 left-1/2 z-50 animate-fly-to-balance">
+            <div className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
+              <GoldCoin className="w-8 h-8" />
+              <span className="text-yellow-400 font-bold text-2xl">+{round === 1 ? 100 : round === 2 ? 100 : 500}</span>
+            </div>
+          </div>
+
+          {/* Image area - takes 70% of screen height */}
+          <div className="relative h-[70vh] w-full flex items-center justify-center bg-black pt-16">
             <img 
               src="/ib.png" 
               alt="Earth Investor calling from spaceship" 
-              className="max-w-full max-h-full object-contain"
+              className="h-full w-auto object-contain"
             />
             
-            {/* LIVE Earth indicator inside image area */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full">
+            {/* LIVE Earth indicator */}
+            <div className="absolute top-20 left-4 flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
               <span className="text-green-400 text-xl font-mono font-bold">LIVE • Earth</span>
             </div>
           </div>
           
-          {/* Text and button below image */}
-          <div className="bg-black py-6 text-center">
-            <p className="text-yellow-400 text-2xl font-bold mb-1">Earth Investor</p>
-            <p className="text-white text-3xl font-bold mb-2">{investorMessage}</p>
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <GoldCoin className="w-8 h-8" />
-              <span className="text-yellow-400 text-2xl">
-                +{round === 1 ? 100 : round === 2 ? 100 : 500} coins added to {coins - (round === 1 ? 100 : round === 2 ? 100 : 500)} balance
-              </span>
-            </div>
+          {/* Text and button area */}
+          <div className="flex-1 bg-black flex flex-col items-center justify-center py-4">
+            <p className="text-yellow-400 text-3xl font-bold mb-2">Earth Investor</p>
+            <p className="text-white text-4xl font-bold mb-6">{investorMessage}</p>
             <button
               onClick={completeGame}
-              className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-12 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
+              className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
             >
               {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
             </button>
@@ -824,6 +842,23 @@ export default function ConvosetTest() {
         }
         .animate-pop-in {
           animation: pop-in 0.4s ease-out;
+        }
+        @keyframes fly-to-balance {
+          0% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          70% {
+            opacity: 1;
+            transform: translate(calc(50vw - 100px), calc(-50vh + 40px)) scale(0.8);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(calc(50vw - 100px), calc(-50vh + 40px)) scale(0.5);
+          }
+        }
+        .animate-fly-to-balance {
+          animation: fly-to-balance 1.5s ease-in-out forwards;
         }
       `}</style>
     </div>
