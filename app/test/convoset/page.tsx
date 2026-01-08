@@ -94,14 +94,14 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
       newCoins.push({
         id: i,
-        x: Math.random() * 400 - 200,
-        y: Math.random() * -300 - 50,
+        x: Math.random() * 800 - 400,
+        y: Math.random() * -500 - 100,
         rotation: Math.random() * 720 - 360,
-        scale: 0.6 + Math.random() * 0.6,
-        delay: Math.random() * 0.4
+        scale: 0.5 + Math.random() * 0.8,
+        delay: Math.random() * 0.5
       });
     }
     setAnimatedCoins(newCoins);
@@ -559,7 +559,7 @@ export default function ConvosetTest() {
                               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                           }`}
                         >
-                          💡 Show text (10 <GoldCoin className="w-4 h-4 inline" />)
+                          💡 Show Text for 10 <GoldCoin className="w-4 h-4 inline" />
                         </button>
                       </div>
                     )}
@@ -825,7 +825,7 @@ export default function ConvosetTest() {
           </div>
 
           {/* Button below control keyboard */}
-          <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 z-50">
+          <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 z-50">
             <button
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
@@ -880,11 +880,11 @@ export default function ConvosetTest() {
           }
           70% {
             opacity: 1;
-            transform: translate(calc(50vw - 100px), calc(-50vh + 40px)) scale(0.8);
+            transform: translate(calc(50vw - 250px), calc(-50vh + 40px)) scale(0.8);
           }
           100% {
             opacity: 0;
-            transform: translate(calc(50vw - 100px), calc(-50vh + 40px)) scale(0.5);
+            transform: translate(calc(50vw - 250px), calc(-50vh + 40px)) scale(0.5);
           }
         }
         .animate-fly-to-balance {
