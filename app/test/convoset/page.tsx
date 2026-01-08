@@ -32,13 +32,13 @@ export default function ConvosetTest() {
   const [animatedCoins, setAnimatedCoins] = useState<Coin[]>([]);
   
   // Animation states
-  const [kokoroX, setKokoroX] = useState(-150);
+  const [kokoroX, setKokoroX] = useState(-200);
   const [kokoroScale, setKokoroScale] = useState(1);
   const [kokoroOpacity, setKokoroOpacity] = useState(1);
   const [showFullBody, setShowFullBody] = useState(true);
   const [isWalking, setIsWalking] = useState(false);
   const [introReady, setIntroReady] = useState(false);
-  const [missionSlideIn, setMissionSlideIn] = useState(false);
+  const [missionVisible, setMissionVisible] = useState(false);
   
   const [round1Selections, setRound1Selections] = useState<OrderItem[]>([]);
   const [currentItem, setCurrentItem] = useState<Partial<OrderItem>>({});
@@ -62,29 +62,29 @@ export default function ConvosetTest() {
     { type: 'Latte', size: 'Small', milk: 'Whole' },
   ];
 
-  // Intro - Kokorobot walks to center, then mission slides in
+  // Intro - Kokorobot walks to center-left, then mission fades in
   useEffect(() => {
     if (gameState === 'intro') {
-      setKokoroX(-150);
+      setKokoroX(-200);
       setIsWalking(true);
       setIntroReady(false);
-      setMissionSlideIn(false);
+      setMissionVisible(false);
       
       const walkIn = setInterval(() => {
         setKokoroX(prev => {
-          // Walk to center
-          const target = window.innerWidth / 2 - 80;
+          // Walk to about 25% from left
+          const target = window.innerWidth * 0.25;
           if (prev >= target) {
             clearInterval(walkIn);
             setIsWalking(false);
-            // Mission slides in after Kokorobot stops
+            // Mission fades in after Kokorobot stops
             setTimeout(() => {
-              setMissionSlideIn(true);
-              setTimeout(() => setIntroReady(true), 500);
+              setMissionVisible(true);
+              setTimeout(() => setIntroReady(true), 400);
             }, 200);
             return target;
           }
-          return prev + 12; // Faster walk
+          return prev + 10;
         });
       }, 20);
       
@@ -165,10 +165,18 @@ export default function ConvosetTest() {
     setShowTranscript(false);
     setIsWalking(true);
     
-    // Quick shrink and transition
-    setTimeout(() => {
-      shrinkAndTransition();
-    }, 300);
+    // Walk to center then transition
+    const walkToCenter = setInterval(() => {
+      setKokoroX(prev => {
+        const target = window.innerWidth / 2 - 80;
+        if (prev >= target) {
+          clearInterval(walkToCenter);
+          shrinkAndTransition();
+          return target;
+        }
+        return prev + 12;
+      });
+    }, 20);
   };
 
   const shrinkAndTransition = () => {
@@ -217,7 +225,7 @@ export default function ConvosetTest() {
     if (isCorrect) {
       setCoins(prev => prev + 100);
       triggerCoinAnimation();
-      setInvestorMessage('Well done! You understood the order perfectly.');
+      setInvestorMessage('Well done!');
       setGameState('investor');
     } else {
       speak("Hmm, that's not quite right. Listen again!");
@@ -271,7 +279,7 @@ export default function ConvosetTest() {
         setTimeout(() => {
           setCoins(prev => prev + 100);
           triggerCoinAnimation();
-          setInvestorMessage("Fantastic! They understood your text. Can they understand you through speaking too?");
+          setInvestorMessage("Great work!");
           setGameState('investor');
         }, 1500);
       }
@@ -347,7 +355,7 @@ export default function ConvosetTest() {
       setTimeout(() => {
         setCoins(prev => prev + 500);
         triggerCoinAnimation();
-        setInvestorMessage("Perfect communication! You're ready for real conversations on Earth.");
+        setInvestorMessage("Perfect!");
         setGameState('investor');
       }, 1500);
     } else {
@@ -362,7 +370,7 @@ export default function ConvosetTest() {
     setTimeout(() => {
       setCoins(prev => prev + Math.max(score, 100));
       triggerCoinAnimation();
-      setInvestorMessage(`Good effort! +${Math.max(score, 100)} coins. Keep practicing!`);
+      setInvestorMessage("Good effort!");
       setGameState('investor');
     }, 1000);
   };
@@ -382,8 +390,8 @@ export default function ConvosetTest() {
       setShowFullBody(true);
       setKokoroScale(1);
       setKokoroOpacity(1);
-      setKokoroX(-150);
-      setMissionSlideIn(false);
+      setKokoroX(-200);
+      setMissionVisible(false);
     }
   };
 
@@ -460,18 +468,18 @@ export default function ConvosetTest() {
         </div>
       </div>
 
-      {/* Full Body Kokorobot */}
+      {/* Full Body Kokorobot - Side view when walking */}
       {showFullBody && (gameState === 'intro' || gameState === 'walking') && (
         <div 
-          className="absolute bottom-20 z-20 transition-transform"
+          className="absolute bottom-16 z-20"
           style={{ 
             left: `${kokoroX}px`,
-            transform: `scale(${kokoroScale}) translateX(-50%)`,
+            transform: `scale(${kokoroScale})`,
             opacity: kokoroOpacity
           }}
         >
           <img 
-            src="/kokorobot-cb.png" 
+            src={isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png"}
             alt="Kokorobot" 
             className={`h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`}
             style={{
@@ -486,16 +494,17 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* INTRO - Mission slides in from right */}
+      {/* INTRO - Mission text CENTERED */}
       {gameState === 'intro' && (
-        <div className={`absolute top-1/2 right-8 -translate-y-1/2 z-10 transition-all duration-700 ease-out ${missionSlideIn ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-32'}`}>
-          <div className="text-right max-w-lg">
-            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 drop-shadow-lg">
+        <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="text-center max-w-xl px-8">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 drop-shadow-lg">
               M31 Coffee Outpost
             </h1>
-            <p className="text-amber-200/90 mb-8 text-xl">
-              Kokorobot approaches. She wants coffee.<br />
-              Listen carefully. Can you take her order?
+            <p className="text-amber-200/90 mb-8 text-lg md:text-xl leading-relaxed">
+              Kokorobot-1 dreams of becoming a barista someday.<br />
+              Listen carefully. Can you take her order?<br />
+              <span className="text-yellow-400">Earn coins to build Andromeda's first café!</span>
             </p>
             <button
               onClick={startGame}
@@ -737,55 +746,42 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* Earth Investor Video Call Modal */}
+      {/* Earth Investor Video Call - Using ib.png */}
       {gameState === 'investor' && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-40 p-4">
-          {/* Spaceship interior frame */}
-          <div className="relative max-w-2xl w-full">
-            {/* Video screen frame */}
-            <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl p-3 shadow-2xl border-4 border-slate-600">
-              {/* Screen bezel */}
-              <div className="bg-black rounded-2xl overflow-hidden relative">
-                {/* Video feed - Earth Investor image */}
-                <img 
-                  src="/ei-empire.png" 
-                  alt="Earth Investor" 
-                  className="w-full h-auto"
-                />
-                
-                {/* Overlay content */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                
-                {/* Call UI elements */}
-                <div className="absolute top-4 left-4 flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-green-400 text-sm font-mono">LIVE • Earth</span>
-                </div>
-                
-                {/* Message and coins at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-                  <h2 className="text-2xl font-bold text-yellow-400 mb-2">Earth Investor</h2>
-                  <p className="text-xl mb-4 text-white">{investorMessage}</p>
-                  <div className="flex items-center justify-center gap-2 mb-6">
-                    <span className="text-yellow-400 font-bold text-4xl drop-shadow-[0_0_15px_rgba(255,215,0,0.6)]">
-                      +{round === 1 ? 100 : round === 2 ? 100 : 500}
-                    </span>
-                    <GoldCoin className="w-10 h-10" />
-                  </div>
-                  <button
-                    onClick={completeGame}
-                    className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
-                  >
-                    {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
-                  </button>
-                </div>
+        <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-40 p-4">
+          {/* Live indicator */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-green-400 text-lg font-mono">LIVE • Earth</span>
+          </div>
+          
+          {/* Main screen - ib.png image */}
+          <div className="relative max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-700">
+            <img 
+              src="/ib.png" 
+              alt="Earth Investor calling from spaceship" 
+              className="w-full h-auto"
+            />
+            
+            {/* Minimal overlay - just message and coins in corner */}
+            <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-xl px-6 py-4 text-right">
+              <p className="text-2xl font-bold text-white mb-2">{investorMessage}</p>
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-yellow-400 font-bold text-3xl">
+                  +{round === 1 ? 100 : round === 2 ? 100 : 500}
+                </span>
+                <GoldCoin className="w-8 h-8" />
               </div>
             </div>
-            
-            {/* Screen stand/base */}
-            <div className="mx-auto w-24 h-4 bg-gradient-to-b from-slate-700 to-slate-800 rounded-b-lg" />
-            <div className="mx-auto w-32 h-2 bg-slate-800 rounded-full" />
           </div>
+          
+          {/* Next Round button BELOW the screen */}
+          <button
+            onClick={completeGame}
+            className="mt-6 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-12 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
+          >
+            {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
+          </button>
         </div>
       )}
 
@@ -805,8 +801,8 @@ export default function ConvosetTest() {
           animation: coin-burst 2s ease-out forwards;
         }
         @keyframes walk {
-          0%, 100% { transform: translateY(0) rotate(-1deg); }
-          50% { transform: translateY(-8px) rotate(1deg); }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
         }
         .animate-walk {
           animation: walk 0.3s ease-in-out infinite;
