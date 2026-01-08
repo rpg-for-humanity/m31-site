@@ -752,17 +752,17 @@ export default function ConvosetTest() {
 
       {/* Earth Investor Video Call - Full screen */}
       {gameState === 'investor' && (
-        <div className="fixed inset-0 z-40 flex flex-col">
-          {/* Full screen image */}
-          <div className="relative flex-1 w-full">
+        <div className="fixed inset-0 z-40 flex flex-col bg-black">
+          {/* Image container - contain to show full image */}
+          <div className="relative flex-1 w-full flex items-center justify-center">
             <img 
               src="/ib.png" 
               alt="Earth Investor calling from spaceship" 
-              className="w-full h-full object-cover"
+              className="max-w-full max-h-full object-contain"
             />
             
-            {/* LIVE Earth indicator inside image */}
-            <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
+            {/* LIVE Earth indicator inside image area */}
+            <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
               <span className="text-green-400 text-xl font-mono font-bold">LIVE • Earth</span>
             </div>
