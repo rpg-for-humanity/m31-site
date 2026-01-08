@@ -494,17 +494,21 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* INTRO - Mission text CENTERED */}
+      {/* INTRO - Mission text CENTERED with dark box */}
       {gameState === 'intro' && (
         <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="text-center max-w-xl px-8">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 drop-shadow-lg">
+          <div className="text-center max-w-2xl px-12 py-10 bg-black/70 rounded-3xl shadow-2xl">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
               M31 Coffee Outpost
             </h1>
-            <p className="text-amber-200/90 mb-8 text-lg md:text-xl leading-relaxed">
-              Kokorobot-1 dreams of becoming a barista someday.<br />
-              Listen carefully. Can you take her order?<br />
-              <span className="text-yellow-400">Earn coins to build Andromeda's first café!</span>
+            <p className="text-white mb-3 text-lg md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              Kokorobot-1 dreams of becoming a barista someday.
+            </p>
+            <p className="text-amber-100 mb-3 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              Listen carefully. Can you take her order?
+            </p>
+            <p className="text-yellow-400 font-semibold mb-8 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              Earn coins to build Andromeda's first café!
             </p>
             <button
               onClick={startGame}
