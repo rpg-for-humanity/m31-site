@@ -750,9 +750,16 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* Earth Investor Video Call - Full screen */}
+      {/* Earth Investor Video Call - Full screen image with overlay */}
       {gameState === 'investor' && (
-        <div className="fixed inset-0 z-40 bg-black flex flex-col">
+        <div className="fixed inset-0 z-40">
+          {/* Full screen background image */}
+          <img 
+            src="/ib.png" 
+            alt="Earth Investor calling from spaceship" 
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          
           {/* HUD - with solid black background */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
             <div className="bg-black rounded-full px-5 py-2 border border-amber-500/50">
@@ -769,7 +776,13 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Coin flying animation to top right */}
+          {/* LIVE indicator - inside image */}
+          <div className="absolute top-20 left-6 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full z-50">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-green-400 text-xl font-mono font-bold">LIVE</span>
+          </div>
+
+          {/* Coin flying animation */}
           <div className="absolute top-1/2 left-1/2 z-50 animate-fly-to-balance">
             <div className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
               <GoldCoin className="w-8 h-8" />
@@ -777,29 +790,11 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Image area - takes 60% of screen height */}
-          <div className="relative h-[60vh] w-full flex items-center justify-center bg-black pt-16">
-            <img 
-              src="/ib.png" 
-              alt="Earth Investor calling from spaceship" 
-              className="h-full w-auto object-contain"
-            />
-            
-            {/* LIVE indicator - just "LIVE" */}
-            <div className="absolute top-20 left-4 flex items-center gap-2 bg-black/80 px-4 py-2 rounded-full">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-400 text-xl font-mono font-bold">LIVE</span>
-            </div>
-          </div>
-          
-          {/* Text and button area */}
-          <div className="flex-1 bg-black flex flex-col items-center justify-center py-4">
-            <div className="flex items-center gap-2 mb-2">
-              <GoldCoin className="w-8 h-8" />
-              <span className="text-yellow-400 text-2xl font-bold">from our Earth Investors</span>
-            </div>
-            <p className="text-white text-4xl font-bold mb-2">{investorMessage}</p>
-            <p className="text-amber-300 text-xl mb-6">Can she take your order?</p>
+          {/* Text overlay on image - bottom center */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center z-50">
+            <p className="text-yellow-400 text-3xl font-bold mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">Earth Investor</p>
+            <p className="text-white text-5xl font-bold mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
+            <p className="text-amber-300 text-xl mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">Can she take your order?</p>
             <button
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
