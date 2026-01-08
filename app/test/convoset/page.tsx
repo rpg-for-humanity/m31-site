@@ -31,12 +31,14 @@ export default function ConvosetTest() {
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [animatedCoins, setAnimatedCoins] = useState<Coin[]>([]);
   
-  // Walking animation states
+  // Animation states
   const [kokoroX, setKokoroX] = useState(-150);
   const [kokoroScale, setKokoroScale] = useState(1);
   const [kokoroOpacity, setKokoroOpacity] = useState(1);
   const [showFullBody, setShowFullBody] = useState(true);
   const [isWalking, setIsWalking] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
+  const [missionSlideIn, setMissionSlideIn] = useState(false);
   
   const [round1Selections, setRound1Selections] = useState<OrderItem[]>([]);
   const [currentItem, setCurrentItem] = useState<Partial<OrderItem>>({});
@@ -60,22 +62,31 @@ export default function ConvosetTest() {
     { type: 'Latte', size: 'Small', milk: 'Whole' },
   ];
 
-  // Intro walking animation - Kokorobot walks in from left
+  // Intro - Kokorobot walks to center, then mission slides in
   useEffect(() => {
     if (gameState === 'intro') {
       setKokoroX(-150);
       setIsWalking(true);
+      setIntroReady(false);
+      setMissionSlideIn(false);
       
       const walkIn = setInterval(() => {
         setKokoroX(prev => {
-          if (prev >= 50) {
+          // Walk to center
+          const target = window.innerWidth / 2 - 80;
+          if (prev >= target) {
             clearInterval(walkIn);
             setIsWalking(false);
-            return 50;
+            // Mission slides in after Kokorobot stops
+            setTimeout(() => {
+              setMissionSlideIn(true);
+              setTimeout(() => setIntroReady(true), 500);
+            }, 200);
+            return target;
           }
-          return prev + 4;
+          return prev + 12; // Faster walk
         });
-      }, 30);
+      }, 20);
       
       return () => clearInterval(walkIn);
     }
@@ -83,19 +94,19 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 20; i++) {
       newCoins.push({
         id: i,
-        x: Math.random() * 300 - 150,
-        y: Math.random() * -200 - 50,
+        x: Math.random() * 400 - 200,
+        y: Math.random() * -300 - 50,
         rotation: Math.random() * 720 - 360,
-        scale: 0.5 + Math.random() * 0.5,
-        delay: Math.random() * 0.3
+        scale: 0.6 + Math.random() * 0.6,
+        delay: Math.random() * 0.4
       });
     }
     setAnimatedCoins(newCoins);
     setShowCoinAnimation(true);
-    setTimeout(() => setShowCoinAnimation(false), 2000);
+    setTimeout(() => setShowCoinAnimation(false), 2500);
   };
 
   useEffect(() => {
@@ -154,30 +165,21 @@ export default function ConvosetTest() {
     setShowTranscript(false);
     setIsWalking(true);
     
-    // Kokorobot walks to center
-    const walkToCenter = setInterval(() => {
-      setKokoroX(prev => {
-        if (prev >= window.innerWidth / 2 - 100) {
-          clearInterval(walkToCenter);
-          // Start shrinking and fading
-          shrinkAndTransition();
-          return prev;
-        }
-        return prev + 6;
-      });
-    }, 20);
+    // Quick shrink and transition
+    setTimeout(() => {
+      shrinkAndTransition();
+    }, 300);
   };
 
   const shrinkAndTransition = () => {
     setIsWalking(false);
     
-    // Shrink and fade out full body
     let scale = 1;
     let opacity = 1;
     
     const shrinkInterval = setInterval(() => {
-      scale -= 0.05;
-      opacity -= 0.05;
+      scale -= 0.08;
+      opacity -= 0.08;
       setKokoroScale(scale);
       setKokoroOpacity(opacity);
       
@@ -188,7 +190,7 @@ export default function ConvosetTest() {
         setShowDialogue(true);
         speak(npcOrder);
       }
-    }, 30);
+    }, 25);
   };
 
   const replayVoice = () => {
@@ -381,8 +383,25 @@ export default function ConvosetTest() {
       setKokoroScale(1);
       setKokoroOpacity(1);
       setKokoroX(-150);
+      setMissionSlideIn(false);
     }
   };
+
+  // Gold coin SVG component
+  const GoldCoin = ({ className = "" }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="url(#goldGradient)" stroke="#B8860B" strokeWidth="1.5"/>
+      <circle cx="12" cy="12" r="7" fill="none" stroke="#DAA520" strokeWidth="1"/>
+      <text x="12" y="16" textAnchor="middle" fill="#8B6914" fontSize="10" fontWeight="bold">$</text>
+      <defs>
+        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFD700"/>
+          <stop offset="50%" stopColor="#FFA500"/>
+          <stop offset="100%" stopColor="#DAA520"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -392,8 +411,8 @@ export default function ConvosetTest() {
         style={{ backgroundImage: `url('/m31.jpg')` }}
       />
       
-      {/* Darker overlay for better readability */}
-      <div className="absolute inset-0 bg-black/30" />
+      {/* Darker overlay */}
+      <div className="absolute inset-0 bg-black/20" />
       
       {/* Barren landscape at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-amber-950/90 via-amber-900/40 to-transparent" />
@@ -401,23 +420,25 @@ export default function ConvosetTest() {
       {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent" />
 
-      {/* Coin Animation */}
+      {/* Gold Coin Animation */}
       {showCoinAnimation && (
         <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
           {animatedCoins.map((coin) => (
             <div
               key={coin.id}
-              className="absolute text-5xl animate-coin-burst"
+              className="absolute animate-coin-burst"
               style={{
                 '--tx': `${coin.x}px`,
                 '--ty': `${coin.y}px`,
                 '--r': `${coin.rotation}deg`,
                 '--s': coin.scale,
-                '--d': `${coin.delay}s`,
                 animationDelay: `${coin.delay}s`
               } as React.CSSProperties}
             >
-              <span className="drop-shadow-[0_0_15px_rgba(250,204,21,0.9)]">🪙</span>
+              <div className="w-12 h-12 relative">
+                <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
+                <GoldCoin className="w-12 h-12 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+              </div>
             </div>
           ))}
         </div>
@@ -429,11 +450,9 @@ export default function ConvosetTest() {
           <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
         </div>
         <div className="flex gap-3">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30">
-            <span className="text-yellow-400 font-mono flex items-center gap-2">
-              <span className="text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.7)]">🪙</span> 
-              <span className="font-bold text-lg">{coins}</span>
-            </span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2">
+            <GoldCoin className="w-6 h-6" />
+            <span className="text-yellow-400 font-mono font-bold text-lg">{coins}</span>
           </div>
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30">
             <span className="text-purple-400 font-mono">Round {round}/3</span>
@@ -441,13 +460,13 @@ export default function ConvosetTest() {
         </div>
       </div>
 
-      {/* Full Body Kokorobot - walks in during intro and to center */}
+      {/* Full Body Kokorobot */}
       {showFullBody && (gameState === 'intro' || gameState === 'walking') && (
         <div 
           className="absolute bottom-20 z-20 transition-transform"
           style={{ 
             left: `${kokoroX}px`,
-            transform: `scale(${kokoroScale})`,
+            transform: `scale(${kokoroScale}) translateX(-50%)`,
             opacity: kokoroOpacity
           }}
         >
@@ -467,75 +486,74 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* Main Content - Centered */}
-      <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4">
-        
-        {/* INTRO - Text and Button */}
-        {gameState === 'intro' && (
-          <div className="text-center ml-auto mr-16">
-            <h1 className="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300">
+      {/* INTRO - Mission slides in from right */}
+      {gameState === 'intro' && (
+        <div className={`absolute top-1/2 right-8 -translate-y-1/2 z-10 transition-all duration-700 ease-out ${missionSlideIn ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-32'}`}>
+          <div className="text-right max-w-lg">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 drop-shadow-lg">
               M31 Coffee Outpost
             </h1>
-            <p className="text-amber-200/80 mb-8 max-w-md text-lg">
+            <p className="text-amber-200/90 mb-8 text-xl">
               Kokorobot approaches. She wants coffee.<br />
               Listen carefully. Can you take her order?
             </p>
             <button
               onClick={startGame}
-              disabled={isWalking}
-              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-bold py-4 px-12 rounded-full text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50"
+              disabled={!introReady}
+              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-bold py-4 px-14 rounded-full text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Begin Mission
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* WALKING STATE - Show loading text */}
-        {gameState === 'walking' && (
-          <div className="text-center">
-            <p className="text-amber-400 text-xl animate-pulse">Kokorobot is approaching...</p>
-          </div>
-        )}
+      {/* WALKING STATE */}
+      {gameState === 'walking' && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <p className="text-amber-400 text-2xl animate-pulse font-medium">Starting mission...</p>
+        </div>
+      )}
 
-        {/* DIALOGUE BOX - Centered on screen */}
-        {gameState === 'playing' && showDialogue && (
-          <div className="w-full max-w-xl animate-fade-in">
+      {/* DIALOGUE BOX - Centered */}
+      {gameState === 'playing' && showDialogue && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
+          <div className="w-full max-w-2xl animate-fade-in">
             
             {/* Round 1 */}
             {round === 1 && (
-              <div className="bg-black/80 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
                 <div className="flex items-start gap-5 mb-6">
-                  {/* Closeup photo with closed eyes - appears after transition */}
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-20 h-20 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-24 h-24 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
-                    <p className="text-amber-400 text-lg mb-2 font-mono font-bold">Kokorobot-1</p>
+                    <p className="text-amber-400 text-xl mb-2 font-mono font-bold">Kokorobot-1</p>
                     
                     {showTranscript ? (
-                      <p className="text-xl leading-relaxed text-white">{npcOrder}</p>
+                      <p className="text-2xl leading-relaxed text-white">{npcOrder}</p>
                     ) : (
-                      <div className="bg-amber-900/40 rounded-xl p-5 text-center border border-amber-500/30">
-                        <p className="text-amber-300/80 mb-4 text-lg">🎧 Listen to the order...</p>
+                      <div className="bg-amber-900/40 rounded-xl p-6 text-center border border-amber-500/30">
+                        <p className="text-amber-300/80 mb-4 text-xl">🎧 Listen to the order...</p>
                         <button 
                           onClick={buyTranscript}
                           disabled={coins < 10}
-                          className={`text-base px-6 py-3 rounded-full transition font-semibold ${
+                          className={`text-lg px-8 py-3 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${
                             coins >= 10 
                               ? 'bg-yellow-500/30 text-yellow-400 hover:bg-yellow-500/40 border border-yellow-500/60' 
                               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                           }`}
                         >
-                          💡 Show text (10 🪙)
+                          💡 Show text (10 <GoldCoin className="w-5 h-5 inline" />)
                         </button>
                       </div>
                     )}
                     
                     <button 
                       onClick={replayVoice}
-                      className="mt-4 text-base text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
+                      className="mt-4 text-lg text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
                     >
                       🔊 Replay voice
                     </button>
@@ -543,22 +561,22 @@ export default function ConvosetTest() {
                 </div>
                 
                 {/* Order Builder */}
-                <div className="border-t border-amber-500/30 pt-5">
-                  <p className="text-base text-amber-300/80 mb-4 font-medium">Build the order ({round1Selections.length}/3 items)</p>
+                <div className="border-t border-amber-500/30 pt-6">
+                  <p className="text-lg text-amber-300/80 mb-4 font-medium">Build the order ({round1Selections.length}/3 items)</p>
                   
-                  <div className="flex flex-wrap gap-2 mb-5 min-h-[44px]">
+                  <div className="flex flex-wrap gap-2 mb-5 min-h-[48px]">
                     {round1Selections.map((item, i) => (
                       <button
                         key={i}
                         onClick={() => removeFromOrder(i)}
-                        className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-base hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
+                        className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-lg hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
                       >
                         {item.size} {item.type} {item.milk && `(${item.milk})`} ✕
                       </button>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-5">
+                  <div className="grid grid-cols-3 gap-5 mb-6">
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
                       <div className="flex flex-col gap-2">
@@ -566,7 +584,7 @@ export default function ConvosetTest() {
                           <button
                             key={type}
                             onClick={() => setCurrentItem({...currentItem, type})}
-                            className={`py-2 px-3 rounded-lg text-base transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {type}
                           </button>
@@ -580,7 +598,7 @@ export default function ConvosetTest() {
                           <button
                             key={size}
                             onClick={() => setCurrentItem({...currentItem, size})}
-                            className={`py-2 px-3 rounded-lg text-base transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {size}
                           </button>
@@ -594,7 +612,7 @@ export default function ConvosetTest() {
                           <button
                             key={milk}
                             onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
-                            className={`py-2 px-3 rounded-lg text-base transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {milk}
                           </button>
@@ -603,18 +621,18 @@ export default function ConvosetTest() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-4">
                     <button
                       onClick={addToOrder}
                       disabled={!currentItem.type || !currentItem.size || round1Selections.length >= 3}
-                      className="flex-1 py-3 rounded-xl font-bold text-lg transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex-1 py-4 rounded-xl font-bold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       + Add Item
                     </button>
                     <button
                       onClick={checkRound1}
                       disabled={round1Selections.length !== 3}
-                      className="flex-1 py-3 rounded-xl font-bold text-lg transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex-1 py-4 rounded-xl font-bold text-xl transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Submit ✓
                     </button>
@@ -625,22 +643,22 @@ export default function ConvosetTest() {
 
             {/* Round 2 */}
             {round === 2 && (
-              <div className="bg-black/80 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
                 <div className="flex items-center gap-4 mb-4">
-                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-16 h-16 rounded-full object-cover border-2 border-amber-500/50" />
+                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
                   <div>
-                    <p className="text-amber-400 font-mono font-bold">Kokorobot-1</p>
-                    <p className="text-sm text-purple-400">Your turn! Order a drink.</p>
+                    <p className="text-amber-400 font-mono font-bold text-xl">Kokorobot-1</p>
+                    <p className="text-lg text-purple-400">Your turn! Order a drink.</p>
                   </div>
                 </div>
                 
-                <div className="h-56 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4">
+                <div className="h-64 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4">
                   {round2Chat.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'player' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'npc' && (
-                        <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-10 h-10 rounded-full mr-2 object-cover" />
+                        <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-12 h-12 rounded-full mr-2 object-cover" />
                       )}
-                      <span className={`inline-block rounded-xl px-4 py-3 max-w-[80%] text-base ${
+                      <span className={`inline-block rounded-xl px-5 py-3 max-w-[80%] text-lg ${
                         msg.role === 'player' ? 'bg-purple-500 text-white' : 'bg-amber-900/60 text-amber-200'
                       }`}>
                         {msg.text}
@@ -649,9 +667,9 @@ export default function ConvosetTest() {
                   ))}
                 </div>
 
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-3 mb-4">
                   {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'milk', label: '🥛 Milk'}].map(({key, label}) => (
-                    <span key={key} className={`px-4 py-2 rounded-full text-sm font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`}>
+                    <span key={key} className={`px-4 py-2 rounded-full text-base font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`}>
                       {label} {round2Order[key as keyof typeof round2Order] && '✓'}
                     </span>
                   ))}
@@ -664,9 +682,9 @@ export default function ConvosetTest() {
                     onChange={(e) => setRound2Input(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && processRound2Input()}
                     placeholder="Type your order..."
-                    className="flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-3 text-lg focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
+                    className="flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
                   />
-                  <button onClick={processRound2Input} className="bg-purple-500 hover:bg-purple-400 text-white font-bold px-8 rounded-xl text-lg">
+                  <button onClick={processRound2Input} className="bg-purple-500 hover:bg-purple-400 text-white font-bold px-10 rounded-xl text-xl">
                     Send
                   </button>
                 </div>
@@ -675,14 +693,14 @@ export default function ConvosetTest() {
 
             {/* Round 3 */}
             {round === 3 && (
-              <div className="bg-black/80 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
-                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
-                <p className="text-lg text-green-400 mb-6 font-medium">Speak your order! Include type, size, and milk.</p>
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
+                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
+                <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, size, and milk.</p>
                 
                 <button
                   onClick={startListening}
                   disabled={round3Listening}
-                  className={`w-36 h-36 rounded-full font-bold text-3xl transition mx-auto mb-6 shadow-lg ${
+                  className={`w-40 h-40 rounded-full font-bold text-4xl transition mx-auto mb-6 shadow-lg ${
                     round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
                   }`}
                 >
@@ -691,57 +709,85 @@ export default function ConvosetTest() {
 
                 {round3Transcript && (
                   <div className="bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30">
-                    <p className="text-sm text-amber-400/80 mb-1">You said:</p>
-                    <p className="text-xl text-white">"{round3Transcript}"</p>
+                    <p className="text-base text-amber-400/80 mb-1">You said:</p>
+                    <p className="text-2xl text-white">"{round3Transcript}"</p>
                   </div>
                 )}
 
                 {round3Feedback.length > 0 && (
                   <div className="bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30">
                     {round3Feedback.map((f, i) => (
-                      <p key={i} className="text-yellow-400 text-lg mb-1">{f}</p>
+                      <p key={i} className="text-yellow-400 text-xl mb-1">{f}</p>
                     ))}
-                    <div className="flex gap-3 mt-5">
-                      <button onClick={startListening} className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-3 rounded-xl text-lg">
+                    <div className="flex gap-4 mt-5">
+                      <button onClick={startListening} className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-xl text-xl">
                         Try Again
                       </button>
-                      <button onClick={acceptRound3Score} className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-bold py-3 rounded-xl text-lg">
+                      <button onClick={acceptRound3Score} className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-bold py-4 rounded-xl text-xl">
                         Accept Score
                       </button>
                     </div>
                   </div>
                 )}
 
-                <p className="text-sm text-amber-400/60 mt-5">Max: 500 coins (−100 per missing element)</p>
+                <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−100 per missing element)</p>
               </div>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Investor Modal */}
-        {gameState === 'investor' && (
-          <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-40 p-4">
-            <div className="bg-gradient-to-b from-amber-950 to-black rounded-3xl p-10 max-w-md text-center border border-yellow-500/40 relative overflow-hidden shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/10 to-transparent -skew-x-12 animate-shimmer" />
-              
-              <div className="relative z-10">
-                <div className="text-7xl mb-5">🌍</div>
-                <h2 className="text-2xl font-bold text-yellow-400 mb-3">Earth Investor</h2>
-                <p className="text-xl mb-5 text-amber-200">{investorMessage}</p>
-                <p className="text-yellow-400 font-bold text-4xl mb-8 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]">
-                  +{round === 1 ? 100 : round === 2 ? 100 : 500} 🪙
-                </p>
-                <button
-                  onClick={completeGame}
-                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
-                >
-                  {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
-                </button>
+      {/* Earth Investor Video Call Modal */}
+      {gameState === 'investor' && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-40 p-4">
+          {/* Spaceship interior frame */}
+          <div className="relative max-w-2xl w-full">
+            {/* Video screen frame */}
+            <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl p-3 shadow-2xl border-4 border-slate-600">
+              {/* Screen bezel */}
+              <div className="bg-black rounded-2xl overflow-hidden relative">
+                {/* Video feed - Earth Investor image */}
+                <img 
+                  src="/ei-empire.png" 
+                  alt="Earth Investor" 
+                  className="w-full h-auto"
+                />
+                
+                {/* Overlay content */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                
+                {/* Call UI elements */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-green-400 text-sm font-mono">LIVE • Earth</span>
+                </div>
+                
+                {/* Message and coins at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+                  <h2 className="text-2xl font-bold text-yellow-400 mb-2">Earth Investor</h2>
+                  <p className="text-xl mb-4 text-white">{investorMessage}</p>
+                  <div className="flex items-center justify-center gap-2 mb-6">
+                    <span className="text-yellow-400 font-bold text-4xl drop-shadow-[0_0_15px_rgba(255,215,0,0.6)]">
+                      +{round === 1 ? 100 : round === 2 ? 100 : 500}
+                    </span>
+                    <GoldCoin className="w-10 h-10" />
+                  </div>
+                  <button
+                    onClick={completeGame}
+                    className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
+                  >
+                    {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
+                  </button>
+                </div>
               </div>
             </div>
+            
+            {/* Screen stand/base */}
+            <div className="mx-auto w-24 h-4 bg-gradient-to-b from-slate-700 to-slate-800 rounded-b-lg" />
+            <div className="mx-auto w-32 h-2 bg-slate-800 rounded-full" />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Custom animation styles */}
       <style jsx>{`
@@ -756,21 +802,14 @@ export default function ConvosetTest() {
           }
         }
         .animate-coin-burst {
-          animation: coin-burst 1.5s ease-out forwards;
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%) skewX(-12deg); }
-          100% { transform: translateX(200%) skewX(-12deg); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s ease-in-out infinite;
+          animation: coin-burst 2s ease-out forwards;
         }
         @keyframes walk {
-          0%, 100% { transform: translateY(0) rotate(-2deg); }
-          50% { transform: translateY(-8px) rotate(2deg); }
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50% { transform: translateY(-8px) rotate(1deg); }
         }
         .animate-walk {
-          animation: walk 0.4s ease-in-out infinite;
+          animation: walk 0.3s ease-in-out infinite;
         }
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(20px); }
