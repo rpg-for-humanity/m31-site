@@ -531,42 +531,42 @@ export default function ConvosetTest() {
       {/* DIALOGUE BOX - Centered */}
       {gameState === 'playing' && showDialogue && (
         <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
-          <div className="w-full max-w-2xl animate-fade-in">
+          <div className="w-full max-w-xl animate-fade-in">
             
             {/* Round 1 */}
             {round === 1 && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
-                <div className="flex items-start gap-5 mb-6">
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl">
+                <div className="flex items-center gap-4 mb-6">
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-24 h-24 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-28 h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
                     <p className="text-amber-400 text-xl mb-2 font-mono font-bold">Kokorobot-1</p>
                     
                     {showTranscript ? (
-                      <p className="text-2xl leading-relaxed text-white">{npcOrder}</p>
+                      <p className="text-xl leading-relaxed text-white">{npcOrder}</p>
                     ) : (
-                      <div className="bg-amber-900/40 rounded-xl p-6 text-center border border-amber-500/30">
-                        <p className="text-amber-300/80 mb-4 text-xl">🎧 Listen to the order...</p>
+                      <div className="bg-amber-900/40 rounded-xl p-4 text-center border border-amber-500/30">
+                        <p className="text-amber-300/80 mb-3 text-lg">🎧 Listen to the order...</p>
                         <button 
                           onClick={buyTranscript}
                           disabled={coins < 10}
-                          className={`text-lg px-8 py-3 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${
+                          className={`text-base px-6 py-2 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${
                             coins >= 10 
                               ? 'bg-yellow-500/30 text-yellow-400 hover:bg-yellow-500/40 border border-yellow-500/60' 
                               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                           }`}
                         >
-                          💡 Show text (10 <GoldCoin className="w-5 h-5 inline" />)
+                          💡 Show text (10 <GoldCoin className="w-4 h-4 inline" />)
                         </button>
                       </div>
                     )}
                     
                     <button 
                       onClick={replayVoice}
-                      className="mt-4 text-lg text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
+                      className="mt-3 text-base text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
                     >
                       🔊 Replay voice
                     </button>
@@ -782,6 +782,30 @@ export default function ConvosetTest() {
             <span className="text-green-400 text-xl font-mono font-bold">LIVE</span>
           </div>
 
+          {/* Dramatic coin burst */}
+          {showCoinAnimation && (
+            <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center">
+              {animatedCoins.map((coin) => (
+                <div
+                  key={coin.id}
+                  className="absolute animate-coin-burst"
+                  style={{
+                    '--tx': `${coin.x}px`,
+                    '--ty': `${coin.y}px`,
+                    '--r': `${coin.rotation}deg`,
+                    '--s': coin.scale,
+                    animationDelay: `${coin.delay}s`
+                  } as React.CSSProperties}
+                >
+                  <div className="w-12 h-12 relative">
+                    <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
+                    <GoldCoin className="w-12 h-12 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Coin flying animation */}
           <div className="absolute top-1/2 left-1/2 z-50 animate-fly-to-balance">
             <div className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
@@ -800,8 +824,8 @@ export default function ConvosetTest() {
             <p className="text-white text-4xl font-bold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">Can she take your orders, too?</p>
           </div>
 
-          {/* Button closer to call buttons */}
-          <div className="absolute bottom-[28%] left-1/2 -translate-x-1/2 z-50">
+          {/* Button below control keyboard */}
+          <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 z-50">
             <button
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
