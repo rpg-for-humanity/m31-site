@@ -7,7 +7,9 @@ type GameState = 'intro' | 'walking' | 'playing' | 'investor';
 type OrderItem = {
   type: string;
   size: string;
+  temp?: string;
   milk?: string;
+  syrup?: string;
 };
 
 type Coin = {
@@ -45,8 +47,8 @@ export default function ConvosetTest() {
   
   const [round2Input, setRound2Input] = useState('');
   const [round2Chat, setRound2Chat] = useState<{role: 'npc' | 'player', text: string}[]>([]);
-  const [round2Order, setRound2Order] = useState<{type: boolean, size: boolean, milk: boolean}>({
-    type: false, size: false, milk: false
+  const [round2Order, setRound2Order] = useState<{type: boolean, size: boolean, milk: boolean, syrup: boolean, temp: boolean}>({
+    type: false, size: false, milk: false, syrup: false, temp: false
   });
   
   const [round3Listening, setRound3Listening] = useState(false);
@@ -377,7 +379,7 @@ export default function ConvosetTest() {
     
     const newOrder = { ...round2Order };
     
-    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('espresso') || input.includes('coffee') || input.includes('macchiato')) {
+    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('espresso') || input.includes('coffee') || input.includes('macchiato') || input.includes('machiato')) {
       newOrder.type = true;
     }
     if (input.includes('small') || input.includes('medium') || input.includes('large')) {
@@ -385,6 +387,12 @@ export default function ConvosetTest() {
     }
     if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('regular') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) {
       newOrder.milk = true;
+    }
+    if (input.includes('caramel') || input.includes('vanilla') || input.includes('hazelnut') || input.includes('mocha') || input.includes('no syrup') || input.includes('none')) {
+      newOrder.syrup = true;
+    }
+    if (input.includes('iced') || input.includes('ice') || input.includes('hot') || input.includes('cold')) {
+      newOrder.temp = true;
     }
     
     setRound2Order(newOrder);
@@ -396,8 +404,12 @@ export default function ConvosetTest() {
         response = "What kind of drink would you like?";
       } else if (!newOrder.size) {
         response = "What size — small, medium, or large?";
+      } else if (!newOrder.temp) {
+        response = "Would you like that iced or hot?";
       } else if (!newOrder.milk) {
         response = "Any milk preference? We have oat, almond, whole, skim, or nonfat.";
+      } else if (!newOrder.syrup) {
+        response = "Any syrup? Caramel, vanilla, hazelnut, or none?";
       } else {
         response = "Perfect! Coming right up!";
         setTimeout(() => {
@@ -719,20 +731,20 @@ export default function ConvosetTest() {
                         onClick={() => removeFromOrder(i)}
                         className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-lg hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
                       >
-                        {item.size} {item.type} {item.milk && `(${item.milk})`} ✕
+                        {item.size} {item.temp} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
                       </button>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-5 mb-6">
+                  <div className="grid grid-cols-5 gap-3 mb-6">
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
                       <div className="flex flex-col gap-2">
-                        {['Americano', 'Latte', 'Cappuccino', 'Caramel Macchiato'].map((type) => (
+                        {['Americano', 'Latte', 'Cappuccino', 'Macchiato'].map((type) => (
                           <button
                             key={type}
                             onClick={() => setCurrentItem({...currentItem, type})}
-                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {type}
                           </button>
@@ -746,9 +758,23 @@ export default function ConvosetTest() {
                           <button
                             key={size}
                             onClick={() => setCurrentItem({...currentItem, size})}
-                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">TEMP</p>
+                      <div className="flex flex-col gap-2">
+                        {['Hot', 'Iced'].map((temp) => (
+                          <button
+                            key={temp}
+                            onClick={() => setCurrentItem({...currentItem, temp})}
+                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.temp === temp ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                          >
+                            {temp}
                           </button>
                         ))}
                       </div>
@@ -760,9 +786,23 @@ export default function ConvosetTest() {
                           <button
                             key={milk}
                             onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
-                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {milk}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">SYRUP</p>
+                      <div className="flex flex-col gap-2">
+                        {['None', 'Caramel', 'Vanilla', 'Hazelnut'].map((syrup) => (
+                          <button
+                            key={syrup}
+                            onClick={() => setCurrentItem({...currentItem, syrup: syrup === 'None' ? undefined : syrup})}
+                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${(currentItem.syrup === syrup || (!currentItem.syrup && syrup === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                          >
+                            {syrup}
                           </button>
                         ))}
                       </div>
@@ -772,7 +812,7 @@ export default function ConvosetTest() {
                   <div className="flex gap-4">
                     <button
                       onClick={addToOrder}
-                      disabled={!currentItem.type || !currentItem.size || round1Selections.length >= 3}
+                      disabled={!currentItem.type || !currentItem.size || !currentItem.temp || round1Selections.length >= 3}
                       className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       + Add Item
@@ -816,7 +856,7 @@ export default function ConvosetTest() {
                 </div>
 
                 <div className="flex gap-3 mb-4">
-                  {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'milk', label: '🥛 Milk'}].map(({key, label}) => (
+                  {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'temp', label: '🧊 Temp'}, {key: 'milk', label: '🥛 Milk'}, {key: 'syrup', label: '🍯 Syrup'}].map(({key, label}) => (
                     <span key={key} className={`px-4 py-2 rounded-full text-base font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`}>
                       {label} {round2Order[key as keyof typeof round2Order] && '✓'}
                     </span>
