@@ -94,19 +94,21 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    for (let i = 0; i < 30; i++) {
+    // Create 80 small coins scattered across the entire screen like stars
+    for (let i = 0; i < 80; i++) {
       newCoins.push({
         id: i,
-        x: Math.random() * 800 - 400,
-        y: Math.random() * -500 - 100,
-        rotation: Math.random() * 720 - 360,
-        scale: 0.5 + Math.random() * 0.8,
-        delay: Math.random() * 0.5
+        // Random positions across entire screen
+        x: Math.random() * window.innerWidth - window.innerWidth / 2,
+        y: Math.random() * window.innerHeight - window.innerHeight / 2,
+        rotation: Math.random() * 360,
+        scale: 0.2 + Math.random() * 0.4, // Small like stars
+        delay: Math.random() * 1.5 // Staggered twinkle
       });
     }
     setAnimatedCoins(newCoins);
     setShowCoinAnimation(true);
-    setTimeout(() => setShowCoinAnimation(false), 2500);
+    setTimeout(() => setShowCoinAnimation(false), 3500);
   };
 
   useEffect(() => {
@@ -782,13 +784,13 @@ export default function ConvosetTest() {
             <span className="text-green-400 text-xl font-mono font-bold">LIVE</span>
           </div>
 
-          {/* Dramatic coin burst */}
+          {/* Dramatic coin burst - stars turning gold */}
           {showCoinAnimation && (
-            <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center">
+            <div className="fixed inset-0 pointer-events-none z-50">
               {animatedCoins.map((coin) => (
                 <div
                   key={coin.id}
-                  className="absolute animate-coin-burst"
+                  className="absolute top-1/2 left-1/2 animate-coin-burst"
                   style={{
                     '--tx': `${coin.x}px`,
                     '--ty': `${coin.y}px`,
@@ -797,9 +799,9 @@ export default function ConvosetTest() {
                     animationDelay: `${coin.delay}s`
                   } as React.CSSProperties}
                 >
-                  <div className="w-12 h-12 relative">
-                    <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
-                    <GoldCoin className="w-12 h-12 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+                  <div className="w-6 h-6 relative">
+                    <div className="absolute inset-0 bg-yellow-300/80 rounded-full blur-sm animate-pulse" />
+                    <GoldCoin className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,215,0,0.9)]" />
                   </div>
                 </div>
               ))}
@@ -840,16 +842,24 @@ export default function ConvosetTest() {
       <style jsx>{`
         @keyframes coin-burst {
           0% {
+            opacity: 0;
+            transform: translate(var(--tx), var(--ty)) scale(0);
+          }
+          20% {
             opacity: 1;
-            transform: translate(0, 0) rotate(0deg) scale(1);
+            transform: translate(var(--tx), var(--ty)) scale(var(--s));
+          }
+          50% {
+            opacity: 1;
+            transform: translate(var(--tx), var(--ty)) scale(var(--s)) rotate(var(--r));
           }
           100% {
             opacity: 0;
-            transform: translate(var(--tx), var(--ty)) rotate(var(--r)) scale(var(--s));
+            transform: translate(calc(50vw - 250px), calc(-50vh + 40px)) scale(0.3);
           }
         }
         .animate-coin-burst {
-          animation: coin-burst 2s ease-out forwards;
+          animation: coin-burst 3s ease-in-out forwards;
         }
         @keyframes walk {
           0%, 100% { transform: translateY(0); }
