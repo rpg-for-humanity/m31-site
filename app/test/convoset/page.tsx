@@ -377,13 +377,13 @@ export default function ConvosetTest() {
     
     const newOrder = { ...round2Order };
     
-    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('espresso') || input.includes('coffee')) {
+    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('espresso') || input.includes('coffee') || input.includes('macchiato')) {
       newOrder.type = true;
     }
     if (input.includes('small') || input.includes('medium') || input.includes('large')) {
       newOrder.size = true;
     }
-    if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('regular') || input.includes('milk')) {
+    if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('regular') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) {
       newOrder.milk = true;
     }
     
@@ -397,7 +397,7 @@ export default function ConvosetTest() {
       } else if (!newOrder.size) {
         response = "What size — small, medium, or large?";
       } else if (!newOrder.milk) {
-        response = "Any milk preference? We have oat, almond, whole, or skim.";
+        response = "Any milk preference? We have oat, almond, whole, skim, or nonfat.";
       } else {
         response = "Perfect! Coming right up!";
         setTimeout(() => {
@@ -455,7 +455,7 @@ export default function ConvosetTest() {
     let score = 500;
     let missing: string[] = [];
     
-    if (!(input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('coffee'))) {
+    if (!(input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('coffee') || input.includes('macchiato'))) {
       feedback.push('☕ Coffee type not detected');
       missing.push('coffee type');
       score -= 100;
@@ -465,7 +465,7 @@ export default function ConvosetTest() {
       missing.push('size');
       score -= 100;
     }
-    if (!(input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('milk'))) {
+    if (!(input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat'))) {
       feedback.push('🥛 Milk type not detected');
       missing.push('milk preference');
       score -= 100;
