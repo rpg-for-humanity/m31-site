@@ -146,7 +146,25 @@ export default function ConvosetTest() {
       audio.volume = 0.8;
       setIsNpcSpeaking(true);
       audio.onended = () => setIsNpcSpeaking(false);
-      audio.play().catch(() => setIsNpcSpeaking(false));
+      audio.onerror = (e) => {
+        console.error('Audio failed to load:', audioFile, e);
+        setIsNpcSpeaking(false);
+        // Fallback to TTS if audio fails
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          const voice = getVoice();
+          if (voice) utterance.voice = voice;
+          utterance.rate = 1.0;
+          utterance.pitch = 1.2;
+          setIsNpcSpeaking(true);
+          utterance.onend = () => setIsNpcSpeaking(false);
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+      audio.play().catch((err) => {
+        console.error('Audio play failed:', err);
+        setIsNpcSpeaking(false);
+      });
       return;
     }
     
@@ -169,7 +187,76 @@ export default function ConvosetTest() {
   };
 
   const playRound1Order = () => {
-    speak(npcOrder, '/audio/order.mp3');
+    console.log('Playing round 1 order audio...');
+    
+    // Pause background music while voice plays
+    if (audioRef) {
+      audioRef.pause();
+    }
+    
+    const audio = new Audio('/audio/order.mp3');
+    audio.volume = 0.8;
+    setIsNpcSpeaking(true);
+    
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Audio can play through');
+      audio.play().then(() => {
+        console.log('Audio playing');
+      }).catch(err => {
+        console.error('Play failed:', err);
+        // Fallback to TTS
+        speakTTS(npcOrder);
+      });
+    });
+    
+    audio.addEventListener('ended', () => {
+      console.log('Audio ended');
+      setIsNpcSpeaking(false);
+      // Start background music after voice ends
+      startBackgroundMusic();
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+      setIsNpcSpeaking(false);
+      // Fallback to TTS
+      speakTTS(npcOrder);
+    });
+    
+    audio.load();
+  };
+
+  const startBackgroundMusic = () => {
+    if (!musicStarted) {
+      const audio = new Audio('/afterglow.mp3');
+      audio.loop = true;
+      audio.volume = 0.2;
+      audio.play().catch(() => {});
+      setAudioRef(audio);
+      setMusicStarted(true);
+      setMusicPlaying(true);
+    } else if (audioRef && !musicPlaying) {
+      audioRef.play().catch(() => {});
+      setMusicPlaying(true);
+    }
+  };
+
+  const speakTTS = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voice = getVoice();
+      if (voice) utterance.voice = voice;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.2;
+      utterance.volume = 1.0;
+      setIsNpcSpeaking(true);
+      utterance.onend = () => {
+        setIsNpcSpeaking(false);
+        startBackgroundMusic();
+      };
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const buyTranscript = () => {
@@ -191,16 +278,6 @@ export default function ConvosetTest() {
   };
 
   const startGame = () => {
-    // Start background music on first game start
-    if (!musicStarted) {
-      const audio = new Audio('/afterglow.mp3');
-      audio.loop = true;
-      audio.volume = 0.2;
-      audio.play().catch(() => {});
-      setAudioRef(audio);
-      setMusicStarted(true);
-    }
-    
     setGameState('walking');
     setShowTranscript(false);
     setIsWalking(true);
