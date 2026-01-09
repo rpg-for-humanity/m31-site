@@ -53,6 +53,7 @@ export default function ConvosetTest() {
   const [round3Transcript, setRound3Transcript] = useState('');
   const [round3Attempts, setRound3Attempts] = useState(0);
   const [round3Feedback, setRound3Feedback] = useState<string[]>([]);
+  const [musicStarted, setMusicStarted] = useState(false);
 
   const npcOrder = "Can I get a large Americano, and two small lattes — one with oat milk and one with whole milk?";
 
@@ -94,16 +95,16 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    // Create 80 small coins scattered across the entire screen like stars
+    // Create 80 small coins scattered in top 1/3 of screen
     for (let i = 0; i < 80; i++) {
       newCoins.push({
         id: i,
-        // Random positions across entire screen
+        // Random positions in top third of screen
         x: Math.random() * window.innerWidth - window.innerWidth / 2,
-        y: Math.random() * window.innerHeight - window.innerHeight / 2,
+        y: -window.innerHeight / 3 + Math.random() * (window.innerHeight / 3),
         rotation: Math.random() * 360,
-        scale: 0.2 + Math.random() * 0.4, // Small like stars
-        delay: Math.random() * 1.5 // Staggered twinkle
+        scale: 0.3 + Math.random() * 0.5,
+        delay: Math.random() * 0.8
       });
     }
     setAnimatedCoins(newCoins);
@@ -163,6 +164,15 @@ export default function ConvosetTest() {
   };
 
   const startGame = () => {
+    // Start background music on first game start
+    if (!musicStarted) {
+      const audio = new Audio('/cool-dark-cabaret-music.mp3');
+      audio.loop = true;
+      audio.volume = 0.3;
+      audio.play().catch(() => {}); // Ignore autoplay errors
+      setMusicStarted(true);
+    }
+    
     setGameState('walking');
     setShowTranscript(false);
     setIsWalking(true);
@@ -397,17 +407,18 @@ export default function ConvosetTest() {
     }
   };
 
-  // Gold coin SVG component
+  // Gold coin SVG component - bright yellow, no dollar sign
   const GoldCoin = ({ className = "" }: { className?: string }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="10" fill="url(#goldGradient)" stroke="#B8860B" strokeWidth="1.5"/>
-      <circle cx="12" cy="12" r="7" fill="none" stroke="#DAA520" strokeWidth="1"/>
-      <text x="12" y="16" textAnchor="middle" fill="#8B6914" fontSize="10" fontWeight="bold">$</text>
+      <circle cx="12" cy="12" r="10" fill="url(#goldGradientBright)" stroke="#FFD700" strokeWidth="1.5"/>
+      <circle cx="12" cy="12" r="7" fill="none" stroke="#FFF176" strokeWidth="1" opacity="0.6"/>
+      <circle cx="12" cy="12" r="4" fill="#FFF59D" opacity="0.4"/>
       <defs>
-        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFD700"/>
-          <stop offset="50%" stopColor="#FFA500"/>
-          <stop offset="100%" stopColor="#DAA520"/>
+        <linearGradient id="goldGradientBright" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFEB3B"/>
+          <stop offset="30%" stopColor="#FFD700"/>
+          <stop offset="70%" stopColor="#FFC107"/>
+          <stop offset="100%" stopColor="#FFB300"/>
         </linearGradient>
       </defs>
     </svg>
@@ -862,11 +873,14 @@ export default function ConvosetTest() {
           animation: coin-burst 3s ease-in-out forwards;
         }
         @keyframes walk {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+          0% { transform: translateY(0) rotate(0deg); }
+          25% { transform: translateY(-6px) rotate(-2deg); }
+          50% { transform: translateY(0) rotate(0deg); }
+          75% { transform: translateY(-6px) rotate(2deg); }
+          100% { transform: translateY(0) rotate(0deg); }
         }
         .animate-walk {
-          animation: walk 0.3s ease-in-out infinite;
+          animation: walk 0.5s ease-in-out infinite;
         }
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(20px); }
