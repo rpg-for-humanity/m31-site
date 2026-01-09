@@ -728,7 +728,7 @@ export default function ConvosetTest() {
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
                       <div className="flex flex-col gap-2">
-                        {['Americano', 'Latte', 'Cappuccino'].map((type) => (
+                        {['Americano', 'Latte', 'Cappuccino', 'Caramel Macchiato'].map((type) => (
                           <button
                             key={type}
                             onClick={() => setCurrentItem({...currentItem, type})}
@@ -756,11 +756,11 @@ export default function ConvosetTest() {
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">MILK</p>
                       <div className="flex flex-col gap-2">
-                        {['Half & Half', 'Whole', 'Oat', 'Almond'].map((milk) => (
+                        {['None', 'Whole', 'Oat', 'Almond', 'Nonfat'].map((milk) => (
                           <button
                             key={milk}
-                            onClick={() => setCurrentItem({...currentItem, milk: milk === 'Half & Half' ? undefined : milk})}
-                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'Half & Half')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
+                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {milk}
                           </button>
