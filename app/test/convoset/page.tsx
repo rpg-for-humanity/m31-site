@@ -54,6 +54,8 @@ export default function ConvosetTest() {
   const [round3Attempts, setRound3Attempts] = useState(0);
   const [round3Feedback, setRound3Feedback] = useState<string[]>([]);
   const [musicStarted, setMusicStarted] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(true);
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
 
   const npcOrder = "Can I get a large Americano, and two small lattes — one with oat milk and one with whole milk?";
 
@@ -95,16 +97,15 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    // Create 80 small coins scattered in top 1/3 of screen
-    for (let i = 0; i < 80; i++) {
+    // Create 100 tiny sparkles scattered in top 1/3 of screen
+    for (let i = 0; i < 100; i++) {
       newCoins.push({
         id: i,
-        // Random positions in top third of screen
         x: Math.random() * window.innerWidth - window.innerWidth / 2,
         y: -window.innerHeight / 3 + Math.random() * (window.innerHeight / 3),
         rotation: Math.random() * 360,
-        scale: 0.3 + Math.random() * 0.5,
-        delay: Math.random() * 0.8
+        scale: 0.15 + Math.random() * 0.25, // Very small
+        delay: Math.random() * 0.6
       });
     }
     setAnimatedCoins(newCoins);
@@ -163,13 +164,25 @@ export default function ConvosetTest() {
     }
   };
 
+  const toggleMusic = () => {
+    if (audioRef) {
+      if (musicPlaying) {
+        audioRef.pause();
+      } else {
+        audioRef.play();
+      }
+      setMusicPlaying(!musicPlaying);
+    }
+  };
+
   const startGame = () => {
     // Start background music on first game start
     if (!musicStarted) {
-      const audio = new Audio('/cool-dark-cabaret-music.mp3');
+      const audio = new Audio('/afterglow.mp3');
       audio.loop = true;
-      audio.volume = 0.3;
-      audio.play().catch(() => {}); // Ignore autoplay errors
+      audio.volume = 0.2;
+      audio.play().catch(() => {});
+      setAudioRef(audio);
       setMusicStarted(true);
     }
     
@@ -467,8 +480,18 @@ export default function ConvosetTest() {
 
       {/* HUD */}
       <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-30">
-        <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-amber-500/30">
-          <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-amber-500/30">
+            <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
+          </div>
+          {musicStarted && (
+            <button 
+              onClick={toggleMusic}
+              className="bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-amber-500/30 hover:bg-black/80 transition"
+            >
+              <span className="text-amber-400 text-lg">{musicPlaying ? '🔊' : '🔇'}</span>
+            </button>
+          )}
         </div>
         <div className="flex gap-3">
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2">
@@ -572,7 +595,7 @@ export default function ConvosetTest() {
                               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                           }`}
                         >
-                          💡 Show Text for 10 <GoldCoin className="w-4 h-4 inline" />
+                          💡 Show Text for <GoldCoin className="w-4 h-4 inline" /> 10
                         </button>
                       </div>
                     )}
@@ -634,11 +657,11 @@ export default function ConvosetTest() {
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">MILK</p>
                       <div className="flex flex-col gap-2">
-                        {['None', 'Whole', 'Oat', 'Almond'].map((milk) => (
+                        {['2%/Skim', 'Whole', 'Oat', 'Almond'].map((milk) => (
                           <button
                             key={milk}
-                            onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
-                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            onClick={() => setCurrentItem({...currentItem, milk: milk === '2%/Skim' ? undefined : milk})}
+                            className={`py-3 px-4 rounded-lg text-lg transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === '2%/Skim')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {milk}
                           </button>
@@ -795,7 +818,7 @@ export default function ConvosetTest() {
             <span className="text-green-400 text-xl font-mono font-bold">LIVE</span>
           </div>
 
-          {/* Dramatic coin burst - stars turning gold */}
+          {/* Dramatic sparkle burst - glowing stars */}
           {showCoinAnimation && (
             <div className="fixed inset-0 pointer-events-none z-50">
               {animatedCoins.map((coin) => (
@@ -810,9 +833,10 @@ export default function ConvosetTest() {
                     animationDelay: `${coin.delay}s`
                   } as React.CSSProperties}
                 >
-                  <div className="w-6 h-6 relative">
-                    <div className="absolute inset-0 bg-yellow-300/80 rounded-full blur-sm animate-pulse" />
-                    <GoldCoin className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,215,0,0.9)]" />
+                  <div className="relative">
+                    <div className="w-4 h-4 bg-yellow-300 rounded-full blur-[2px] animate-pulse" 
+                         style={{ boxShadow: '0 0 12px 4px rgba(255, 235, 59, 0.8), 0 0 20px 8px rgba(255, 215, 0, 0.5)' }} />
+                    <div className="absolute inset-0 w-4 h-4 bg-white rounded-full opacity-60 blur-[1px]" />
                   </div>
                 </div>
               ))}
