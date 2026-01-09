@@ -194,36 +194,43 @@ export default function ConvosetTest() {
       audioRef.pause();
     }
     
-    const audio = new Audio('/audio/order.mp3');
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = '/Audio/order.mp3';
     audio.volume = 0.8;
     setIsNpcSpeaking(true);
     
-    audio.addEventListener('canplaythrough', () => {
-      console.log('Audio can play through');
+    audio.oncanplay = () => {
+      console.log('Audio can play');
       audio.play().then(() => {
-        console.log('Audio playing');
+        console.log('Audio playing successfully');
       }).catch(err => {
         console.error('Play failed:', err);
-        // Fallback to TTS
         speakTTS(npcOrder);
       });
-    });
+    };
     
-    audio.addEventListener('ended', () => {
+    audio.onended = () => {
       console.log('Audio ended');
       setIsNpcSpeaking(false);
-      // Start background music after voice ends
       startBackgroundMusic();
-    });
+    };
     
-    audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
-      setIsNpcSpeaking(false);
-      // Fallback to TTS
-      speakTTS(npcOrder);
-    });
-    
-    audio.load();
+    audio.onerror = (e) => {
+      console.error('Audio load error - trying fetch:', e);
+      // Try fetching to see the actual error
+      fetch('/Audio/order.mp3')
+        .then(res => {
+          console.log('Fetch status:', res.status, res.statusText);
+          if (!res.ok) {
+            speakTTS(npcOrder);
+          }
+        })
+        .catch(fetchErr => {
+          console.error('Fetch also failed:', fetchErr);
+          speakTTS(npcOrder);
+        });
+    };
   };
 
   const startBackgroundMusic = () => {
