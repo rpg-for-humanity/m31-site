@@ -378,10 +378,18 @@ export default function ConvosetTest() {
     const isCorrect = normalize(round1Selections) === normalize(correctOrder);
     
     if (isCorrect) {
-      setCoins(prev => prev + 100);
-      triggerCoinAnimation();
-      setInvestorMessage('Well done!');
-      setGameState('investor');
+      // Stop background music
+      if (audioRef) {
+        audioRef.pause();
+        setMusicPlaying(false);
+      }
+      // Play celebration sound
+      playAudio('/Audio/goodresult.mp3', () => {
+        setCoins(prev => prev + 100);
+        triggerCoinAnimation();
+        setInvestorMessage('Well done!');
+        setGameState('investor');
+      });
     } else {
       speak("Hmm, that's not quite right. Listen again!");
       setRound1Selections([]);
@@ -450,13 +458,17 @@ export default function ConvosetTest() {
       if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect') || input.includes('that\'s it') || input.includes('thats it') || input.includes('thank you') || input.includes('thanks') || input.includes('good') || input.includes('yep') || input.includes('yup') || input.includes('sure') || input.includes('okay') || input.includes('ok')) {
         const response = "Thank you, it will be at the pick up counter.";
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-        playAudio('/Audio/coffee-confirm.mp3');
-        setTimeout(() => {
+        // Stop background music
+        if (audioRef) {
+          audioRef.pause();
+          setMusicPlaying(false);
+        }
+        playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 100);
           triggerCoinAnimation();
           setInvestorMessage("Great work!");
           setGameState('investor');
-        }, 2000);
+        });
         return;
       } else if (input.includes('no') || input.includes('change') || input.includes('actually') || input.includes('wait') || input.includes('wrong')) {
         setRound2ConfirmStep(false);
@@ -687,17 +699,21 @@ export default function ConvosetTest() {
       newDetails.milk = 'none';
     }
     
-    // Detect milk
+    // Detect milk - for drinks that require milk, "no" alone doesn't work
+    const milkRequiredDrinks = ['Latte', 'Cappuccino', 'Macchiato', 'Mocha'];
     if (!newOrder.milk) {
-      if (input.includes('no milk') || input.includes('black') || input.includes('regular') || input.includes('no thank')) { 
-        newOrder.milk = true; newDetails.milk = 'none'; 
-      }
-      else if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
+      // Check for actual milk choices
+      if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
       else if (input.includes('almond')) { newOrder.milk = true; newDetails.milk = 'almond milk'; }
       else if (input.includes('whole')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
       else if (input.includes('skim')) { newOrder.milk = true; newDetails.milk = 'skim milk'; }
       else if (input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) { newOrder.milk = true; newDetails.milk = 'nonfat milk'; }
       else if (input.includes('soy')) { newOrder.milk = true; newDetails.milk = 'soy milk'; }
+      else if (input.includes('regular') || input.includes('normal') || input.includes('default')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
+      // Only allow "no milk" for non-milk-required drinks
+      else if ((input.includes('no milk') || input.includes('black') || input.includes('no thank')) && !milkRequiredDrinks.includes(newDetails.type || '')) { 
+        newOrder.milk = true; newDetails.milk = 'none'; 
+      }
     }
     
     setRound3Order(newOrder);
@@ -721,7 +737,8 @@ export default function ConvosetTest() {
       audioFile = '/Audio/coffee-temperature.mp3';
       score -= 20;
     } else if (!newOrder.milk) {
-      question = "Any milk preference?";
+      // More helpful message for milk-required drinks
+      question = `A ${newDetails.type} requires a milk choice. We have whole, oat, almond, nonfat, or soy.`;
       audioFile = '/Audio/milk-preference.mp3';
       score -= 20;
     }
@@ -743,7 +760,13 @@ export default function ConvosetTest() {
   };
 
   const acceptRound3Score = () => {
-    playAudio('/Audio/kokorobot-success.mp3', () => {
+    // Stop background music
+    if (audioRef) {
+      audioRef.pause();
+      setMusicPlaying(false);
+    }
+    // Play celebration sound
+    playAudio('/Audio/goodresult.mp3', () => {
       setTimeout(() => {
         setCoins(prev => prev + Math.max(round3Score, 100));
         triggerCoinAnimation();
@@ -1064,7 +1087,7 @@ export default function ConvosetTest() {
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
                   <div>
                     <p className="text-amber-400 font-mono font-semibold text-xl">Kokorobot-1</p>
-                    <p className="text-lg text-purple-400">Your turn! Order a drink.</p>
+                    <p className="text-lg text-purple-400">Your turn! Order one drink by typing.</p>
                   </div>
                 </div>
                 
@@ -1111,13 +1134,17 @@ export default function ConvosetTest() {
                       onClick={() => {
                         const response = "Thank you, it will be at the pick up counter.";
                         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-                        playAudio('/Audio/coffee-confirm.mp3');
-                        setTimeout(() => {
+                        // Stop background music
+                        if (audioRef) {
+                          audioRef.pause();
+                          setMusicPlaying(false);
+                        }
+                        playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 100);
                           triggerCoinAnimation();
                           setInvestorMessage("Great work!");
                           setGameState('investor');
-                        }, 2000);
+                        });
                       }}
                       className="flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl"
                     >
@@ -1149,7 +1176,7 @@ export default function ConvosetTest() {
                 
                 {!round3ConfirmStep ? (
                   <>
-                    <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, temperature, size, and milk preference.</p>
+                    <p className="text-xl text-green-400 mb-6 font-medium">Speak to order one drink! Include type, temperature, size, and milk preference.</p>
                     
                     <button
                       onClick={startListening}
