@@ -547,6 +547,12 @@ export default function ConvosetTest() {
     setGameState('playing');
     setShowDialogue(true);
     setRound3Order({ type: false, size: false, milk: false, temp: false });
+    setRound3OrderDetails({});
+    setRound3Score(500);
+    setRound3ConfirmStep(false);
+    setRound3CurrentQuestion('');
+    setRound3Transcript('');
+    setRound3Feedback([]);
     playAudio('/Audio/kokorobot-ready.mp3');
   };
 
@@ -556,6 +562,8 @@ export default function ConvosetTest() {
 
   const [round3OrderDetails, setRound3OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
   const [round3Score, setRound3Score] = useState(500);
+  const [round3ConfirmStep, setRound3ConfirmStep] = useState(false);
+  const [round3CurrentQuestion, setRound3CurrentQuestion] = useState('');
 
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -571,15 +579,15 @@ export default function ConvosetTest() {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    recognition.continuous = true; // Keep listening longer
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
     
     setRound3Listening(true);
     setRound3Transcript('');
     setRound3Feedback([]);
+    setRound3CurrentQuestion('');
     
-    // Auto-stop after 5 seconds of speech
     let speechTimeout: NodeJS.Timeout;
     
     recognition.onresult = (event: any) => {
@@ -589,7 +597,6 @@ export default function ConvosetTest() {
         .join(' ');
       setRound3Transcript(transcript);
       
-      // Wait a bit more before finalizing
       speechTimeout = setTimeout(() => {
         recognition.stop();
         evaluateRound3(transcript);
@@ -598,21 +605,18 @@ export default function ConvosetTest() {
     
     recognition.onerror = () => {
       setRound3Listening(false);
-      // Resume music
       if (audioRef && musicPlaying) {
         audioRef.play().catch(() => {});
       }
     };
     recognition.onend = () => {
       setRound3Listening(false);
-      // Resume music
       if (audioRef && musicPlaying) {
         audioRef.play().catch(() => {});
       }
     };
     recognition.start();
     
-    // Safety timeout - stop after 8 seconds max
     setTimeout(() => {
       if (round3Listening) {
         recognition.stop();
@@ -623,54 +627,91 @@ export default function ConvosetTest() {
   const evaluateRound3 = (transcript: string) => {
     const input = transcript.toLowerCase();
     const newOrder = { ...round3Order };
-    const newDetails: {type?: string, size?: string, temp?: string, milk?: string} = {};
-    let score = 500;
-    let missing: string[] = [];
+    const newDetails = { ...round3OrderDetails };
+    let score = round3Score;
     
     // Detect drink type
-    if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
-    else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
-    else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
-    else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
-    else if (input.includes('mocha')) { newOrder.type = true; newDetails.type = 'Mocha'; }
-    else if (input.includes('espresso')) { newOrder.type = true; newDetails.type = 'Espresso'; }
-    else { missing.push('type'); score -= 20; }
+    if (!newOrder.type) {
+      if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
+      else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
+      else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
+      else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
+      else if (input.includes('mocha')) { newOrder.type = true; newDetails.type = 'Mocha'; }
+      else if (input.includes('espresso')) { newOrder.type = true; newDetails.type = 'Espresso'; }
+    }
     
     // Detect size
-    if (input.includes('small')) { newOrder.size = true; newDetails.size = 'small'; }
-    else if (input.includes('medium')) { newOrder.size = true; newDetails.size = 'medium'; }
-    else if (input.includes('large')) { newOrder.size = true; newDetails.size = 'large'; }
-    else { missing.push('size'); score -= 20; }
+    if (!newOrder.size) {
+      if (input.includes('small')) { newOrder.size = true; newDetails.size = 'small'; }
+      else if (input.includes('medium')) { newOrder.size = true; newDetails.size = 'medium'; }
+      else if (input.includes('large')) { newOrder.size = true; newDetails.size = 'large'; }
+    }
     
     // Detect temperature
-    if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
-    else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
-    else { missing.push('temperature'); score -= 20; }
+    if (!newOrder.temp) {
+      if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
+      else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
+    }
     
-    // Detect milk - Americano and Espresso don't need milk
+    // Americano and Espresso don't need milk
     const noMilkDrinks = ['Americano', 'Espresso'];
     if (noMilkDrinks.includes(newDetails.type || '')) {
-      newOrder.milk = true; // Auto-pass milk for Americano/Espresso
+      newOrder.milk = true;
       newDetails.milk = 'none';
-    } else if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
-    else if (input.includes('almond')) { newOrder.milk = true; newDetails.milk = 'almond milk'; }
-    else if (input.includes('whole')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
-    else if (input.includes('skim')) { newOrder.milk = true; newDetails.milk = 'skim milk'; }
-    else if (input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) { newOrder.milk = true; newDetails.milk = 'nonfat milk'; }
-    else if (input.includes('soy')) { newOrder.milk = true; newDetails.milk = 'soy milk'; }
-    else if (input.includes('no milk') || input.includes('black') || input.includes('regular')) { newOrder.milk = true; newDetails.milk = 'none'; }
-    else { missing.push('milk preference'); score -= 20; }
+    }
+    
+    // Detect milk
+    if (!newOrder.milk) {
+      if (input.includes('no milk') || input.includes('black') || input.includes('regular') || input.includes('no thank')) { 
+        newOrder.milk = true; newDetails.milk = 'none'; 
+      }
+      else if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
+      else if (input.includes('almond')) { newOrder.milk = true; newDetails.milk = 'almond milk'; }
+      else if (input.includes('whole')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
+      else if (input.includes('skim')) { newOrder.milk = true; newDetails.milk = 'skim milk'; }
+      else if (input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) { newOrder.milk = true; newDetails.milk = 'nonfat milk'; }
+      else if (input.includes('soy')) { newOrder.milk = true; newDetails.milk = 'soy milk'; }
+    }
     
     setRound3Order(newOrder);
     setRound3OrderDetails(newDetails);
-    setRound3Score(score);
     setRound3Attempts(prev => prev + 1);
     
-    // Build feedback
-    if (missing.length > 0) {
-      setRound3Feedback([`Missing: ${missing.join(', ')}`]);
+    // Check what's missing and ask follow-up
+    let question = '';
+    let audioFile = '';
+    
+    if (!newOrder.type) {
+      question = "What kind of coffee would you like?";
+      audioFile = '/Audio/ask-type.mp3';
+      score -= 20;
+    } else if (!newOrder.size) {
+      question = "What size?";
+      audioFile = '/Audio/ask-size.mp3';
+      score -= 20;
+    } else if (!newOrder.temp) {
+      question = "Would you like that hot or over ice?";
+      audioFile = '/Audio/coffee-temperature.mp3';
+      score -= 20;
+    } else if (!newOrder.milk) {
+      question = "Any milk preference?";
+      audioFile = '/Audio/milk-preference.mp3';
+      score -= 20;
+    }
+    
+    setRound3Score(score);
+    
+    if (question) {
+      // Still missing info - ask follow-up
+      setRound3CurrentQuestion(question);
+      setRound3Feedback([question]);
+      playAudio(audioFile);
     } else {
+      // All info collected! Show confirmation
+      setRound3ConfirmStep(true);
       setRound3Feedback([]);
+      const milkText = newDetails.milk === 'none' ? '' : ` with ${newDetails.milk}`;
+      setRound3CurrentQuestion(`Perfect! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}.`);
     }
   };
 
@@ -679,7 +720,7 @@ export default function ConvosetTest() {
       setTimeout(() => {
         setCoins(prev => prev + Math.max(round3Score, 100));
         triggerCoinAnimation();
-        setInvestorMessage(round3Score === 500 ? "Perfect!" : "Good effort!");
+        setInvestorMessage(round3Score >= 480 ? "🎉 AMAZING! You nailed it!" : round3Score >= 400 ? "Great job!" : "Good effort!");
         setGameState('investor');
       }, 500);
     });
@@ -1078,42 +1119,62 @@ export default function ConvosetTest() {
             {round === 3 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
                 <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
-                <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, temperature, size, and milk preference.</p>
                 
-                <button
-                  onClick={startListening}
-                  disabled={round3Listening}
-                  className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
-                    round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
-                  }`}
-                >
-                  {round3Listening ? '🎤' : '🎤 Speak'}
-                </button>
+                {!round3ConfirmStep ? (
+                  <>
+                    <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, temperature, size, and milk preference.</p>
+                    
+                    <button
+                      onClick={startListening}
+                      disabled={round3Listening}
+                      className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
+                        round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
+                      }`}
+                    >
+                      {round3Listening ? '🎤' : '🎤 Speak'}
+                    </button>
 
-                {round3Transcript && (
-                  <div className="bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30">
-                    <p className="text-base text-amber-400/80 mb-1">You said:</p>
-                    <p className="text-2xl text-white">"{round3Transcript}"</p>
-                  </div>
-                )}
+                    {round3Transcript && (
+                      <div className="bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30">
+                        <p className="text-base text-amber-400/80 mb-1">You said:</p>
+                        <p className="text-2xl text-white">"{round3Transcript}"</p>
+                      </div>
+                    )}
 
-                {round3Feedback.length > 0 && (
-                  <div className="bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30">
-                    {round3Feedback.map((f, i) => (
-                      <p key={i} className="text-yellow-400 text-xl mb-1">{f}</p>
-                    ))}
-                    <div className="flex gap-4 mt-5">
-                      <button onClick={startListening} className="flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl">
-                        Try Again
-                      </button>
-                      <button onClick={acceptRound3Score} className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl">
-                        Accept Score
+                    {round3CurrentQuestion && !round3ConfirmStep && (
+                      <div className="bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30">
+                        <p className="text-yellow-400 text-xl mb-4">🎤 {round3CurrentQuestion}</p>
+                        <p className="text-amber-400/60 text-base mb-4">Tap the mic to answer</p>
+                      </div>
+                    )}
+
+                    <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−20 per follow-up question)</p>
+                    <p className="text-base text-green-400/80 mt-2">Current score: {round3Score} coins</p>
+                  </>
+                ) : (
+                  <>
+                    {/* Order Complete - Celebration! */}
+                    <div className="text-center">
+                      <p className="text-3xl text-green-400 mb-4 font-semibold">🎉 Order Complete!</p>
+                      
+                      <div className="bg-green-900/30 rounded-xl p-6 mb-6 border border-green-500/50">
+                        <p className="text-2xl text-white mb-2">{round3CurrentQuestion}</p>
+                        <p className="text-4xl text-yellow-400 font-bold mt-4">+{round3Score} coins!</p>
+                      </div>
+                      
+                      {round3Score >= 480 && (
+                        <p className="text-xl text-green-400 mb-4">⭐ Perfect order! No follow-up needed!</p>
+                      )}
+                      
+                      <button 
+                        onClick={acceptRound3Score}
+                        className="w-full bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 text-black font-bold py-5 rounded-xl text-2xl shadow-lg shadow-green-500/30"
+                      >
+                        ✓ Confirm & Collect Coins!
                       </button>
                     </div>
-                  </div>
+                  </>
                 )}
-
-                <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−20 per missing element)</p>
               </div>
             )}
           </div>
