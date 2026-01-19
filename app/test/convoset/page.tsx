@@ -241,7 +241,7 @@ export default function ConvosetTest() {
     if (!musicStarted) {
       const audio = new Audio('/afterglow.mp3');
       audio.loop = true;
-      audio.volume = 0.2;
+      audio.volume = 0.08;
       audio.play().catch(() => {});
       setAudioRef(audio);
       setMusicStarted(true);
@@ -369,6 +369,7 @@ export default function ConvosetTest() {
     setShowTranscript(true);
     setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
     setRound2OrderDetails({});
+    setRound2ConfirmStep(false);
     const greeting = "Hi there! What can I get started for you today?";
     setRound2Chat([{ role: 'npc', text: greeting }]);
     playAudio('/Audio/kokorobot-greeting.mp3');
@@ -408,6 +409,7 @@ export default function ConvosetTest() {
 
   // Track actual order details for repeating back
   const [round2OrderDetails, setRound2OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
+  const [round2ConfirmStep, setRound2ConfirmStep] = useState(false);
 
   const processRound2Input = () => {
     if (!round2Input.trim()) return;
@@ -416,11 +418,43 @@ export default function ConvosetTest() {
     setRound2Chat(prev => [...prev, { role: 'player', text: round2Input }]);
     setRound2Input('');
     
+    // If in confirm step, check for confirmation
+    if (round2ConfirmStep) {
+      if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect')) {
+        const response = "Thank you, it will be at the pick up counter.";
+        setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+        playAudio('/Audio/coffee-confirm.mp3');
+        setTimeout(() => {
+          setCoins(prev => prev + 100);
+          triggerCoinAnimation();
+          setInvestorMessage("Great work!");
+          setGameState('investor');
+        }, 2000);
+        return;
+      } else if (input.includes('no') || input.includes('change') || input.includes('actually')) {
+        setRound2ConfirmStep(false);
+        setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
+        setRound2OrderDetails({});
+        const response = "No problem! What would you like instead?";
+        setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+        playAudio('/Audio/kokorobot-greeting.mp3');
+        return;
+      }
+    }
+    
     const newOrder = { ...round2Order };
     const newDetails = { ...round2OrderDetails };
     
     // Check if it's a question about availability
     const isQuestion = input.includes('do you have') || input.includes('is there') || input.includes('can i get') || input.includes('?');
+    
+    // Check for unavailable items (like 2%)
+    if (input.includes('2%') || input.includes('two percent')) {
+      const response = "We don't have 2%, but we do have whole, oat, almond, nonfat, and soy milk. Which would you like?";
+      setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+      playAudio('/Audio/milk-preference.mp3');
+      return;
+    }
     
     // Detect drink type
     if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
@@ -438,6 +472,13 @@ export default function ConvosetTest() {
     // Detect temperature
     if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
     else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
+    
+    // Americano and Espresso don't need milk
+    const noMilkDrinks = ['Americano', 'Espresso'];
+    if (noMilkDrinks.includes(newDetails.type || '')) {
+      newOrder.milk = true;
+      newDetails.milk = 'none';
+    }
     
     // Detect milk - including "no" responses
     if (input.includes('no thank') || input.includes('no,') || input.includes('no milk') || input.includes('none') || input.includes('black') || input.includes('regular') || (input === 'no') || input.startsWith('no ') || input.includes("i'm good") || input.includes("that's it") || input.includes("that's all")) {
@@ -459,11 +500,10 @@ export default function ConvosetTest() {
       
       // Handle questions about availability
       if (isQuestion && !newOrder.type) {
-        // They're asking about milk/ingredients availability
         if (input.includes('almond') || input.includes('oat') || input.includes('whole') || input.includes('nonfat') || input.includes('soy')) {
           response = "Yes, we do! Would you like to order something with that?";
           setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-          playAudio('/Audio/ask-type.mp3'); // Use type audio as fallback
+          playAudio('/Audio/ask-type.mp3');
           return;
         }
       }
@@ -481,20 +521,16 @@ export default function ConvosetTest() {
         response = "Any milk preference?";
         audioFile = '/Audio/milk-preference.mp3';
       } else {
-        // All required info collected! Repeat order back
+        // All required info collected! Show confirmation
         const milkText = newDetails.milk === 'none' ? '' : ` with ${newDetails.milk}`;
-        response = `Got it! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}. Thank you, it will be at the pick up counter.`;
-        audioFile = '/Audio/coffee-confirm.mp3';
-        setTimeout(() => {
-          setCoins(prev => prev + 100);
-          triggerCoinAnimation();
-          setInvestorMessage("Great work!");
-          setGameState('investor');
-        }, 3000);
+        response = `Got it! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}. Anything else? Please confirm your order.`;
+        setRound2ConfirmStep(true);
+        // TODO: You can add a voice file for "Anything else? Please review your order" here
+        // audioFile = '/Audio/confirm-order.mp3';
       }
       
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-      playAudio(audioFile);
+      if (audioFile) playAudio(audioFile);
     }, 500);
   };
 
@@ -510,16 +546,24 @@ export default function ConvosetTest() {
     type: false, size: false, milk: false, temp: false
   });
 
+  const [round3OrderDetails, setRound3OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
+  const [round3Score, setRound3Score] = useState(500);
+
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Speech recognition not supported. Try Chrome.');
       return;
     }
     
+    // Pause music while speaking
+    if (audioRef) {
+      audioRef.pause();
+    }
+    
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    recognition.continuous = false;
+    recognition.continuous = true; // Keep listening longer
     recognition.interimResults = false;
     recognition.lang = 'en-US';
     
@@ -527,84 +571,110 @@ export default function ConvosetTest() {
     setRound3Transcript('');
     setRound3Feedback([]);
     
+    // Auto-stop after 5 seconds of speech
+    let speechTimeout: NodeJS.Timeout;
+    
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      clearTimeout(speechTimeout);
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join(' ');
       setRound3Transcript(transcript);
-      evaluateRound3(transcript);
+      
+      // Wait a bit more before finalizing
+      speechTimeout = setTimeout(() => {
+        recognition.stop();
+        evaluateRound3(transcript);
+      }, 1500);
     };
     
-    recognition.onerror = () => setRound3Listening(false);
-    recognition.onend = () => setRound3Listening(false);
+    recognition.onerror = () => {
+      setRound3Listening(false);
+      // Resume music
+      if (audioRef && musicPlaying) {
+        audioRef.play().catch(() => {});
+      }
+    };
+    recognition.onend = () => {
+      setRound3Listening(false);
+      // Resume music
+      if (audioRef && musicPlaying) {
+        audioRef.play().catch(() => {});
+      }
+    };
     recognition.start();
+    
+    // Safety timeout - stop after 8 seconds max
+    setTimeout(() => {
+      if (round3Listening) {
+        recognition.stop();
+      }
+    }, 8000);
   };
 
   const evaluateRound3 = (transcript: string) => {
     const input = transcript.toLowerCase();
     const newOrder = { ...round3Order };
+    const newDetails: {type?: string, size?: string, temp?: string, milk?: string} = {};
+    let score = 500;
+    let missing: string[] = [];
     
-    // Check what info was provided
-    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('coffee') || input.includes('macchiato') || input.includes('machiato')) {
-      newOrder.type = true;
-    }
-    if (input.includes('small') || input.includes('medium') || input.includes('large')) {
-      newOrder.size = true;
-    }
-    if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) {
-      newOrder.milk = true;
-    }
-    if (input.includes('iced') || input.includes('ice') || input.includes('hot') || input.includes('cold')) {
-      newOrder.temp = true;
-    }
+    // Detect drink type
+    if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
+    else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
+    else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
+    else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
+    else if (input.includes('mocha')) { newOrder.type = true; newDetails.type = 'Mocha'; }
+    else if (input.includes('espresso')) { newOrder.type = true; newDetails.type = 'Espresso'; }
+    else { missing.push('type'); score -= 20; }
+    
+    // Detect size
+    if (input.includes('small')) { newOrder.size = true; newDetails.size = 'small'; }
+    else if (input.includes('medium')) { newOrder.size = true; newDetails.size = 'medium'; }
+    else if (input.includes('large')) { newOrder.size = true; newDetails.size = 'large'; }
+    else { missing.push('size'); score -= 20; }
+    
+    // Detect temperature
+    if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
+    else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
+    else { missing.push('temperature'); score -= 20; }
+    
+    // Detect milk - Americano and Espresso don't need milk
+    const noMilkDrinks = ['Americano', 'Espresso'];
+    if (noMilkDrinks.includes(newDetails.type || '')) {
+      newOrder.milk = true; // Auto-pass milk for Americano/Espresso
+      newDetails.milk = 'none';
+    } else if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
+    else if (input.includes('almond')) { newOrder.milk = true; newDetails.milk = 'almond milk'; }
+    else if (input.includes('whole')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
+    else if (input.includes('skim')) { newOrder.milk = true; newDetails.milk = 'skim milk'; }
+    else if (input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) { newOrder.milk = true; newDetails.milk = 'nonfat milk'; }
+    else if (input.includes('soy')) { newOrder.milk = true; newDetails.milk = 'soy milk'; }
+    else if (input.includes('no milk') || input.includes('black') || input.includes('regular')) { newOrder.milk = true; newDetails.milk = 'none'; }
+    else { missing.push('milk preference'); score -= 20; }
     
     setRound3Order(newOrder);
+    setRound3OrderDetails(newDetails);
+    setRound3Score(score);
     setRound3Attempts(prev => prev + 1);
     
-    // Check what's missing and ask for it
-    let audioFile = '';
-    let feedbackText = '';
-    
-    if (!newOrder.type) {
-      feedbackText = "What kind of coffee would you like?";
-      audioFile = '/Audio/ask-type.mp3';
-    } else if (!newOrder.size) {
-      feedbackText = "What size?";
-      audioFile = '/Audio/ask-size.mp3';
-    } else if (!newOrder.temp) {
-      feedbackText = "Would you like that hot or over ice?";
-      audioFile = '/Audio/coffee-temperature.mp3';
-    } else if (!newOrder.milk) {
-      feedbackText = "Any milk preference?";
-      audioFile = '/Audio/milk-preference.mp3';
+    // Build feedback
+    if (missing.length > 0) {
+      setRound3Feedback([`Missing: ${missing.join(', ')}`]);
     } else {
-      // All required info collected!
-      feedbackText = "Alright, you are all set.";
-      audioFile = '/Audio/kokorobot-success.mp3';
       setRound3Feedback([]);
-      playAudio(audioFile, () => {
-        setTimeout(() => {
-          setCoins(prev => prev + 500);
-          triggerCoinAnimation();
-          setInvestorMessage("Perfect!");
-          setGameState('investor');
-        }, 500);
-      });
-      return;
     }
-    
-    // Missing something - prompt for it
-    setRound3Feedback([feedbackText]);
-    playAudio(audioFile);
   };
 
   const acceptRound3Score = () => {
-    const score = 500 - (round3Feedback.length * 100);
-    speak("Alright, I'll get that started for you!");
-    setTimeout(() => {
-      setCoins(prev => prev + Math.max(score, 100));
-      triggerCoinAnimation();
-      setInvestorMessage("Good effort!");
-      setGameState('investor');
-    }, 1000);
+    playAudio('/Audio/kokorobot-success.mp3', () => {
+      setTimeout(() => {
+        setCoins(prev => prev + Math.max(round3Score, 100));
+        triggerCoinAnimation();
+        setInvestorMessage(round3Score === 500 ? "Perfect!" : "Good effort!");
+        setGameState('investor');
+      }, 500);
+    });
   };
 
   const completeGame = () => {
@@ -965,7 +1035,7 @@ export default function ConvosetTest() {
             {round === 3 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
                 <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
-                <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, size, and milk.</p>
+                <p className="text-xl text-green-400 mb-6 font-medium">Speak your order! Include type, temperature, size, and milk preference.</p>
                 
                 <button
                   onClick={startListening}
@@ -1000,7 +1070,7 @@ export default function ConvosetTest() {
                   </div>
                 )}
 
-                <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−100 per missing element)</p>
+                <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−20 per missing element)</p>
               </div>
             )}
           </div>
