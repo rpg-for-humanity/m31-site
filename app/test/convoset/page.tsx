@@ -727,23 +727,16 @@ export default function ConvosetTest() {
     if (!newOrder.type) {
       question = "What kind of coffee would you like?";
       audioFile = '/Audio/ask-type.mp3';
-      score -= 20;
     } else if (!newOrder.size) {
       question = "What size?";
       audioFile = '/Audio/ask-size.mp3';
-      score -= 20;
     } else if (!newOrder.temp) {
       question = "Would you like that hot or over ice?";
       audioFile = '/Audio/coffee-temperature.mp3';
-      score -= 20;
     } else if (!newOrder.milk) {
-      // More helpful message for milk-required drinks
       question = `A ${newDetails.type} requires a milk choice. We have whole, oat, almond, nonfat, or soy.`;
       audioFile = '/Audio/milk-preference.mp3';
-      score -= 20;
     }
-    
-    setRound3Score(score);
     
     if (question) {
       // Still missing info - ask follow-up
@@ -765,14 +758,12 @@ export default function ConvosetTest() {
       audioRef.pause();
       setMusicPlaying(false);
     }
-    // Play celebration sound
+    // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
-      setTimeout(() => {
-        setCoins(prev => prev + Math.max(round3Score, 100));
-        triggerCoinAnimation();
-        setInvestorMessage("🎉 You're a natural!");
-        setGameState('investor');
-      }, 500);
+      setCoins(prev => prev + 500);
+      triggerCoinAnimation();
+      setInvestorMessage("🎉 You're a natural!");
+      setGameState('investor');
     });
   };
 
@@ -1176,7 +1167,7 @@ export default function ConvosetTest() {
                 
                 {!round3ConfirmStep ? (
                   <>
-                    <p className="text-xl text-green-400 mb-6 font-medium">Speak to order one drink! Include type, temperature, size, and milk preference.</p>
+                    <p className="text-xl text-green-400 mb-6 font-medium">Speak your order!</p>
                     
                     <button
                       onClick={startListening}
@@ -1201,31 +1192,35 @@ export default function ConvosetTest() {
                         <p className="text-amber-400/60 text-base mb-4">Tap the mic to answer</p>
                       </div>
                     )}
-
-                    <p className="text-base text-amber-400/60 mt-5">Max: 500 coins (−20 per follow-up question)</p>
-                    <p className="text-base text-green-400/80 mt-2">Current score: {round3Score} coins</p>
                   </>
                 ) : (
                   <>
-                    {/* Order Complete - Celebration! */}
+                    {/* Order Summary with Confirm/Modify */}
                     <div className="text-center">
-                      <p className="text-3xl text-green-400 mb-4 font-semibold">🎉 Order Complete!</p>
-                      
                       <div className="bg-green-900/30 rounded-xl p-6 mb-6 border border-green-500/50">
-                        <p className="text-2xl text-white mb-2">{round3CurrentQuestion}</p>
-                        <p className="text-4xl text-yellow-400 font-bold mt-4">+{round3Score} coins!</p>
+                        <p className="text-2xl text-white">{round3CurrentQuestion}</p>
                       </div>
                       
-                      {round3Score >= 480 && (
-                        <p className="text-xl text-green-400 mb-4">⭐ Perfect order! No follow-up needed!</p>
-                      )}
-                      
-                      <button 
-                        onClick={acceptRound3Score}
-                        className="w-full bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 text-black font-bold py-5 rounded-xl text-2xl shadow-lg shadow-green-500/30"
-                      >
-                        ✓ Confirm & Collect Coins!
-                      </button>
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => {
+                            setRound3ConfirmStep(false);
+                            setRound3Order({ type: false, size: false, milk: false, temp: false });
+                            setRound3OrderDetails({});
+                            setRound3Transcript('');
+                            setRound3CurrentQuestion('');
+                          }}
+                          className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40"
+                        >
+                          ✏️ Modify
+                        </button>
+                        <button 
+                          onClick={acceptRound3Score}
+                          className="flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl"
+                        >
+                          ✓ Confirm Order
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
