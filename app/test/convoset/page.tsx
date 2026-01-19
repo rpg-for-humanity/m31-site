@@ -420,7 +420,7 @@ export default function ConvosetTest() {
     
     // If in confirm step, check for confirmation
     if (round2ConfirmStep) {
-      if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect')) {
+      if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect') || input.includes('that\'s it') || input.includes('thats it') || input.includes('thank you') || input.includes('thanks') || input.includes('good') || input.includes('yep') || input.includes('yup') || input.includes('sure') || input.includes('okay') || input.includes('ok')) {
         const response = "Thank you, it will be at the pick up counter.";
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
         playAudio('/Audio/coffee-confirm.mp3');
@@ -431,7 +431,7 @@ export default function ConvosetTest() {
           setGameState('investor');
         }, 2000);
         return;
-      } else if (input.includes('no') || input.includes('change') || input.includes('actually')) {
+      } else if (input.includes('no') || input.includes('change') || input.includes('actually') || input.includes('wait') || input.includes('wrong')) {
         setRound2ConfirmStep(false);
         setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
         setRound2OrderDetails({});
