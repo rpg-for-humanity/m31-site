@@ -442,19 +442,27 @@ export default function ConvosetTest() {
       }
     }
     
-    const newOrder = { ...round2Order };
-    const newDetails = { ...round2OrderDetails };
+    // Check for "what do you have" type questions FIRST - before any order processing
+    if (input.includes('what do you have') || input.includes('what options') || input.includes('what kinds') || input.includes('what milk') || input.includes('what type')) {
+      const response = "We have whole, oat, almond, nonfat, and soy milk. Which would you like?";
+      setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+      playAudio('/Audio/milk-preference.mp3');
+      return;
+    }
     
-    // Check if it's a question about availability
-    const isQuestion = input.includes('do you have') || input.includes('is there') || input.includes('can i get') || input.includes('?');
-    
-    // Check for unavailable items (like 2%)
-    if (input.includes('2%') || input.includes('two percent')) {
+    // Check for unavailable items (like 2%) BEFORE other processing
+    if (input.includes('2%') || input.includes('two percent') || input.includes('two %') || input.includes('with 2')) {
       const response = "We don't have 2%, but we do have whole, oat, almond, nonfat, and soy milk. Which would you like?";
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
       playAudio('/Audio/milk-preference.mp3');
       return;
     }
+    
+    const newOrder = { ...round2Order };
+    const newDetails = { ...round2OrderDetails };
+    
+    // Check if it's a question about availability
+    const isQuestion = input.includes('do you have') || input.includes('is there') || input.includes('can i get') || input.includes('?');
     
     // Detect drink type
     if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
@@ -518,7 +526,7 @@ export default function ConvosetTest() {
         response = "Would you like that hot or over ice?";
         audioFile = '/Audio/coffee-temperature.mp3';
       } else if (!newOrder.milk) {
-        response = "Any milk preference?";
+        response = "Any milk preference? We have whole, oat, almond, nonfat, and soy.";
         audioFile = '/Audio/milk-preference.mp3';
       } else {
         // All required info collected! Show confirmation
