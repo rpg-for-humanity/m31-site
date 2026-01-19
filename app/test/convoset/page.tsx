@@ -1307,7 +1307,9 @@ export default function ConvosetTest() {
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
             </div>
             <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
-            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">Can she take your orders, too?</p>
+            {round === 1 && (
+              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">Can she take your orders, too?</p>
+            )}
           </div>
 
           {/* Button below control keyboard */}
@@ -1316,7 +1318,7 @@ export default function ConvosetTest() {
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
             >
-              {round < 3 ? 'Next Round →' : 'Mission Complete! 🎉'}
+              {round < 3 ? 'Next Round →' : 'Play Again 🔄'}
             </button>
           </div>
         </div>
