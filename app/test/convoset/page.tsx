@@ -369,7 +369,39 @@ export default function ConvosetTest() {
     setShowTranscript(true);
     const greeting = "Hi there! What can I get started for you today?";
     setRound2Chat([{ role: 'npc', text: greeting }]);
-    speak(greeting);
+    playAudio('/Audio/kokorobot-greeting.mp3');
+  };
+
+  const playAudio = (audioFile: string, onEnd?: () => void) => {
+    // Pause background music while voice plays
+    if (audioRef) {
+      audioRef.pause();
+    }
+    
+    const audio = new Audio(audioFile);
+    audio.volume = 0.8;
+    setIsNpcSpeaking(true);
+    
+    audio.oncanplay = () => {
+      audio.play().catch(err => {
+        console.error('Play failed:', err);
+        setIsNpcSpeaking(false);
+      });
+    };
+    
+    audio.onended = () => {
+      setIsNpcSpeaking(false);
+      if (onEnd) onEnd();
+      // Resume background music
+      if (audioRef && musicPlaying) {
+        audioRef.play().catch(() => {});
+      }
+    };
+    
+    audio.onerror = () => {
+      console.error('Audio error:', audioFile);
+      setIsNpcSpeaking(false);
+    };
   };
 
   const processRound2Input = () => {
@@ -401,29 +433,34 @@ export default function ConvosetTest() {
     
     setTimeout(() => {
       let response = '';
+      let audioFile = '';
       
       if (!newOrder.type) {
-        response = "What kind of drink would you like?";
+        response = "What kind of coffee would you like?";
+        audioFile = '/Audio/ask-type.mp3';
       } else if (!newOrder.size) {
-        response = "What size — small, medium, or large?";
+        response = "What size?";
+        audioFile = '/Audio/ask-size.mp3';
       } else if (!newOrder.temp) {
-        response = "Would you like that iced or hot?";
+        response = "Would you like that hot or over ice?";
+        audioFile = '/Audio/coffee-temperature.mp3';
       } else if (!newOrder.milk) {
-        response = "Any milk preference? We have oat, almond, whole, skim, or nonfat.";
-      } else if (!newOrder.syrup) {
-        response = "Any syrup? Caramel, vanilla, hazelnut, or none?";
+        response = "Any milk preference?";
+        audioFile = '/Audio/milk-preference.mp3';
       } else {
-        response = "Perfect! Coming right up!";
+        // All required info collected!
+        response = "Thank you, it will be at the pick up counter.";
+        audioFile = '/Audio/coffee-confirm.mp3';
         setTimeout(() => {
           setCoins(prev => prev + 100);
           triggerCoinAnimation();
           setInvestorMessage("Great work!");
           setGameState('investor');
-        }, 1500);
+        }, 2000);
       }
       
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-      speak(response);
+      playAudio(audioFile);
     }, 500);
   };
 
@@ -431,9 +468,13 @@ export default function ConvosetTest() {
     setRound(3);
     setGameState('playing');
     setShowDialogue(true);
-    const greeting = "Ready when you are! Tap the mic and speak your order.";
-    speak(greeting);
+    setRound3Order({ type: false, size: false, milk: false, temp: false });
+    playAudio('/Audio/kokorobot-ready.mp3');
   };
+
+  const [round3Order, setRound3Order] = useState<{type: boolean, size: boolean, milk: boolean, temp: boolean}>({
+    type: false, size: false, milk: false, temp: false
+  });
 
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -465,41 +506,60 @@ export default function ConvosetTest() {
 
   const evaluateRound3 = (transcript: string) => {
     const input = transcript.toLowerCase();
-    const feedback: string[] = [];
-    let score = 500;
-    let missing: string[] = [];
+    const newOrder = { ...round3Order };
     
-    if (!(input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('coffee') || input.includes('macchiato'))) {
-      feedback.push('☕ Coffee type not detected');
-      missing.push('coffee type');
-      score -= 100;
+    // Check what info was provided
+    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('coffee') || input.includes('macchiato') || input.includes('machiato')) {
+      newOrder.type = true;
     }
-    if (!(input.includes('small') || input.includes('medium') || input.includes('large'))) {
-      feedback.push('📏 Size not detected');
-      missing.push('size');
-      score -= 100;
+    if (input.includes('small') || input.includes('medium') || input.includes('large')) {
+      newOrder.size = true;
     }
-    if (!(input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat'))) {
-      feedback.push('🥛 Milk type not detected');
-      missing.push('milk preference');
-      score -= 100;
+    if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) {
+      newOrder.milk = true;
+    }
+    if (input.includes('iced') || input.includes('ice') || input.includes('hot') || input.includes('cold')) {
+      newOrder.temp = true;
     }
     
-    setRound3Feedback(feedback);
+    setRound3Order(newOrder);
     setRound3Attempts(prev => prev + 1);
     
-    if (feedback.length === 0) {
-      speak("Got it! Your order is coming right up!");
-      setTimeout(() => {
-        setCoins(prev => prev + 500);
-        triggerCoinAnimation();
-        setInvestorMessage("Perfect!");
-        setGameState('investor');
-      }, 1500);
+    // Check what's missing and ask for it
+    let audioFile = '';
+    let feedbackText = '';
+    
+    if (!newOrder.type) {
+      feedbackText = "What kind of coffee would you like?";
+      audioFile = '/Audio/ask-type.mp3';
+    } else if (!newOrder.size) {
+      feedbackText = "What size?";
+      audioFile = '/Audio/ask-size.mp3';
+    } else if (!newOrder.temp) {
+      feedbackText = "Would you like that hot or over ice?";
+      audioFile = '/Audio/coffee-temperature.mp3';
+    } else if (!newOrder.milk) {
+      feedbackText = "Any milk preference?";
+      audioFile = '/Audio/milk-preference.mp3';
     } else {
-      const clarification = `I didn't quite catch your ${missing.join(' or ')}. Could you repeat that?`;
-      speak(clarification);
+      // All required info collected!
+      feedbackText = "Alright, you are all set.";
+      audioFile = '/Audio/kokorobot-success.mp3';
+      setRound3Feedback([]);
+      playAudio(audioFile, () => {
+        setTimeout(() => {
+          setCoins(prev => prev + 500);
+          triggerCoinAnimation();
+          setInvestorMessage("Perfect!");
+          setGameState('investor');
+        }, 500);
+      });
+      return;
     }
+    
+    // Missing something - prompt for it
+    setRound3Feedback([feedbackText]);
+    playAudio(audioFile);
   };
 
   const acceptRound3Score = () => {
@@ -733,12 +793,12 @@ export default function ConvosetTest() {
                         onClick={() => removeFromOrder(i)}
                         className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-lg hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
                       >
-                        {item.size} {item.temp} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
+                        {item.size} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
                       </button>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-5 gap-3 mb-6">
+                  <div className="grid grid-cols-4 gap-3 mb-6">
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
                       <div className="flex flex-col gap-2">
@@ -763,20 +823,6 @@ export default function ConvosetTest() {
                             className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
                           >
                             {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">TEMP</p>
-                      <div className="flex flex-col gap-2">
-                        {['Hot', 'Iced'].map((temp) => (
-                          <button
-                            key={temp}
-                            onClick={() => setCurrentItem({...currentItem, temp})}
-                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.temp === temp ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
-                          >
-                            {temp}
                           </button>
                         ))}
                       </div>
@@ -814,7 +860,7 @@ export default function ConvosetTest() {
                   <div className="flex gap-4">
                     <button
                       onClick={addToOrder}
-                      disabled={!currentItem.type || !currentItem.size || !currentItem.temp || round1Selections.length >= 3}
+                      disabled={!currentItem.type || !currentItem.size || round1Selections.length >= 3}
                       className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       + Add Item
@@ -858,7 +904,7 @@ export default function ConvosetTest() {
                 </div>
 
                 <div className="flex gap-3 mb-4">
-                  {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'temp', label: '🧊 Temp'}, {key: 'milk', label: '🥛 Milk'}, {key: 'syrup', label: '🍯 Syrup'}].map(({key, label}) => (
+                  {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'temp', label: '🧊 Temp'}, {key: 'milk', label: '🥛 Milk'}].map(({key, label}) => (
                     <span key={key} className={`px-4 py-2 rounded-full text-base font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`}>
                       {label} {round2Order[key as keyof typeof round2Order] && '✓'}
                     </span>
