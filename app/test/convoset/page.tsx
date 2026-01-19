@@ -99,20 +99,22 @@ export default function ConvosetTest() {
 
   const triggerCoinAnimation = () => {
     const newCoins: Coin[] = [];
-    // Create 120 tiny sparkles that spring up from center
+    // Create 120 coins that shoot up like Bellagio fountain
     for (let i = 0; i < 120; i++) {
+      const angle = (Math.random() * 120 - 60) * (Math.PI / 180); // -60 to 60 degrees spread
+      const velocity = 300 + Math.random() * 400; // varying heights
       newCoins.push({
         id: i,
-        x: (Math.random() - 0.5) * 600, // Spread horizontally
-        y: Math.random() * -400 - 100, // Spring upward
+        x: Math.cos(angle) * velocity * 0.5, // horizontal spread
+        y: -velocity, // shoot upward (negative Y)
         rotation: Math.random() * 360,
         scale: 0.2 + Math.random() * 0.4,
-        delay: Math.random() * 0.3
+        delay: Math.random() * 0.8
       });
     }
     setAnimatedCoins(newCoins);
     setShowCoinAnimation(true);
-    setTimeout(() => setShowCoinAnimation(false), 4000);
+    setTimeout(() => setShowCoinAnimation(false), 4500);
   };
 
   useEffect(() => {
@@ -519,7 +521,7 @@ export default function ConvosetTest() {
       setGameState('intro');
       setRound1Selections([]);
       setRound2Chat([]);
-      setRound2Order({ type: false, size: false, milk: false });
+      setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
       setRound3Transcript('');
       setRound3Feedback([]);
       setShowTranscript(false);
@@ -1017,27 +1019,31 @@ export default function ConvosetTest() {
         @keyframes coin-burst {
           0% {
             opacity: 0;
-            transform: translate(0, 100px) scale(0);
+            transform: translate(0, 50vh) scale(0.3);
           }
           15% {
             opacity: 1;
-            transform: translate(var(--tx), var(--ty)) scale(var(--s));
+            transform: translate(calc(var(--tx) * 0.3), calc(var(--ty) * 0.5)) scale(var(--s));
           }
-          40% {
+          35% {
             opacity: 1;
-            transform: translate(var(--tx), calc(var(--ty) - 30px)) scale(var(--s)) rotate(180deg);
+            transform: translate(calc(var(--tx) * 0.8), var(--ty)) scale(var(--s)) rotate(180deg);
           }
-          60% {
+          55% {
             opacity: 1;
-            transform: translate(var(--tx), calc(var(--ty) + 10px)) scale(var(--s)) rotate(360deg);
+            transform: translate(var(--tx), calc(var(--ty) * 0.7)) scale(var(--s)) rotate(270deg);
+          }
+          75% {
+            opacity: 0.8;
+            transform: translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.3)) scale(calc(var(--s) * 0.8)) rotate(360deg);
           }
           100% {
             opacity: 0;
-            transform: translate(calc(50vw - 250px), calc(-50vh + 30px)) scale(0.1);
+            transform: translate(calc(50vw - 250px), calc(-50vh + 30px)) scale(0.15);
           }
         }
         .animate-coin-burst {
-          animation: coin-burst 3.5s ease-in-out forwards;
+          animation: coin-burst 4s ease-out forwards;
         }
         @keyframes walk {
           0% { transform: translateY(0) rotate(0deg); }
