@@ -1023,19 +1023,54 @@ export default function ConvosetTest() {
                   ))}
                 </div>
 
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={round2Input}
-                    onChange={(e) => setRound2Input(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && processRound2Input()}
-                    placeholder="Type your order..."
-                    className="flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
-                  />
-                  <button onClick={processRound2Input} className="bg-purple-500 hover:bg-purple-400 text-white font-semibold px-10 rounded-xl text-xl">
-                    Send
-                  </button>
-                </div>
+                {/* Show Confirm/Modify buttons when order is complete */}
+                {round2ConfirmStep ? (
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setRound2ConfirmStep(false);
+                        setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
+                        setRound2OrderDetails({});
+                        const response = "No problem! What would you like instead?";
+                        setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+                        playAudio('/Audio/kokorobot-greeting.mp3');
+                      }}
+                      className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40"
+                    >
+                      ✏️ Modify
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const response = "Thank you, it will be at the pick up counter.";
+                        setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+                        playAudio('/Audio/coffee-confirm.mp3');
+                        setTimeout(() => {
+                          setCoins(prev => prev + 100);
+                          triggerCoinAnimation();
+                          setInvestorMessage("Great work!");
+                          setGameState('investor');
+                        }, 2000);
+                      }}
+                      className="flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl"
+                    >
+                      ✓ Confirm Order
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={round2Input}
+                      onChange={(e) => setRound2Input(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && processRound2Input()}
+                      placeholder="Type your order..."
+                      className="flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
+                    />
+                    <button onClick={processRound2Input} className="bg-purple-500 hover:bg-purple-400 text-white font-semibold px-10 rounded-xl text-xl">
+                      Send
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
