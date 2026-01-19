@@ -127,6 +127,16 @@ export default function ConvosetTest() {
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
 
+  // Switch music when round changes
+  useEffect(() => {
+    if (musicStarted && round > 1) {
+      // Small delay to let the round transition happen
+      setTimeout(() => {
+        startBackgroundMusic(true);
+      }, 500);
+    }
+  }, [round]);
+
   const getVoice = () => {
     const preferred = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Zira', 'Hazel'];
     
@@ -237,11 +247,28 @@ export default function ConvosetTest() {
     };
   };
 
-  const startBackgroundMusic = () => {
-    if (!musicStarted) {
-      const audio = new Audio('/afterglow.mp3');
+  const getMusicForRound = (r: number) => {
+    switch(r) {
+      case 1: return '/Audio/music-round1.mp3';
+      case 2: return '/Audio/music-round2.mp3';
+      case 3: return '/Audio/music-round3.mp3';
+      default: return '/Audio/music-round1.mp3';
+    }
+  };
+
+  const startBackgroundMusic = (forceNewTrack = false) => {
+    const musicFile = getMusicForRound(round);
+    
+    if (!musicStarted || forceNewTrack) {
+      // Stop existing music if switching tracks
+      if (audioRef) {
+        audioRef.pause();
+        audioRef.src = '';
+      }
+      
+      const audio = new Audio(musicFile);
       audio.loop = true;
-      audio.volume = 0.08;
+      audio.volume = 0.05;
       audio.play().catch(() => {});
       setAudioRef(audio);
       setMusicStarted(true);
