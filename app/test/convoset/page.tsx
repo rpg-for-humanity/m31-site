@@ -367,6 +367,8 @@ export default function ConvosetTest() {
     setGameState('playing');
     setShowDialogue(true);
     setShowTranscript(true);
+    setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
+    setRound2OrderDetails({});
     const greeting = "Hi there! What can I get started for you today?";
     setRound2Chat([{ role: 'npc', text: greeting }]);
     playAudio('/Audio/kokorobot-greeting.mp3');
@@ -404,6 +406,9 @@ export default function ConvosetTest() {
     };
   };
 
+  // Track actual order details for repeating back
+  const [round2OrderDetails, setRound2OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
+
   const processRound2Input = () => {
     if (!round2Input.trim()) return;
     
@@ -412,34 +417,62 @@ export default function ConvosetTest() {
     setRound2Input('');
     
     const newOrder = { ...round2Order };
+    const newDetails = { ...round2OrderDetails };
     
-    if (input.includes('latte') || input.includes('americano') || input.includes('cappuccino') || input.includes('mocha') || input.includes('espresso') || input.includes('coffee') || input.includes('macchiato') || input.includes('machiato')) {
-      newOrder.type = true;
-    }
-    if (input.includes('small') || input.includes('medium') || input.includes('large')) {
-      newOrder.size = true;
-    }
-    if (input.includes('oat') || input.includes('whole') || input.includes('skim') || input.includes('almond') || input.includes('soy') || input.includes('regular') || input.includes('milk') || input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) {
+    // Check if it's a question about availability
+    const isQuestion = input.includes('do you have') || input.includes('is there') || input.includes('can i get') || input.includes('?');
+    
+    // Detect drink type
+    if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
+    else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
+    else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
+    else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
+    else if (input.includes('mocha')) { newOrder.type = true; newDetails.type = 'Mocha'; }
+    else if (input.includes('espresso')) { newOrder.type = true; newDetails.type = 'Espresso'; }
+    
+    // Detect size
+    if (input.includes('small')) { newOrder.size = true; newDetails.size = 'small'; }
+    else if (input.includes('medium')) { newOrder.size = true; newDetails.size = 'medium'; }
+    else if (input.includes('large')) { newOrder.size = true; newDetails.size = 'large'; }
+    
+    // Detect temperature
+    if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
+    else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
+    
+    // Detect milk - including "no" responses
+    if (input.includes('no thank') || input.includes('no,') || input.includes('no milk') || input.includes('none') || input.includes('black') || input.includes('regular') || (input === 'no') || input.startsWith('no ') || input.includes("i'm good") || input.includes("that's it") || input.includes("that's all")) {
       newOrder.milk = true;
-    }
-    if (input.includes('caramel') || input.includes('vanilla') || input.includes('hazelnut') || input.includes('mocha') || input.includes('no syrup') || input.includes('none')) {
-      newOrder.syrup = true;
-    }
-    if (input.includes('iced') || input.includes('ice') || input.includes('hot') || input.includes('cold')) {
-      newOrder.temp = true;
-    }
+      newDetails.milk = 'none';
+    } else if (input.includes('oat')) { newOrder.milk = true; newDetails.milk = 'oat milk'; }
+    else if (input.includes('almond')) { newOrder.milk = true; newDetails.milk = 'almond milk'; }
+    else if (input.includes('whole')) { newOrder.milk = true; newDetails.milk = 'whole milk'; }
+    else if (input.includes('skim')) { newOrder.milk = true; newDetails.milk = 'skim milk'; }
+    else if (input.includes('nonfat') || input.includes('non-fat') || input.includes('non fat')) { newOrder.milk = true; newDetails.milk = 'nonfat milk'; }
+    else if (input.includes('soy')) { newOrder.milk = true; newDetails.milk = 'soy milk'; }
     
     setRound2Order(newOrder);
+    setRound2OrderDetails(newDetails);
     
     setTimeout(() => {
       let response = '';
       let audioFile = '';
       
+      // Handle questions about availability
+      if (isQuestion && !newOrder.type) {
+        // They're asking about milk/ingredients availability
+        if (input.includes('almond') || input.includes('oat') || input.includes('whole') || input.includes('nonfat') || input.includes('soy')) {
+          response = "Yes, we do! Would you like to order something with that?";
+          setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+          playAudio('/Audio/ask-type.mp3'); // Use type audio as fallback
+          return;
+        }
+      }
+      
       if (!newOrder.type) {
         response = "What kind of coffee would you like?";
         audioFile = '/Audio/ask-type.mp3';
       } else if (!newOrder.size) {
-        response = "What size?";
+        response = "Sure, what size? We have small, medium, and large.";
         audioFile = '/Audio/ask-size.mp3';
       } else if (!newOrder.temp) {
         response = "Would you like that hot or over ice?";
@@ -448,15 +481,16 @@ export default function ConvosetTest() {
         response = "Any milk preference?";
         audioFile = '/Audio/milk-preference.mp3';
       } else {
-        // All required info collected!
-        response = "Thank you, it will be at the pick up counter.";
+        // All required info collected! Repeat order back
+        const milkText = newDetails.milk === 'none' ? '' : ` with ${newDetails.milk}`;
+        response = `Got it! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}. Thank you, it will be at the pick up counter.`;
         audioFile = '/Audio/coffee-confirm.mp3';
         setTimeout(() => {
           setCoins(prev => prev + 100);
           triggerCoinAnimation();
           setInvestorMessage("Great work!");
           setGameState('investor');
-        }, 2000);
+        }, 3000);
       }
       
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
