@@ -466,7 +466,7 @@ export default function ConvosetTest() {
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 100);
           triggerCoinAnimation();
-          setInvestorMessage("Great work!");
+          setInvestorMessage("Impressive! Now let's hear you speak the order.");
           setGameState('investor');
         });
         return;
@@ -770,7 +770,7 @@ export default function ConvosetTest() {
       setTimeout(() => {
         setCoins(prev => prev + Math.max(round3Score, 100));
         triggerCoinAnimation();
-        setInvestorMessage(round3Score >= 480 ? "🎉 AMAZING! You nailed it!" : round3Score >= 400 ? "Great job!" : "Good effort!");
+        setInvestorMessage("🎉 You're a natural!");
         setGameState('investor');
       }, 500);
     });
@@ -1142,7 +1142,7 @@ export default function ConvosetTest() {
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 100);
                           triggerCoinAnimation();
-                          setInvestorMessage("Great work!");
+                          setInvestorMessage("Impressive! Now let's hear you speak the order.");
                           setGameState('investor');
                         });
                       }}
