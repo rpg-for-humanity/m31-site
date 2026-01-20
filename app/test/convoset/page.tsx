@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-type Round = 1 | 2 | 3;
+type Round = 1 | 2 | 3 | 4 | 5;
 type GameState = 'intro' | 'walking' | 'playing' | 'investor';
 type OrderItem = {
   type: string;
@@ -32,6 +32,39 @@ export default function ConvosetTest() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [animatedCoins, setAnimatedCoins] = useState<Coin[]>([]);
+  
+  // Menu and Shop states
+  const [showMenu, setShowMenu] = useState(false);
+  const [showCafeShop, setShowCafeShop] = useState(false);
+  const [showCoinShop, setShowCoinShop] = useState(false);
+  const [purchasedCafes, setPurchasedCafes] = useState<string[]>([]);
+  
+  // Cafe options
+  const cafeOptions = [
+    { id: 'coffeepost', name: 'Coffee Post', price: 300, image: '/coffeepost.png' },
+    { id: 'retrocafe', name: 'Retro Café', price: 500, image: '/retrocafe.png' },
+    { id: 'flowercafe', name: 'Flower Café', price: 700, image: '/flowercafe.png' },
+    { id: 'moderncafe', name: 'Modern Café', price: 900, image: '/moderncafe.png' },
+    { id: 'rocococafe', name: 'Rococo Café', price: 1100, image: '/rocococafe.png' },
+  ];
+  
+  // Coin bundles
+  const coinBundles = [
+    { id: 'starter', coins: 500, price: '$0.99', label: 'Starter' },
+    { id: 'popular', coins: 1500, price: '$2.99', label: 'Popular', best: true },
+    { id: 'pro', coins: 5000, price: '$7.99', label: 'Pro Pack' },
+  ];
+  
+  // Menu items
+  const menuItems = [
+    { name: 'Americano', desc: 'Espresso + water' },
+    { name: 'Latte', desc: 'Espresso + steamed milk' },
+    { name: 'Cappuccino', desc: 'Espresso + foam' },
+    { name: 'Flat White', desc: 'Double shot + microfoam' },
+    { name: 'Macchiato', desc: 'Espresso + milk foam' },
+    { name: 'Mocha', desc: 'Espresso + chocolate + milk' },
+    { name: 'Espresso', desc: 'Pure coffee shot' },
+  ];
   
   // Animation states
   const [kokoroX, setKokoroX] = useState(-200);
@@ -420,6 +453,9 @@ export default function ConvosetTest() {
     audio.volume = 0.8;
     setIsNpcSpeaking(true);
     
+    // Don't resume music after victory/celebration sounds
+    const isVictorySound = audioFile.includes('goodresult') || audioFile.includes('kokorobot-success');
+    
     audio.oncanplay = () => {
       audio.play().catch(err => {
         console.error('Play failed:', err);
@@ -430,8 +466,8 @@ export default function ConvosetTest() {
     audio.onended = () => {
       setIsNpcSpeaking(false);
       if (onEnd) onEnd();
-      // Resume background music
-      if (audioRef && musicPlaying) {
+      // Resume background music (but not after victory sounds)
+      if (audioRef && musicPlaying && !isVictorySound) {
         audioRef.play().catch(() => {});
       }
     };
@@ -489,9 +525,9 @@ export default function ConvosetTest() {
       return;
     }
     
-    // Check for unavailable items (like 2%) BEFORE other processing
-    if (input.includes('2%') || input.includes('two percent') || input.includes('two %') || input.includes('with 2')) {
-      const response = "We don't have 2%, but we do have whole, oat, almond, nonfat, and soy milk. Which would you like?";
+    // Check for unavailable items (like 2%, half and half) BEFORE other processing
+    if (input.includes('2%') || input.includes('two percent') || input.includes('two %') || input.includes('with 2') || input.includes('half and half') || input.includes('half & half') || input.includes('cream') || input.includes('coconut')) {
+      const response = "We don't have that, but we do have whole, oat, almond, nonfat, and soy milk. Which would you like?";
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
       playAudio('/Audio/milk-lists.mp3');
       return;
@@ -503,8 +539,21 @@ export default function ConvosetTest() {
     // Check if it's a question about availability
     const isQuestion = input.includes('do you have') || input.includes('is there') || input.includes('can i get') || input.includes('?');
     
+    // Check for unknown drink types (things that sound like orders but aren't on menu)
+    const unknownDrinks = ['black coffee', 'drip', 'filter', 'pour over', 'cold brew', 'frappuccino', 'frappe', 'chai', 'tea', 'matcha', 'hot chocolate'];
+    const hasUnknownDrink = unknownDrinks.some(drink => input.includes(drink));
+    
+    if (hasUnknownDrink && !round2Order.type) {
+      const response = "I'm sorry, we don't have that, but here are your options!";
+      setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
+      playAudio('/Audio/notavailable.mp3');
+      setTimeout(() => setShowMenu(true), 1000);
+      return;
+    }
+    
     // Detect drink type
     if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
+    else if (input.includes('flat white')) { newOrder.type = true; newDetails.type = 'Flat White'; }
     else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
     else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
     else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
@@ -677,6 +726,7 @@ export default function ConvosetTest() {
     // Detect drink type
     if (!newOrder.type) {
       if (input.includes('americano')) { newOrder.type = true; newDetails.type = 'Americano'; }
+      else if (input.includes('flat white')) { newOrder.type = true; newDetails.type = 'Flat White'; }
       else if (input.includes('latte')) { newOrder.type = true; newDetails.type = 'Latte'; }
       else if (input.includes('cappuccino')) { newOrder.type = true; newDetails.type = 'Cappuccino'; }
       else if (input.includes('macchiato') || input.includes('machiato')) { newOrder.type = true; newDetails.type = 'Macchiato'; }
@@ -1015,7 +1065,7 @@ export default function ConvosetTest() {
                     <div>
                       <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
                       <div className="flex flex-col gap-2">
-                        {['Americano', 'Latte', 'Cappuccino', 'Macchiato'].map((type) => (
+                        {['Americano', 'Latte', 'Cappuccino', 'Flat White', 'Macchiato', 'Mocha', 'Espresso'].map((type) => (
                           <button
                             key={type}
                             onClick={() => setCurrentItem({...currentItem, type})}
@@ -1327,7 +1377,18 @@ export default function ConvosetTest() {
           </div>
 
           {/* Button below control keyboard */}
-          <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 z-50">
+          <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 z-50 flex gap-4">
+            {round === 3 && (
+              <button
+                onClick={() => {
+                  setGameState('intro');
+                  setShowCafeShop(true);
+                }}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
+              >
+                🏪 Build Your Café
+              </button>
+            )}
             <button
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
@@ -1412,6 +1473,163 @@ export default function ConvosetTest() {
           animation: fly-to-balance 1.5s ease-in-out forwards;
         }
       `}</style>
+
+      {/* Menu Popup - Chalkboard Style */}
+      {showMenu && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowMenu(false)}>
+          <div 
+            className="bg-zinc-900 rounded-xl p-8 max-w-2xl w-full border-4 border-zinc-700 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+            style={{ 
+              backgroundImage: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
+              boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)'
+            }}
+          >
+            <h2 className="text-4xl font-bold text-center mb-8 text-white" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+              ☕ Our Menu
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {menuItems.map((item, i) => (
+                <div key={i} className="flex justify-between items-center border-b border-zinc-700/50 pb-3">
+                  <div>
+                    <p className="text-2xl text-white font-medium" style={{ fontFamily: 'Georgia, serif' }}>{item.name}</p>
+                    <p className="text-zinc-400 text-sm italic">{item.desc}</p>
+                  </div>
+                  <div className="text-zinc-500 text-xl">•••</div>
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => setShowMenu(false)}
+              className="mt-8 w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-lg"
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cafe Shop */}
+      {showCafeShop && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-amber-400">🏪 Choose Your Café</h2>
+              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
+                <span className="text-yellow-400 text-xl">🪙</span>
+                <span className="text-yellow-400 font-bold text-xl">{coins}</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+              {cafeOptions.map((cafe) => {
+                const owned = purchasedCafes.includes(cafe.id);
+                const canAfford = coins >= cafe.price;
+                return (
+                  <div 
+                    key={cafe.id}
+                    className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                      owned ? 'border-green-500 opacity-60' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'
+                    }`}
+                    onClick={() => {
+                      if (!owned && canAfford) {
+                        setCoins(prev => prev - cafe.price);
+                        setPurchasedCafes(prev => [...prev, cafe.id]);
+                      } else if (!canAfford && !owned) {
+                        setShowCoinShop(true);
+                      }
+                    }}
+                  >
+                    <img src={cafe.image} alt={cafe.name} className="w-full h-32 object-cover" />
+                    <div className="p-3 bg-black/80">
+                      <p className="text-white font-medium text-sm">{cafe.name}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {owned ? (
+                          <span className="text-green-400 text-sm">✓ Owned</span>
+                        ) : (
+                          <>
+                            <span className="text-yellow-400">🪙</span>
+                            <span className={`font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>{cafe.price}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowCoinShop(true)}
+                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg"
+              >
+                💰 Buy Coins
+              </button>
+              <button 
+                onClick={() => {
+                  setShowCafeShop(false);
+                  setRound(1);
+                  setGameState('intro');
+                }}
+                className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
+              >
+                🔄 Keep Playing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coin Shop */}
+      {showCoinShop && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
+          <div 
+            className="bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-3xl font-bold text-center text-purple-300 mb-6">💰 Coin Shop</h2>
+            
+            <div className="space-y-4 mb-6">
+              {coinBundles.map((bundle) => (
+                <div 
+                  key={bundle.id}
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${
+                    bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'
+                  }`}
+                  onClick={() => {
+                    // Simulate purchase (in real app, this would go to payment)
+                    setCoins(prev => prev + bundle.coins);
+                    setShowCoinShop(false);
+                  }}
+                >
+                  {bundle.best && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full">
+                      ⭐ BEST VALUE
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-white font-bold text-lg">{bundle.label}</p>
+                      <p className="text-yellow-400 font-bold text-2xl">🪙 {bundle.coins.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl text-xl">
+                      {bundle.price}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button 
+              onClick={() => setShowCoinShop(false)}
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
