@@ -413,7 +413,7 @@ export default function ConvosetTest() {
   };
 
   const addToOrder = () => {
-    if (currentItem.type && currentItem.size && round1Selections.length < 3) {
+    if (currentItem.type && currentItem.size && round1Selections.length < currentRoundConfig.itemCount) {
       setRound1Selections([...round1Selections, currentItem as OrderItem]);
       setCurrentItem({});
     }
@@ -1042,8 +1042,8 @@ export default function ConvosetTest() {
         <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
           <div className="w-full max-w-xl animate-fade-in">
             
-            {/* Round 1 */}
-            {round === 1 && (
+            {/* Listen & Select UI - All Rounds */}
+            {(round === 1 || round === 2 || round === 3) && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl">
                 <div className="flex items-center gap-4 mb-6">
                   <img 
@@ -1177,8 +1177,8 @@ export default function ConvosetTest() {
               </div>
             )}
 
-            {/* Round 2 */}
-            {round === 2 && (
+            {/* Old Round 2 Typing UI - DISABLED */}
+            {false && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
                 <div className="flex items-center gap-4 mb-4">
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
@@ -1266,8 +1266,8 @@ export default function ConvosetTest() {
               </div>
             )}
 
-            {/* Round 3 */}
-            {round === 3 && (
+            {/* Old Round 3 Speaking UI - DISABLED */}
+            {false && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
                 <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
                 
