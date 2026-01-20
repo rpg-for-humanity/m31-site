@@ -391,7 +391,7 @@ export default function ConvosetTest() {
         setGameState('investor');
       });
     } else {
-      speak("Hmm, that's not quite right. Listen again!");
+      playAudio('/Audio/kokorobot-wrong.mp3');
       setRound1Selections([]);
       setCurrentItem({});
     }
@@ -443,7 +443,7 @@ export default function ConvosetTest() {
   };
 
   // Track actual order details for repeating back
-  const [round2OrderDetails, setRound2OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
+  const [round2OrderDetails, setRound2OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string, syrup?: string}>({});
   const [round2ConfirmStep, setRound2ConfirmStep] = useState(false);
 
   const processRound2Input = () => {
@@ -485,7 +485,7 @@ export default function ConvosetTest() {
     if (input.includes('what do you have') || input.includes('what options') || input.includes('what kinds') || input.includes('what milk') || input.includes('what type')) {
       const response = "We have whole, oat, almond, nonfat, and soy milk. Which would you like?";
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-      playAudio('/Audio/milk-preference.mp3');
+      playAudio('/Audio/milk-lists.mp3');
       return;
     }
     
@@ -493,7 +493,7 @@ export default function ConvosetTest() {
     if (input.includes('2%') || input.includes('two percent') || input.includes('two %') || input.includes('with 2')) {
       const response = "We don't have 2%, but we do have whole, oat, almond, nonfat, and soy milk. Which would you like?";
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-      playAudio('/Audio/milk-preference.mp3');
+      playAudio('/Audio/milk-lists.mp3');
       return;
     }
     
@@ -519,6 +519,12 @@ export default function ConvosetTest() {
     // Detect temperature
     if (input.includes('iced') || input.includes('ice') || input.includes('cold')) { newOrder.temp = true; newDetails.temp = 'iced'; }
     else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
+    
+    // Detect syrup/flavor
+    if (input.includes('caramel')) { newOrder.syrup = true; newDetails.syrup = 'caramel'; }
+    else if (input.includes('vanilla')) { newOrder.syrup = true; newDetails.syrup = 'vanilla'; }
+    else if (input.includes('hazelnut')) { newOrder.syrup = true; newDetails.syrup = 'hazelnut'; }
+    else if (input.includes('no syrup') || input.includes('no flavor') || input.includes('plain')) { newOrder.syrup = true; newDetails.syrup = 'none'; }
     
     // Americano and Espresso don't need milk
     const noMilkDrinks = ['Americano', 'Espresso'];
@@ -570,10 +576,9 @@ export default function ConvosetTest() {
       } else {
         // All required info collected! Show confirmation
         const milkText = newDetails.milk === 'none' ? '' : ` with ${newDetails.milk}`;
-        response = `Got it! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}. Anything else? Please confirm your order.`;
+        const syrupText = newDetails.syrup && newDetails.syrup !== 'none' ? ` ${newDetails.syrup}` : '';
+        response = `Got it! One ${newDetails.size} ${newDetails.temp}${syrupText} ${newDetails.type}${milkText}. Anything else? Please confirm your order.`;
         setRound2ConfirmStep(true);
-        // TODO: You can add a voice file for "Anything else? Please review your order" here
-        // audioFile = '/Audio/confirm-order.mp3';
       }
       
       setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
@@ -585,7 +590,7 @@ export default function ConvosetTest() {
     setRound(3);
     setGameState('playing');
     setShowDialogue(true);
-    setRound3Order({ type: false, size: false, milk: false, temp: false });
+    setRound3Order({ type: false, size: false, milk: false, temp: false, syrup: false });
     setRound3OrderDetails({});
     setRound3Score(500);
     setRound3ConfirmStep(false);
@@ -595,11 +600,11 @@ export default function ConvosetTest() {
     playAudio('/Audio/kokorobot-ready.mp3');
   };
 
-  const [round3Order, setRound3Order] = useState<{type: boolean, size: boolean, milk: boolean, temp: boolean}>({
-    type: false, size: false, milk: false, temp: false
+  const [round3Order, setRound3Order] = useState<{type: boolean, size: boolean, milk: boolean, temp: boolean, syrup: boolean}>({
+    type: false, size: false, milk: false, temp: false, syrup: false
   });
 
-  const [round3OrderDetails, setRound3OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string}>({});
+  const [round3OrderDetails, setRound3OrderDetails] = useState<{type?: string, size?: string, temp?: string, milk?: string, syrup?: string}>({});
   const [round3Score, setRound3Score] = useState(500);
   const [round3ConfirmStep, setRound3ConfirmStep] = useState(false);
   const [round3CurrentQuestion, setRound3CurrentQuestion] = useState('');
@@ -692,6 +697,19 @@ export default function ConvosetTest() {
       else if (input.includes('hot')) { newOrder.temp = true; newDetails.temp = 'hot'; }
     }
     
+    // Detect syrup/flavor
+    if (!newOrder.syrup) {
+      if (input.includes('caramel')) { newOrder.syrup = true; newDetails.syrup = 'caramel'; }
+      else if (input.includes('vanilla')) { newOrder.syrup = true; newDetails.syrup = 'vanilla'; }
+      else if (input.includes('hazelnut')) { newOrder.syrup = true; newDetails.syrup = 'hazelnut'; }
+      else if (input.includes('no syrup') || input.includes('no flavor') || input.includes('plain')) { newOrder.syrup = true; newDetails.syrup = 'none'; }
+      // Auto-pass syrup for drinks that don't typically have syrup mentioned
+      else if (newOrder.type && !input.includes('caramel') && !input.includes('vanilla') && !input.includes('hazelnut')) {
+        newOrder.syrup = true;
+        newDetails.syrup = 'none';
+      }
+    }
+    
     // Americano and Espresso don't need milk
     const noMilkDrinks = ['Americano', 'Espresso'];
     if (noMilkDrinks.includes(newDetails.type || '')) {
@@ -748,7 +766,8 @@ export default function ConvosetTest() {
       setRound3ConfirmStep(true);
       setRound3Feedback([]);
       const milkText = newDetails.milk === 'none' ? '' : ` with ${newDetails.milk}`;
-      setRound3CurrentQuestion(`Perfect! One ${newDetails.size} ${newDetails.temp} ${newDetails.type}${milkText}.`);
+      const syrupText = newDetails.syrup && newDetails.syrup !== 'none' ? ` ${newDetails.syrup}` : '';
+      setRound3CurrentQuestion(`Perfect! One ${newDetails.size} ${newDetails.temp}${syrupText} ${newDetails.type}${milkText}.`);
     }
   };
 
@@ -1205,7 +1224,7 @@ export default function ConvosetTest() {
                         <button 
                           onClick={() => {
                             setRound3ConfirmStep(false);
-                            setRound3Order({ type: false, size: false, milk: false, temp: false });
+                            setRound3Order({ type: false, size: false, milk: false, temp: false, syrup: false });
                             setRound3OrderDetails({});
                             setRound3Transcript('');
                             setRound3CurrentQuestion('');
