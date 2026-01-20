@@ -118,7 +118,7 @@ export default function ConvosetTest() {
     }
   };
 
-  const currentRoundConfig = roundConfigs[round as 1 | 2 | 3];
+  const currentRoundConfig = round <= 3 ? roundConfigs[round as 1 | 2 | 3] : null;
 
   // Intro - Kokorobot walks to center-left, then mission fades in
   useEffect(() => {
@@ -254,6 +254,9 @@ export default function ConvosetTest() {
   };
 
   const playRoundOrder = () => {
+    // Only for rounds 1-3 (listen & select)
+    if (!currentRoundConfig) return;
+    
     console.log(`Playing round ${round} order audio...`);
     
     // Pause background music while voice plays
@@ -413,6 +416,7 @@ export default function ConvosetTest() {
   };
 
   const addToOrder = () => {
+    if (!currentRoundConfig) return;
     if (currentItem.type && currentItem.size && round1Selections.length < currentRoundConfig.itemCount) {
       setRound1Selections([...round1Selections, currentItem as OrderItem]);
       setCurrentItem({});
@@ -424,6 +428,8 @@ export default function ConvosetTest() {
   };
 
   const checkRound1 = () => {
+    if (!currentRoundConfig) return;
+    
     const normalize = (items: OrderItem[]) => 
       items.map(i => `${i.size}-${i.type}-${i.milk || 'none'}-${i.syrup || 'none'}`).sort().join(',');
     
@@ -439,12 +445,14 @@ export default function ConvosetTest() {
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + 100);
         triggerCoinAnimation();
-        const messages = {
+        const messages: Record<number, string> = {
           1: "Well done! Ready for a harder order?",
-          2: "Great job! One more challenge!",
-          3: "🎉 You're a natural!"
+          2: "Great job! One more listening challenge!",
+          3: "Excellent! Now try typing your order!",
+          4: "Impressive! Final challenge - speak your order!",
+          5: "🎉 You're a natural!"
         };
-        setInvestorMessage(messages[round as 1 | 2 | 3]);
+        setInvestorMessage(messages[round] || "Great job!");
         setGameState('investor');
       });
     } else {
@@ -861,20 +869,49 @@ export default function ConvosetTest() {
   };
 
   const completeGame = () => {
-    if (round < 3) {
-      // Move to next round - all rounds are listen & select
-      setRound((round + 1) as Round);
-      setGameState('intro');
-      setRound1Selections([]);
-      setCurrentItem({});
-      setShowTranscript(false);
-      setShowFullBody(true);
-      setKokoroScale(1);
-      setKokoroOpacity(1);
-      setKokoroX(-200);
-      setMissionVisible(false);
+    if (round < 5) {
+      // Move to next round
+      const nextRound = (round + 1) as Round;
+      setRound(nextRound);
+      
+      // Reset states based on next round type
+      if (nextRound <= 3) {
+        // Rounds 1-3: Listen & Select
+        setGameState('intro');
+        setRound1Selections([]);
+        setCurrentItem({});
+        setShowTranscript(false);
+        setShowFullBody(true);
+        setKokoroScale(1);
+        setKokoroOpacity(1);
+        setKokoroX(-200);
+        setMissionVisible(false);
+      } else if (nextRound === 4) {
+        // Round 4: Typing
+        setGameState('playing');
+        setShowDialogue(true);
+        setRound2Chat([]);
+        setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
+        setRound2OrderDetails({});
+        setRound2ConfirmStep(false);
+        const greeting = "Hi there! What can I get started for you today?";
+        setRound2Chat([{ role: 'npc', text: greeting }]);
+        playAudio('/Audio/kokorobot-greeting.mp3');
+      } else if (nextRound === 5) {
+        // Round 5: Speaking
+        setGameState('playing');
+        setShowDialogue(true);
+        setRound3Order({ type: false, size: false, milk: false, temp: false, syrup: false });
+        setRound3OrderDetails({});
+        setRound3Score(500);
+        setRound3ConfirmStep(false);
+        setRound3CurrentQuestion('');
+        setRound3Transcript('');
+        setRound3Feedback([]);
+        playAudio('/Audio/kokorobot-ready.mp3');
+      }
     } else {
-      // After Round 3, reset to Round 1
+      // After Round 5, reset to Round 1
       setRound(1);
       setGameState('intro');
       setRound1Selections([]);
@@ -1006,7 +1043,7 @@ export default function ConvosetTest() {
       {gameState === 'intro' && (
         <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="text-center max-w-2xl px-12 py-10 bg-black/70 rounded-3xl shadow-2xl">
-            <p className="text-purple-400 font-medium mb-2 text-lg">Round {round} of 3</p>
+            <p className="text-purple-400 font-medium mb-2 text-lg">Round {round} of 5</p>
             <h1 className="text-5xl md:text-6xl font-semibold mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
               M31 Coffee Outpost
             </h1>
@@ -1014,7 +1051,12 @@ export default function ConvosetTest() {
               Kokorobot-1 dreams of becoming a barista someday.
             </p>
             <p className="text-amber-100 mb-3 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-              Listen carefully. Can you take {currentRoundConfig.itemCount === 1 ? 'this order' : `these ${currentRoundConfig.itemCount} orders`}?
+              {round <= 3 && currentRoundConfig 
+                ? `Listen carefully. Can you take ${currentRoundConfig.itemCount === 1 ? 'this order' : `these ${currentRoundConfig.itemCount} orders`}?`
+                : round === 4
+                  ? "Type your order to the barista!"
+                  : "Speak your order out loud!"
+              }
             </p>
             <p className="text-yellow-400 font-medium mb-8 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
               Earn coins to build Andromeda's first café!
@@ -1042,8 +1084,8 @@ export default function ConvosetTest() {
         <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
           <div className="w-full max-w-xl animate-fade-in">
             
-            {/* Listen & Select UI - All Rounds */}
-            {(round === 1 || round === 2 || round === 3) && (
+            {/* Listen & Select UI - Rounds 1-3 */}
+            {(round === 1 || round === 2 || round === 3) && currentRoundConfig && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl">
                 <div className="flex items-center gap-4 mb-6">
                   <img 
@@ -1177,8 +1219,8 @@ export default function ConvosetTest() {
               </div>
             )}
 
-            {/* Old Round 2 Typing UI - DISABLED */}
-            {false && (
+            {/* Round 4 - Typing Order */}
+            {round === 4 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
                 <div className="flex items-center gap-4 mb-4">
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
@@ -1266,8 +1308,8 @@ export default function ConvosetTest() {
               </div>
             )}
 
-            {/* Old Round 3 Speaking UI - DISABLED */}
-            {false && (
+            {/* Round 5 - Speaking Order */}
+            {round === 5 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
                 <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
                 
@@ -1397,7 +1439,7 @@ export default function ConvosetTest() {
           <div className="absolute top-1/2 left-1/2 z-50 animate-fly-to-balance">
             <div className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
               <GoldCoin className="w-8 h-8" />
-              <span className="text-yellow-400 font-semibold text-2xl">+{round === 1 ? 100 : round === 2 ? 100 : 500}</span>
+              <span className="text-yellow-400 font-semibold text-2xl">+{round <= 2 ? 100 : round === 3 ? 200 : round === 4 ? 100 : 500}</span>
             </div>
           </div>
 
@@ -1415,7 +1457,7 @@ export default function ConvosetTest() {
 
           {/* Button below control keyboard */}
           <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 z-50 flex gap-4">
-            {round === 3 && (
+            {round === 5 && (
               <button
                 onClick={() => {
                   setGameState('intro');
@@ -1430,7 +1472,7 @@ export default function ConvosetTest() {
               onClick={completeGame}
               className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
             >
-              {round < 3 ? 'Next Round →' : 'Play Again 🔄'}
+              {round < 5 ? 'Next Round →' : 'Play Again 🔄'}
             </button>
           </div>
         </div>
