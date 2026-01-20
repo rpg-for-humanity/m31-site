@@ -1,0 +1,414 @@
+{
+  "schema": "rpg4h.stationGraph.v1",
+  "id": "graph.m31",
+  "version": "0.2.0",
+  "title": "M31 Andromeda Station",
+  "description": "The main space station on planet M31 in the Andromeda galaxy. A hub for language learners from across the universe.",
+
+  "defaultSpawn": "zone.m31.concourse",
+  "background": "/m31.jpg",
+
+  "buildSystem": {
+    "enabled": true,
+    "gridSize": { "width": 100, "height": 100 },
+    "cellSize": 10,
+    "description": "Players can place owned buildings anywhere on buildable zones. Coordinates are 0-100 percentage based.",
+    "buildableZones": ["zone.m31.concourse", "zone.m31.habitat"],
+    "placementRules": {
+      "minDistanceBetweenBuildings": 15,
+      "maxBuildingsPerZone": 10,
+      "canOverlapPortals": false
+    }
+  },
+
+  "buildingTypes": {
+    "cafes": {
+      "category": "Food & Drink",
+      "enterable": true,
+      "defaultLaunchPack": "pack.m31.cafe.coffeepost",
+      "items": [
+        {
+          "itemId": "cafe.coffeepost",
+          "name": "Coffee Post",
+          "priceCoins": 300,
+          "image": "/coffeepost.png",
+          "thumbnail": "/coffeepost-thumb.png",
+          "size": { "width": 12, "height": 10 },
+          "description": "A rustic desert outpost café"
+        },
+        {
+          "itemId": "cafe.retrocafe",
+          "name": "Retro Café",
+          "priceCoins": 500,
+          "image": "/retrocafe.png",
+          "thumbnail": "/retrocafe-thumb.png",
+          "size": { "width": 12, "height": 10 },
+          "description": "Classic European charm"
+        },
+        {
+          "itemId": "cafe.flowercafe",
+          "name": "Flower Café",
+          "priceCoins": 700,
+          "image": "/flowercafe.png",
+          "thumbnail": "/flowercafe-thumb.png",
+          "size": { "width": 14, "height": 12 },
+          "description": "Surrounded by blooming gardens"
+        },
+        {
+          "itemId": "cafe.moderncafe",
+          "name": "Modern Café",
+          "priceCoins": 900,
+          "image": "/moderncafe.png",
+          "thumbnail": "/moderncafe-thumb.png",
+          "size": { "width": 12, "height": 10 },
+          "description": "Sleek contemporary design"
+        },
+        {
+          "itemId": "cafe.rocococafe",
+          "name": "Rococo Café",
+          "priceCoins": 1100,
+          "image": "/rocococafe.png",
+          "thumbnail": "/rocococafe-thumb.png",
+          "size": { "width": 16, "height": 14 },
+          "description": "Ornate and luxurious"
+        }
+      ]
+    },
+    "restaurants": {
+      "category": "Food & Drink",
+      "enterable": true,
+      "defaultLaunchPack": null,
+      "comingSoon": true,
+      "items": []
+    },
+    "decorations": {
+      "category": "Decoration",
+      "enterable": false,
+      "comingSoon": true,
+      "items": []
+    }
+  },
+
+  "stations": [
+    {
+      "id": "zone.m31.concourse",
+      "name": "M31 Concourse",
+      "type": "hub",
+      "description": "The central hub of M31 station. All zones connect here. Build your empire!",
+      "background": "/m31-concourse.jpg",
+      "ambience": "/Audio/concourse-ambience.mp3",
+      "buildable": true,
+      "buildGrid": {
+        "rows": 10,
+        "cols": 10,
+        "restrictedAreas": [
+          { "x": 45, "y": 0, "width": 10, "height": 20, "reason": "Central monument" }
+        ]
+      },
+      "playerBuildings": [],
+      "tiles": [
+        {
+          "tileId": "tile.a42.cafe",
+          "name": "A42 Coffee Outpost",
+          "thumbnail": "/coffeepost.png",
+          "category": "Food & Drink",
+          "difficulty": "beginner",
+          "progress": 0,
+          "launch": {
+            "stationId": "zone.m31.cafe",
+            "defaultPackId": "pack.m31.cafe.coffeepost"
+          }
+        },
+        {
+          "tileId": "tile.a42.restaurant",
+          "name": "A42 Galaxy Bistro",
+          "thumbnail": "/restaurant-thumb.png",
+          "category": "Food & Drink",
+          "difficulty": "intermediate",
+          "progress": 0,
+          "comingSoon": true,
+          "launch": {
+            "stationId": "zone.m31.restaurant",
+            "defaultPackId": null
+          }
+        },
+        {
+          "tileId": "tile.b15.pharmacy",
+          "name": "B15 Med Station",
+          "thumbnail": "/pharmacy-thumb.png",
+          "category": "Health",
+          "difficulty": "intermediate",
+          "progress": 0,
+          "comingSoon": true,
+          "launch": {
+            "stationId": "zone.m31.pharmacy",
+            "defaultPackId": null
+          }
+        },
+        {
+          "tileId": "tile.c22.market",
+          "name": "C22 Barter Market",
+          "thumbnail": "/market-thumb.png",
+          "category": "Shopping",
+          "difficulty": "beginner",
+          "progress": 0,
+          "comingSoon": true,
+          "launch": {
+            "stationId": "zone.m31.market",
+            "defaultPackId": null
+          }
+        },
+        {
+          "tileId": "tile.d08.airport",
+          "name": "D08 Spaceport Terminal",
+          "thumbnail": "/airport-thumb.png",
+          "category": "Travel",
+          "difficulty": "advanced",
+          "progress": 0,
+          "comingSoon": true,
+          "launch": {
+            "stationId": "zone.m31.airport",
+            "defaultPackId": null
+          }
+        },
+        {
+          "tileId": "tile.e11.workplace",
+          "name": "E11 Corporate Hub",
+          "thumbnail": "/workplace-thumb.png",
+          "category": "Business",
+          "difficulty": "advanced",
+          "progress": 0,
+          "comingSoon": true,
+          "launch": {
+            "stationId": "zone.m31.workplace",
+            "defaultPackId": null
+          }
+        }
+      ],
+      "portals": [],
+      "npcs": [
+        {
+          "id": "npc.concourse.guide",
+          "name": "Station Guide",
+          "position": { "x": 50, "y": 70 },
+          "dialogue": "Welcome to M31 Station! Choose a zone to begin your language journey."
+        }
+      ]
+    },
+    {
+      "id": "zone.m31.cafe",
+      "name": "A42 Coffee Outpost",
+      "type": "theme",
+      "category": "Food & Drink",
+      "description": "Kokorobot-1's dream café. Practice ordering coffee in various scenarios.",
+      "background": "/m31.jpg",
+      "ambience": "/Audio/cafe-ambience.mp3",
+      "packs": [
+        {
+          "packId": "pack.m31.cafe.coffeepost",
+          "version": "0.1.0",
+          "title": "Coffee Outpost Basics",
+          "difficulty": "beginner"
+        }
+      ],
+      "portals": [
+        {
+          "id": "portal.cafe.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        },
+        {
+          "id": "portal.cafe.to.restaurant",
+          "to": "zone.m31.restaurant",
+          "label": "Walk to Restaurant",
+          "icon": "🍽️",
+          "position": { "x": 90, "y": 50 },
+          "comingSoon": true
+        }
+      ],
+      "npcs": [
+        {
+          "id": "npc.kokorobot1",
+          "name": "Kokorobot-1",
+          "role": "barista",
+          "position": { "x": 50, "y": 30 },
+          "portrait": "/kokorobot-closeup.png",
+          "dialogue": "Welcome to the Coffee Outpost! Ready to take some orders?"
+        }
+      ],
+      "interactables": [
+        {
+          "id": "counter.order",
+          "type": "mission_trigger",
+          "position": { "x": 50, "y": 40 },
+          "label": "Order Counter",
+          "action": { "type": "startMission", "packId": "pack.m31.cafe.coffeepost" }
+        },
+        {
+          "id": "menu.board",
+          "type": "info",
+          "position": { "x": 30, "y": 20 },
+          "label": "Menu Board",
+          "action": { "type": "showMenu" }
+        }
+      ]
+    },
+    {
+      "id": "zone.m31.restaurant",
+      "name": "A42 Galaxy Bistro",
+      "type": "theme",
+      "category": "Food & Drink",
+      "description": "A fine dining experience. Practice making reservations and ordering full meals.",
+      "background": "/restaurant-bg.jpg",
+      "comingSoon": true,
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.restaurant.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        },
+        {
+          "id": "portal.restaurant.to.cafe",
+          "to": "zone.m31.cafe",
+          "label": "Walk to Café",
+          "icon": "☕",
+          "position": { "x": 90, "y": 50 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    },
+    {
+      "id": "zone.m31.pharmacy",
+      "name": "B15 Med Station",
+      "type": "theme",
+      "category": "Health",
+      "description": "Practice describing symptoms and understanding medical instructions.",
+      "comingSoon": true,
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.pharmacy.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    },
+    {
+      "id": "zone.m31.market",
+      "name": "C22 Barter Market",
+      "type": "theme",
+      "category": "Shopping",
+      "description": "Practice negotiating prices and describing items you want to buy or sell.",
+      "comingSoon": true,
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.market.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    },
+    {
+      "id": "zone.m31.airport",
+      "name": "D08 Spaceport Terminal",
+      "type": "theme",
+      "category": "Travel",
+      "description": "Practice checking in, going through security, and asking for directions.",
+      "comingSoon": true,
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.airport.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    },
+    {
+      "id": "zone.m31.workplace",
+      "name": "E11 Corporate Hub",
+      "type": "theme",
+      "category": "Business",
+      "description": "Practice professional communication: meetings, presentations, and emails.",
+      "comingSoon": true,
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.workplace.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Back to Concourse",
+          "icon": "🚪",
+          "position": { "x": 10, "y": 50 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    },
+    {
+      "id": "zone.m31.habitat",
+      "name": "Player Habitat",
+      "type": "personal",
+      "description": "Your personal space on M31. Build and customize with items earned from missions!",
+      "buildable": true,
+      "buildGrid": {
+        "rows": 10,
+        "cols": 10,
+        "restrictedAreas": [
+          { "x": 45, "y": 85, "width": 10, "height": 15, "reason": "Exit portal area" }
+        ]
+      },
+      "playerBuildings": [],
+      "packs": [],
+      "portals": [
+        {
+          "id": "portal.habitat.to.concourse",
+          "to": "zone.m31.concourse",
+          "label": "Exit to Concourse",
+          "icon": "🚪",
+          "position": { "x": 50, "y": 90 }
+        }
+      ],
+      "npcs": [],
+      "interactables": []
+    }
+  ],
+
+  "categories": [
+    { "id": "food_drink", "label": "Food & Drink", "icon": "🍽️", "color": "#f59e0b" },
+    { "id": "health", "label": "Health", "icon": "💊", "color": "#22c55e" },
+    { "id": "shopping", "label": "Shopping", "icon": "🛒", "color": "#8b5cf6" },
+    { "id": "travel", "label": "Travel", "icon": "✈️", "color": "#3b82f6" },
+    { "id": "business", "label": "Business", "icon": "💼", "color": "#6b7280" },
+    { "id": "social", "label": "Social", "icon": "💬", "color": "#ec4899" }
+  ],
+
+  "fastTravel": {
+    "enabled": true,
+    "unlockCondition": { "type": "roundComplete", "roundId": "r3" },
+    "destinations": [
+      { "stationId": "zone.m31.concourse", "label": "Concourse", "icon": "🏛️" },
+      { "stationId": "zone.m31.cafe", "label": "Café", "icon": "☕" },
+      { "stationId": "zone.m31.restaurant", "label": "Restaurant", "icon": "🍽️", "comingSoon": true },
+      { "stationId": "zone.m31.market", "label": "Market", "icon": "🛒", "comingSoon": true }
+    ]
+  }
+}
