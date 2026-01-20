@@ -92,13 +92,33 @@ export default function ConvosetTest() {
   const [musicPlaying, setMusicPlaying] = useState(true);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
 
-  const npcOrder = "Can I get a large Americano, and two small lattes — one with oat milk and one with whole milk?";
+  // Round-specific orders and audio
+  const roundConfigs = {
+    1: {
+      audio: '/Audio/round1-order.mp3',
+      npcOrder: "Hi, a caramel macchiato, medium please.",
+      correctOrder: [{ type: 'Macchiato', size: 'Medium', syrup: 'Caramel' }] as OrderItem[],
+      itemCount: 1
+    },
+    2: {
+      audio: '/Audio/round2-order.mp3', 
+      npcOrder: "Hi, I'd like a large flat white, with hazelnut syrup please.",
+      correctOrder: [{ type: 'Flat White', size: 'Large', syrup: 'Hazelnut' }] as OrderItem[],
+      itemCount: 1
+    },
+    3: {
+      audio: '/Audio/order.mp3',
+      npcOrder: "Can I get a large Americano, and two small lattes — one with oat milk and one with whole milk?",
+      correctOrder: [
+        { type: 'Americano', size: 'Large' },
+        { type: 'Latte', size: 'Small', milk: 'Oat' },
+        { type: 'Latte', size: 'Small', milk: 'Whole' },
+      ] as OrderItem[],
+      itemCount: 3
+    }
+  };
 
-  const correctOrder: OrderItem[] = [
-    { type: 'Americano', size: 'Large' },
-    { type: 'Latte', size: 'Small', milk: 'Oat' },
-    { type: 'Latte', size: 'Small', milk: 'Whole' },
-  ];
+  const currentRoundConfig = roundConfigs[round as 1 | 2 | 3];
 
   // Intro - Kokorobot walks to center-left, then mission fades in
   useEffect(() => {
@@ -233,8 +253,8 @@ export default function ConvosetTest() {
     }
   };
 
-  const playRound1Order = () => {
-    console.log('Playing round 1 order audio...');
+  const playRoundOrder = () => {
+    console.log(`Playing round ${round} order audio...`);
     
     // Pause background music while voice plays
     if (audioRef) {
@@ -243,7 +263,7 @@ export default function ConvosetTest() {
     
     const audio = new Audio();
     audio.preload = 'auto';
-    audio.src = '/Audio/order.mp3';
+    audio.src = currentRoundConfig.audio;
     audio.volume = 0.8;
     setIsNpcSpeaking(true);
     
@@ -253,7 +273,7 @@ export default function ConvosetTest() {
         console.log('Audio playing successfully');
       }).catch(err => {
         console.error('Play failed:', err);
-        speakTTS(npcOrder);
+        speakTTS(currentRoundConfig.npcOrder);
       });
     };
     
@@ -265,17 +285,16 @@ export default function ConvosetTest() {
     
     audio.onerror = (e) => {
       console.error('Audio load error - trying fetch:', e);
-      // Try fetching to see the actual error
-      fetch('/Audio/order.mp3')
+      fetch(currentRoundConfig.audio)
         .then(res => {
           console.log('Fetch status:', res.status, res.statusText);
           if (!res.ok) {
-            speakTTS(npcOrder);
+            speakTTS(currentRoundConfig.npcOrder);
           }
         })
         .catch(fetchErr => {
           console.error('Fetch also failed:', fetchErr);
-          speakTTS(npcOrder);
+          speakTTS(currentRoundConfig.npcOrder);
         });
     };
   };
@@ -384,13 +403,13 @@ export default function ConvosetTest() {
         setShowFullBody(false);
         setGameState('playing');
         setShowDialogue(true);
-        playRound1Order();
+        playRoundOrder();
       }
     }, 25);
   };
 
   const replayVoice = () => {
-    playRound1Order();
+    playRoundOrder();
   };
 
   const addToOrder = () => {
@@ -406,9 +425,9 @@ export default function ConvosetTest() {
 
   const checkRound1 = () => {
     const normalize = (items: OrderItem[]) => 
-      items.map(i => `${i.size}-${i.type}-${i.milk || 'none'}`).sort().join(',');
+      items.map(i => `${i.size}-${i.type}-${i.milk || 'none'}-${i.syrup || 'none'}`).sort().join(',');
     
-    const isCorrect = normalize(round1Selections) === normalize(correctOrder);
+    const isCorrect = normalize(round1Selections) === normalize(currentRoundConfig.correctOrder);
     
     if (isCorrect) {
       // Stop background music
@@ -420,7 +439,12 @@ export default function ConvosetTest() {
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + 100);
         triggerCoinAnimation();
-        setInvestorMessage('Well done!');
+        const messages = {
+          1: "Well done! Ready for a harder order?",
+          2: "Great job! One more challenge!",
+          3: "🎉 You're a natural!"
+        };
+        setInvestorMessage(messages[round as 1 | 2 | 3]);
         setGameState('investor');
       });
     } else {
@@ -837,12 +861,24 @@ export default function ConvosetTest() {
   };
 
   const completeGame = () => {
-    if (round === 1) startRound2();
-    else if (round === 2) startRound3();
-    else {
+    if (round < 3) {
+      // Move to next round - all rounds are listen & select
+      setRound((round + 1) as Round);
+      setGameState('intro');
+      setRound1Selections([]);
+      setCurrentItem({});
+      setShowTranscript(false);
+      setShowFullBody(true);
+      setKokoroScale(1);
+      setKokoroOpacity(1);
+      setKokoroX(-200);
+      setMissionVisible(false);
+    } else {
+      // After Round 3, reset to Round 1
       setRound(1);
       setGameState('intro');
       setRound1Selections([]);
+      setCurrentItem({});
       setRound2Chat([]);
       setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
       setRound3Transcript('');
@@ -970,6 +1006,7 @@ export default function ConvosetTest() {
       {gameState === 'intro' && (
         <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="text-center max-w-2xl px-12 py-10 bg-black/70 rounded-3xl shadow-2xl">
+            <p className="text-purple-400 font-medium mb-2 text-lg">Round {round} of 3</p>
             <h1 className="text-5xl md:text-6xl font-semibold mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
               M31 Coffee Outpost
             </h1>
@@ -977,7 +1014,7 @@ export default function ConvosetTest() {
               Kokorobot-1 dreams of becoming a barista someday.
             </p>
             <p className="text-amber-100 mb-3 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-              Listen carefully. Can you take her order?
+              Listen carefully. Can you take {currentRoundConfig.itemCount === 1 ? 'this order' : `these ${currentRoundConfig.itemCount} orders`}?
             </p>
             <p className="text-yellow-400 font-medium mb-8 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
               Earn coins to build Andromeda's first café!
@@ -1018,7 +1055,7 @@ export default function ConvosetTest() {
                     <p className="text-amber-400 text-xl mb-2 font-mono font-semibold">Kokorobot-1</p>
                     
                     {showTranscript ? (
-                      <p className="text-xl leading-relaxed text-white">{npcOrder}</p>
+                      <p className="text-xl leading-relaxed text-white">{currentRoundConfig.npcOrder}</p>
                     ) : (
                       <div className="bg-amber-900/40 rounded-xl p-4 text-center border border-amber-500/30">
                         <p className="text-amber-300/80 mb-3 text-lg">🎧 Listen to the order...</p>
@@ -1123,14 +1160,14 @@ export default function ConvosetTest() {
                   <div className="flex gap-4">
                     <button
                       onClick={addToOrder}
-                      disabled={!currentItem.type || !currentItem.size || round1Selections.length >= 3}
+                      disabled={!currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount}
                       className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       + Add Item
                     </button>
                     <button
                       onClick={checkRound1}
-                      disabled={round1Selections.length !== 3}
+                      disabled={round1Selections.length !== currentRoundConfig.itemCount}
                       className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Submit ✓
