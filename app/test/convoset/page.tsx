@@ -530,6 +530,7 @@ export default function ConvosetTest() {
         setGameState('playing');
         setShowDialogue(true);
         playRoundOrder();
+        startBackgroundMusic(1); // Start music for Round 1
       }
     }, 25);
   };
