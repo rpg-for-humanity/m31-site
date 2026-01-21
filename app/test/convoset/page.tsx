@@ -1567,16 +1567,16 @@ export default function ConvosetTest() {
           </div>
 
           {/* Text overlay - positioned per round */}
-          <div className={`absolute z-50 left-1/2 -translate-x-1/2 text-center ${
-            round === 4 
-              ? 'top-[42%]'  /* Round 4: bring message down closer to CTAs */
-              : round === 5 
-                ? 'top-[28%]' /* Round 5: bring message down 1 inch */
+          <div className={`absolute z-50 text-center ${
+            round === 5 
+              ? 'top-[38%] right-[18%] text-right'  /* Round 5: lower, to the right, closer to CTAs */
+              : round === 4 
+                ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 4: bring message down closer to CTAs */
                 : round === 3 
-                  ? 'top-[30%]' 
-                  : 'top-[45%]'
+                  ? 'top-[30%] left-1/2 -translate-x-1/2' 
+                  : 'top-[45%] left-1/2 -translate-x-1/2'
           }`}>
-            <div className="flex items-center gap-2 mb-2 justify-center">
+            <div className={`flex items-center gap-2 mb-2 ${round === 5 ? 'justify-end' : 'justify-center'}`}>
               <KokoroCoin size={32} />
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>from our Earth Investors</span>
             </div>
@@ -1591,10 +1591,10 @@ export default function ConvosetTest() {
           </div>
 
           {/* CTAs - positioned per round */}
-          <div className={`absolute z-50 flex gap-4 left-1/2 -translate-x-1/2 flex-col items-center ${
+          <div className={`absolute z-50 flex gap-4 flex-col ${
             round === 5 
-              ? 'bottom-[35%]' /* Round 5: bring CTAs up 1 inch */
-              : 'bottom-[25%]'
+              ? 'bottom-[28%] right-[18%] items-end'  /* Round 5: to the right, lower */
+              : 'bottom-[25%] left-1/2 -translate-x-1/2 items-center'
           }`}>
             {/* Rounds 3 and 4: Build Your Café + Next Round */}
             {(round === 3 || round === 4) && (
