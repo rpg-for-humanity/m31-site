@@ -40,6 +40,9 @@ export default function ConvosetTest() {
   const [showMenu, setShowMenu] = useState(false);
   const [showCafeShop, setShowCafeShop] = useState(false);
   const [showCoinShop, setShowCoinShop] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
+  const [inventoryTab, setInventoryTab] = useState<'buildings' | 'kokorobots' | 'sets'>('buildings');
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<string | null>(null);
   const [purchasedCafes, setPurchasedCafes] = useState<string[]>([]);
   
   // Purchase confirmation popup states
@@ -1880,7 +1883,8 @@ export default function ConvosetTest() {
                   </button>
                   <button 
                     onClick={() => {
-                      alert('📦 Inventory view coming soon!');
+                      setShowCafeShop(false);
+                      setShowInventory(true);
                     }}
                     className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
                     style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -2006,7 +2010,8 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowJustPurchased(false);
                   setJustPurchasedCafe(null);
-                  alert('📦 Inventory view coming soon!');
+                  setShowCafeShop(false);
+                  setShowInventory(true);
                 }}
                 className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg"
               >
@@ -2053,7 +2058,8 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowOwnedPopup(false);
                   setOwnedCafeToView(null);
-                  alert('📦 Inventory view coming soon!');
+                  setShowCafeShop(false);
+                  setShowInventory(true);
                 }}
                 className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg"
               >
@@ -2131,6 +2137,186 @@ export default function ConvosetTest() {
               className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
             >
               Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Inventory View */}
+      {showInventory && (
+        <div className="fixed inset-0 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 z-[60] flex flex-col">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700">
+            <button
+              onClick={() => setShowInventory(false)}
+              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition font-medium"
+            >
+              <span className="text-xl">←</span>
+              <span>Back to Coffee Outpost</span>
+            </button>
+            <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
+              <KokoroCoin size={28} />
+              <span className="text-yellow-400 font-bold text-xl">{coins}</span>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 px-6 py-4 border-b border-zinc-700">
+            <button
+              onClick={() => setInventoryTab('buildings')}
+              className={`px-6 py-3 rounded-xl font-semibold transition ${
+                inventoryTab === 'buildings'
+                  ? 'bg-amber-500 text-black'
+                  : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+              }`}
+            >
+              🏪 Buildings
+            </button>
+            <button
+              onClick={() => setInventoryTab('kokorobots')}
+              className="px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2"
+              disabled
+            >
+              🤖 Kokorobots
+              <span className="text-xs bg-zinc-700 px-2 py-0.5 rounded-full">Soon</span>
+            </button>
+            <button
+              onClick={() => setInventoryTab('sets')}
+              className="px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2"
+              disabled
+            >
+              🎯 Convo Sets
+              <span className="text-xs bg-zinc-700 px-2 py-0.5 rounded-full">Soon</span>
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {inventoryTab === 'buildings' && (
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-6">Your Buildings</h2>
+                
+                {purchasedCafes.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="text-6xl mb-4">🏪</div>
+                    <p className="text-zinc-400 text-xl mb-6">No buildings yet!</p>
+                    <button
+                      onClick={() => {
+                        setShowInventory(false);
+                        setShowCafeShop(true);
+                      }}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-3 px-8 rounded-full text-lg transition"
+                    >
+                      🛒 Shop for Cafés
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Buildings Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
+                      {purchasedCafes.map((cafeId) => {
+                        const cafe = cafeOptions.find(c => c.id === cafeId);
+                        if (!cafe) return null;
+                        const isSelected = selectedInventoryItem === cafeId;
+                        return (
+                          <div
+                            key={cafeId}
+                            onClick={() => setSelectedInventoryItem(isSelected ? null : cafeId)}
+                            className={`relative rounded-xl overflow-hidden cursor-pointer transition-all transform hover:scale-105 ${
+                              isSelected 
+                                ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-zinc-800' 
+                                : 'border-2 border-zinc-600 hover:border-amber-500/50'
+                            }`}
+                          >
+                            <img 
+                              src={cafe.image} 
+                              alt={cafe.name}
+                              className="w-full aspect-square object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
+                              <p className="text-white font-semibold text-sm">{cafe.name}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 bg-amber-400 text-black rounded-full p-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Buy More Card */}
+                      <div
+                        onClick={() => {
+                          setShowInventory(false);
+                          setShowCafeShop(true);
+                        }}
+                        className="rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 cursor-pointer transition-all flex flex-col items-center justify-center aspect-square bg-zinc-800/50 hover:bg-zinc-800"
+                      >
+                        <span className="text-4xl mb-2">+</span>
+                        <span className="text-zinc-400 font-medium">Buy More</span>
+                      </div>
+                    </div>
+
+                    {/* Action Button - only show when item selected */}
+                    {selectedInventoryItem && (
+                      <div className="flex justify-center mb-8">
+                        <button
+                          onClick={() => {
+                            alert('🗺️ M31 Map coming soon! Your café is saved and ready to place.');
+                          }}
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-blue-500/30"
+                        >
+                          🗺️ Place on M31 Map
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {inventoryTab === 'kokorobots' && (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🤖</div>
+                <h2 className="text-2xl font-bold text-white mb-4">Kokorobots Coming Soon!</h2>
+                <p className="text-zinc-400 max-w-md mx-auto">
+                  Customize your Kokorobot's appearance — change hairstyles, suits, colors, and more!
+                </p>
+              </div>
+            )}
+
+            {inventoryTab === 'sets' && (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🎯</div>
+                <h2 className="text-2xl font-bold text-white mb-4">Convo Sets Coming Soon!</h2>
+                <p className="text-zinc-400 max-w-md mx-auto">
+                  Unlock and manage your conversation practice sets here.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-700 bg-zinc-900/80">
+            <button
+              onClick={() => {
+                alert('🏬 All Outposts hub coming soon! Practice at different locations.');
+              }}
+              className="text-purple-400 hover:text-purple-300 font-medium transition flex items-center gap-2"
+            >
+              🏬 All Outposts
+            </button>
+            <button
+              onClick={() => {
+                setShowInventory(false);
+                alert('✅ Progress saved! Your coins and items are stored.');
+              }}
+              className="text-zinc-400 hover:text-zinc-300 font-medium transition"
+            >
+              Save & Exit
             </button>
           </div>
         </div>
