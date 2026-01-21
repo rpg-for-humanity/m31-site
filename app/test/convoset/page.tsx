@@ -14,11 +14,13 @@ type OrderItem = {
 
 type Coin = {
   id: number;
-  x: number;
-  y: number;
+  x: number;           // horizontal position of the jet
+  y: number;           // max height this coin reaches
   rotation: number;
   scale: number;
   delay: number;
+  jetIndex: number;    // which vertical jet column (0-29)
+  coinInJet: number;   // position within the jet (for staggered timing)
 };
 
 export default function ConvosetTest() {
@@ -158,32 +160,57 @@ export default function ConvosetTest() {
     }
   }, [gameState]);
 
-  // Bellagio-style progressive coin fountain - taller each round
+  // Bellagio-style fountain with multiple vertical jets at different heights
   const triggerCoinAnimation = (currentRound: number) => {
     const newCoins: Coin[] = [];
-    // Progressive coin count and height based on round
-    const coinCounts = { 1: 30, 2: 50, 3: 80, 4: 110, 5: 150 };
-    const heightMultipliers = { 1: 0.5, 2: 0.7, 3: 0.85, 4: 1.0, 5: 1.3 };
     
-    const numCoins = coinCounts[currentRound as keyof typeof coinCounts] || 50;
-    const heightMult = heightMultipliers[currentRound as keyof typeof heightMultipliers] || 1;
+    // Number of vertical jets increases with round (like Bellagio has ~30 jets)
+    const jetCounts = { 1: 12, 2: 18, 3: 24, 4: 30, 5: 36 };
+    const coinsPerJet = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 };
+    const maxHeightMultipliers = { 1: 0.4, 2: 0.55, 3: 0.7, 4: 0.85, 5: 1.0 };
     
-    for (let i = 0; i < numCoins; i++) {
-      const angle = (Math.random() * 120 - 60) * (Math.PI / 180);
-      const baseVelocity = 300 + Math.random() * 400;
-      const velocity = baseVelocity * heightMult;
-      newCoins.push({
-        id: i,
-        x: Math.cos(angle) * velocity * 0.5,
-        y: -velocity,
-        rotation: Math.random() * 360,
-        scale: 0.2 + Math.random() * 0.4,
-        delay: Math.random() * 0.8
-      });
+    const numJets = jetCounts[currentRound as keyof typeof jetCounts] || 20;
+    const coinsInJet = coinsPerJet[currentRound as keyof typeof coinsPerJet] || 5;
+    const heightMult = maxHeightMultipliers[currentRound as keyof typeof maxHeightMultipliers] || 1;
+    
+    // Create jets spread across the screen width
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const jetSpacing = screenWidth / (numJets + 1);
+    
+    let coinId = 0;
+    
+    for (let jet = 0; jet < numJets; jet++) {
+      // Each jet has a different max height (like Bellagio's varying heights)
+      // Center jets are taller, edge jets are shorter
+      const centerDistance = Math.abs(jet - numJets / 2) / (numJets / 2);
+      const jetHeightVariation = 1 - (centerDistance * 0.5); // Center = 1, edges = 0.5
+      
+      // Add some randomness to make it look more organic
+      const randomHeightBoost = 0.8 + Math.random() * 0.4;
+      const jetMaxHeight = 300 + (200 * jetHeightVariation * randomHeightBoost * heightMult);
+      
+      // X position for this jet (spread across screen, centered)
+      const jetX = (jet * jetSpacing) - (screenWidth / 2) + jetSpacing;
+      
+      // Create multiple coins in each jet (stacked vertically, staggered timing)
+      for (let c = 0; c < coinsInJet; c++) {
+        const coinHeight = jetMaxHeight * (0.5 + (c / coinsInJet) * 0.5); // Coins at different heights
+        newCoins.push({
+          id: coinId++,
+          x: jetX + (Math.random() * 10 - 5), // Slight horizontal wobble
+          y: -coinHeight,
+          rotation: Math.random() * 360,
+          scale: 0.25 + Math.random() * 0.2,
+          delay: (c * 0.08) + (Math.random() * 0.1), // Staggered launch within jet
+          jetIndex: jet,
+          coinInJet: c
+        });
+      }
     }
+    
     setAnimatedCoins(newCoins);
     setShowCoinAnimation(true);
-    setTimeout(() => setShowCoinAnimation(false), 4500);
+    setTimeout(() => setShowCoinAnimation(false), 3500);
   };
 
   useEffect(() => {
@@ -457,8 +484,8 @@ export default function ConvosetTest() {
         audioRef.pause();
         setMusicPlaying(false);
       }
-      // Coin rewards: Round 1-2 = 20, Round 3 = 60
-      const coinReward = round === 3 ? 60 : 20;
+      // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
+      const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
@@ -466,7 +493,7 @@ export default function ConvosetTest() {
         const messages: Record<number, string> = {
           1: "Well done!",
           2: "Great job!",
-          3: "Excellent! Can she take your orders, too?",
+          3: "Excellent!\nCan she take your orders, too?",
           4: "Impressive!",
           5: "🎉 You're a natural!"
         };
@@ -892,22 +919,25 @@ export default function ConvosetTest() {
       const nextRound = (round + 1) as Round;
       setRound(nextRound);
       
-      // Reset states based on next round type
-      if (nextRound <= 3) {
-        // Rounds 1-3: Listen & Select - go to intro
-        setGameState('intro');
+      // ALL rounds after round 1 go DIRECTLY to playing - NO intro/walking
+      if (nextRound === 2 || nextRound === 3) {
+        // Rounds 2-3: Listen & Select - go DIRECTLY to playing
+        setGameState('playing');
+        setShowDialogue(true);
         setRound1Selections([]);
         setCurrentItem({});
         setShowTranscript(false);
-        setShowFullBody(true);
-        setKokoroScale(1);
-        setKokoroOpacity(1);
-        setKokoroX(-200);
-        setMissionVisible(false);
+        setShowFullBody(false);
+        // Play the round audio after a short delay
+        setTimeout(() => {
+          playRoundOrder();
+          startBackgroundMusic();
+        }, 500);
       } else if (nextRound === 4) {
-        // Round 4: Typing - go directly to playing (no intro)
+        // Round 4: Typing - go directly to playing
         setGameState('playing');
         setShowDialogue(true);
+        setShowFullBody(false);
         setRound2Chat([]);
         setRound2Order({ type: false, size: false, milk: false, syrup: false, temp: false });
         setRound2OrderDetails({});
@@ -917,9 +947,10 @@ export default function ConvosetTest() {
         playAudio('/Audio/kokorobot-greeting.mp3');
         startBackgroundMusic();
       } else if (nextRound === 5) {
-        // Round 5: Speaking - go directly to playing (no intro)
+        // Round 5: Speaking - go directly to playing
         setGameState('playing');
         setShowDialogue(true);
+        setShowFullBody(false);
         setRound3Order({ type: false, size: false, milk: false, temp: false, syrup: false });
         setRound3OrderDetails({});
         setRound3Score(500);
@@ -931,7 +962,7 @@ export default function ConvosetTest() {
         startBackgroundMusic();
       }
     } else {
-      // After Round 5, reset to Round 1
+      // After Round 5, reset to Round 1 with intro
       setRound(1);
       setGameState('intro');
       setRound1Selections([]);
@@ -982,24 +1013,23 @@ export default function ConvosetTest() {
       {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent" />
 
-      {/* Gold Coin Animation */}
+      {/* Bellagio-style Gold Coin Fountain Animation */}
       {showCoinAnimation && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
           {animatedCoins.map((coin) => (
             <div
               key={coin.id}
-              className="absolute animate-coin-burst"
+              className="absolute bottom-0 left-1/2 animate-fountain-jet"
               style={{
-                '--tx': `${coin.x}px`,
-                '--ty': `${coin.y}px`,
-                '--r': `${coin.rotation}deg`,
+                '--jx': `${coin.x}px`,
+                '--jy': `${coin.y}px`,
                 '--s': coin.scale,
                 animationDelay: `${coin.delay}s`
               } as React.CSSProperties}
             >
-              <div className="w-12 h-12 relative">
-                <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
-                <KokoroCoin size={48} className=" drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+              <div className="relative">
+                <KokoroCoin size={36} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
+                <div className="absolute inset-0 w-9 h-9 bg-yellow-400/40 rounded-full blur-md -z-10" />
               </div>
             </div>
           ))}
@@ -1429,25 +1459,25 @@ export default function ConvosetTest() {
             <span className="text-green-400 text-xl font-mono font-semibold">LIVE</span>
           </div>
 
-          {/* Dramatic sparkle burst - glowing stars */}
+          {/* Bellagio-style fountain jets - multiple vertical columns */}
           {showCoinAnimation && (
-            <div className="fixed inset-0 pointer-events-none z-50">
+            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
               {animatedCoins.map((coin) => (
                 <div
                   key={coin.id}
-                  className="absolute top-1/2 left-1/2 animate-coin-burst"
+                  className="absolute bottom-0 left-1/2 animate-fountain-jet"
                   style={{
-                    '--tx': `${coin.x}px`,
-                    '--ty': `${coin.y}px`,
-                    '--r': `${coin.rotation}deg`,
+                    '--jx': `${coin.x}px`,
+                    '--jy': `${coin.y}px`,
                     '--s': coin.scale,
                     animationDelay: `${coin.delay}s`
                   } as React.CSSProperties}
                 >
                   <div className="relative">
-                    <div className="w-4 h-4 bg-yellow-300 rounded-full blur-[2px] animate-pulse" 
-                         style={{ boxShadow: '0 0 12px 4px rgba(255, 235, 59, 0.8), 0 0 20px 8px rgba(255, 215, 0, 0.5)' }} />
-                    <div className="absolute inset-0 w-4 h-4 bg-white rounded-full opacity-60 blur-[1px]" />
+                    {/* Glowing star coin */}
+                    <KokoroCoin size={32} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
+                    {/* Extra glow effect */}
+                    <div className="absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10" />
                   </div>
                 </div>
               ))}
@@ -1462,22 +1492,29 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - positioned to the right on round 5 to not cover cat's face */}
-          <div className={`absolute z-50 text-center ${
-            round === 5 
+          {/* Text overlay - positioned to the right on rounds 3-5 to not cover characters */}
+          <div className={`absolute z-50 ${
+            round >= 3 
               ? 'top-[30%] right-[8%] text-right' 
-              : 'top-[45%] left-1/2 -translate-x-1/2'
+              : 'top-[45%] left-1/2 -translate-x-1/2 text-center'
           }`}>
-            <div className={`flex items-center gap-2 mb-2 ${round === 5 ? 'justify-end' : 'justify-center'}`}>
+            <div className={`flex items-center gap-2 mb-2 ${round >= 3 ? 'justify-end' : 'justify-center'}`}>
               <KokoroCoin size={32} />
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
             </div>
-            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
+            {round === 3 ? (
+              <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                <p className="text-5xl font-bold mb-2">Excellent!</p>
+                <p className="text-3xl font-semibold">Can she take your orders, too?</p>
+              </div>
+            ) : (
+              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
+            )}
           </div>
 
-          {/* CTAs - Higher position (where controller/keyboard area is), Round 5 positioned to the right */}
+          {/* CTAs - Higher position (where controller/keyboard area is), Rounds 3-5 positioned to the right */}
           <div className={`absolute z-50 flex gap-4 ${
-            round === 5 
+            round >= 3 
               ? 'bottom-[30%] right-[8%] flex-col items-end' 
               : 'bottom-[25%] left-1/2 -translate-x-1/2'
           }`}>
@@ -1513,34 +1550,38 @@ export default function ConvosetTest() {
 
       {/* Custom animation styles */}
       <style jsx>{`
-        @keyframes coin-burst {
+        @keyframes fountain-jet {
           0% {
             opacity: 0;
-            transform: translate(0, 50vh) scale(0.3);
+            transform: translateX(var(--jx)) translateY(100vh) scale(0.3);
           }
-          15% {
+          10% {
             opacity: 1;
-            transform: translate(calc(var(--tx) * 0.3), calc(var(--ty) * 0.5)) scale(var(--s));
+            transform: translateX(var(--jx)) translateY(50vh) scale(var(--s));
           }
-          35% {
+          30% {
             opacity: 1;
-            transform: translate(calc(var(--tx) * 0.8), var(--ty)) scale(var(--s)) rotate(180deg);
+            transform: translateX(var(--jx)) translateY(var(--jy)) scale(var(--s));
           }
-          55% {
+          50% {
             opacity: 1;
-            transform: translate(var(--tx), calc(var(--ty) * 0.7)) scale(var(--s)) rotate(270deg);
+            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.8)) scale(var(--s)) rotate(180deg);
           }
-          75% {
-            opacity: 0.8;
-            transform: translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.3)) scale(calc(var(--s) * 0.8)) rotate(360deg);
+          70% {
+            opacity: 0.9;
+            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.4)) scale(var(--s)) rotate(270deg);
+          }
+          85% {
+            opacity: 0.6;
+            transform: translateX(var(--jx)) translateY(20vh) scale(calc(var(--s) * 0.7)) rotate(360deg);
           }
           100% {
             opacity: 0;
-            transform: translate(calc(50vw - 250px), calc(-50vh + 30px)) scale(0.15);
+            transform: translateX(var(--jx)) translateY(60vh) scale(0.2);
           }
         }
-        .animate-coin-burst {
-          animation: coin-burst 4s ease-out forwards;
+        .animate-fountain-jet {
+          animation: fountain-jet 2.5s ease-out forwards;
         }
         @keyframes walk {
           0% { transform: translateY(0) rotate(0deg); }
@@ -1693,8 +1734,8 @@ export default function ConvosetTest() {
               <button 
                 onClick={() => {
                   setShowCafeShop(false);
-                  setRound(1);
-                  setGameState('intro');
+                  // Continue to next round instead of resetting
+                  completeGame();
                 }}
                 className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
               >
@@ -1844,14 +1885,14 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowOwnedPopup(false);
                   setOwnedCafeToView(null);
-                  // Go back to Netflix hub (placeholder)
+                  // Restart game (Netflix hub coming later)
                   setShowCafeShop(false);
                   setRound(1);
                   setGameState('intro');
                 }}
                 className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
               >
-                🎮 Back to Hub
+                🎮 Restart Game
               </button>
               <button
                 onClick={() => {
