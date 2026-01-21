@@ -374,7 +374,7 @@ export default function ConvosetTest() {
         })
         .catch(fetchErr => {
           console.error('Fetch also failed:', fetchErr);
-          speakTTS(currentRoundConfig.npcOrder);
+          speakTTS(config.npcOrder);
         });
     };
   };
