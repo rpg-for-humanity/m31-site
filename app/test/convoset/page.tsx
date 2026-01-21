@@ -41,7 +41,7 @@ export default function ConvosetTest() {
   const [showCafeShop, setShowCafeShop] = useState(false);
   const [showCoinShop, setShowCoinShop] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
-  const [inventoryTab, setInventoryTab] = useState<'buildings' | 'kokorobots' | 'sets'>('buildings');
+  const [inventoryTab, setInventoryTab] = useState<'buildings' | 'kokorobots' | 'items'>('buildings');
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<string | null>(null);
   const [purchasedCafes, setPurchasedCafes] = useState<string[]>([]);
   
@@ -2181,11 +2181,10 @@ export default function ConvosetTest() {
               <span className="text-xs bg-zinc-700 px-2 py-0.5 rounded-full">Soon</span>
             </button>
             <button
-              onClick={() => setInventoryTab('sets')}
               className="px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2"
               disabled
             >
-              🎯 Convo Sets
+              🌳 Items
               <span className="text-xs bg-zinc-700 px-2 py-0.5 rounded-full">Soon</span>
             </button>
           </div>
@@ -2288,24 +2287,15 @@ export default function ConvosetTest() {
               </div>
             )}
 
-            {inventoryTab === 'sets' && (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🎯</div>
-                <h2 className="text-2xl font-bold text-white mb-4">Convo Sets Coming Soon!</h2>
-                <p className="text-zinc-400 max-w-md mx-auto">
-                  Unlock and manage your conversation practice sets here.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Bottom Bar */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-700 bg-zinc-900/80">
+          <div className="flex items-center justify-between px-6 py-5 border-t border-zinc-700 bg-zinc-900/80">
             <button
               onClick={() => {
                 alert('🏬 All Outposts hub coming soon! Practice at different locations.');
               }}
-              className="text-purple-400 hover:text-purple-300 font-medium transition flex items-center gap-2"
+              className="text-amber-400 hover:text-amber-300 font-semibold text-lg transition flex items-center gap-2"
             >
               🏬 All Outposts
             </button>
@@ -2314,7 +2304,7 @@ export default function ConvosetTest() {
                 setShowInventory(false);
                 alert('✅ Progress saved! Your coins and items are stored.');
               }}
-              className="text-zinc-400 hover:text-zinc-300 font-medium transition"
+              className="text-amber-400 hover:text-amber-300 font-semibold text-lg transition"
             >
               Save & Exit
             </button>
