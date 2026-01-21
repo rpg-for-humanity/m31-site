@@ -39,12 +39,15 @@ export default function ConvosetTest() {
   const [showCoinShop, setShowCoinShop] = useState(false);
   const [purchasedCafes, setPurchasedCafes] = useState<string[]>([]);
   
-  // Purchase confirmation states
+  // Purchase confirmation popup states
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const [selectedCafe, setSelectedCafe] = useState<{id: string, name: string, price: number, image: string} | null>(null);
-  const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
+  const [showJustPurchased, setShowJustPurchased] = useState(false);
+  const [justPurchasedCafe, setJustPurchasedCafe] = useState<{id: string, name: string, price: number, image: string} | null>(null);
+  const [showOwnedPopup, setShowOwnedPopup] = useState(false);
+  const [ownedCafeToView, setOwnedCafeToView] = useState<{id: string, name: string, image: string} | null>(null);
   
-  // Cafe options - updated prices
+  // Cafe options - Updated prices
   const cafeOptions = [
     { id: 'coffeepost', name: 'Coffee Post', price: 500, image: '/coffeepost.png' },
     { id: 'retrocafe', name: 'Retro Café', price: 800, image: '/retrocafe.png' },
@@ -155,20 +158,24 @@ export default function ConvosetTest() {
     }
   }, [gameState]);
 
-  // Bellagio fountain coin animation - progressive heights per round
-  const triggerCoinAnimation = (currentRound: number = round) => {
+  // Bellagio-style progressive coin fountain - taller each round
+  const triggerCoinAnimation = (currentRound: number) => {
     const newCoins: Coin[] = [];
-    // More coins and taller fountain for higher rounds
-    const coinCount = 60 + (currentRound * 20); // 80, 100, 120, 140, 160
-    const baseVelocity = 200 + (currentRound * 60); // Taller each round
+    // Progressive coin count and height based on round
+    const coinCounts = { 1: 30, 2: 50, 3: 80, 4: 110, 5: 150 };
+    const heightMultipliers = { 1: 0.5, 2: 0.7, 3: 0.85, 4: 1.0, 5: 1.3 };
     
-    for (let i = 0; i < coinCount; i++) {
-      const angle = (Math.random() * 120 - 60) * (Math.PI / 180); // -60 to 60 degrees spread
-      const velocity = baseVelocity + Math.random() * (baseVelocity * 0.5); // varying heights
+    const numCoins = coinCounts[currentRound as keyof typeof coinCounts] || 50;
+    const heightMult = heightMultipliers[currentRound as keyof typeof heightMultipliers] || 1;
+    
+    for (let i = 0; i < numCoins; i++) {
+      const angle = (Math.random() * 120 - 60) * (Math.PI / 180);
+      const baseVelocity = 300 + Math.random() * 400;
+      const velocity = baseVelocity * heightMult;
       newCoins.push({
         id: i,
-        x: Math.cos(angle) * velocity * 0.5, // horizontal spread
-        y: -velocity, // shoot upward (negative Y)
+        x: Math.cos(angle) * velocity * 0.5,
+        y: -velocity,
         rotation: Math.random() * 360,
         scale: 0.2 + Math.random() * 0.4,
         delay: Math.random() * 0.8
@@ -459,7 +466,7 @@ export default function ConvosetTest() {
         const messages: Record<number, string> = {
           1: "Well done!",
           2: "Great job!",
-          3: "Excellent!",
+          3: "Excellent! Can she take your orders, too?",
           4: "Impressive!",
           5: "🎉 You're a natural!"
         };
@@ -943,13 +950,13 @@ export default function ConvosetTest() {
   };
 
   // Kokoro Star Coin - uses your custom kokoro-star.png
-  const KokoroCoin = ({ size = 24 }: { size?: number }) => (
+  const KokoroCoin = ({ className = "", size = 24 }: { className?: string, size?: number }) => (
     <img 
       src="/kokoro-star.png" 
       alt="coin" 
       width={size} 
       height={size}
-      className="inline-block"
+      className={`inline-block ${className}`}
       style={{ 
         width: size, 
         height: size,
@@ -992,7 +999,7 @@ export default function ConvosetTest() {
             >
               <div className="w-12 h-12 relative">
                 <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
-                <KokoroCoin size={48} />
+                <KokoroCoin size={48} className=" drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
               </div>
             </div>
           ))}
@@ -1020,7 +1027,7 @@ export default function ConvosetTest() {
             <span className="text-yellow-400 font-mono font-semibold text-lg">{coins}</span>
           </div>
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30">
-            <span className="text-purple-400 font-mono">Round {round}/3</span>
+            <span className="text-purple-400 font-mono">Round {round}/5</span>
           </div>
         </div>
       </div>
@@ -1455,20 +1462,36 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - positioned based on round */}
-          <div className={`absolute z-50 text-center ${round === 5 ? 'top-[35%] left-[55%]' : 'top-[45%] left-1/2 -translate-x-1/2'}`}>
-            <div className="flex items-center justify-center gap-2 mb-2">
+          {/* Text overlay - positioned to the right on round 5 to not cover cat's face */}
+          <div className={`absolute z-50 text-center ${
+            round === 5 
+              ? 'top-[30%] right-[8%] text-right' 
+              : 'top-[45%] left-1/2 -translate-x-1/2'
+          }`}>
+            <div className={`flex items-center gap-2 mb-2 ${round === 5 ? 'justify-end' : 'justify-center'}`}>
               <KokoroCoin size={32} />
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
             </div>
-            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-              {round === 3 ? "Excellent! Can she take your orders, too?" : investorMessage}
-            </p>
+            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
           </div>
 
-          {/* CTA Buttons - positioned higher near control panel, right side for round 5 */}
-          <div className={`absolute z-50 flex gap-4 ${round === 5 ? 'bottom-[30%] right-[15%]' : 'bottom-[25%] left-1/2 -translate-x-1/2'}`}>
-            {(round >= 3) && (
+          {/* CTAs - Higher position (where controller/keyboard area is), Round 5 positioned to the right */}
+          <div className={`absolute z-50 flex gap-4 ${
+            round === 5 
+              ? 'bottom-[30%] right-[8%] flex-col items-end' 
+              : 'bottom-[25%] left-1/2 -translate-x-1/2'
+          }`}>
+            {(round === 3 || round === 4) && (
+              <button
+                onClick={() => {
+                  setShowCafeShop(true);
+                }}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
+              >
+                🏪 Build Your Café
+              </button>
+            )}
+            {round === 5 && (
               <button
                 onClick={() => {
                   setShowCafeShop(true);
@@ -1600,55 +1623,57 @@ export default function ConvosetTest() {
 
       {/* Cafe Shop */}
       {showCafeShop && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30 shadow-2xl">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-bold text-amber-400">🏪 Choose Your Café</h2>
-              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full border border-amber-500/30">
+              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
                 <KokoroCoin size={28} />
-                <span className="text-amber-400 font-bold text-xl">{coins.toLocaleString()}</span>
+                <span className="text-yellow-400 font-bold text-xl">{coins}</span>
               </div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
               {cafeOptions.map((cafe) => {
-                const isOwned = purchasedCafes.includes(cafe.id);
+                const owned = purchasedCafes.includes(cafe.id);
                 const canAfford = coins >= cafe.price;
                 return (
                   <div 
                     key={cafe.id}
-                    className={`relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                      isOwned 
-                        ? 'border-green-500 ring-2 ring-green-500/30' 
-                        : canAfford 
-                          ? 'border-amber-500/50 hover:border-amber-400 hover:scale-105' 
-                          : 'border-zinc-600 opacity-50'
+                    className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                      owned ? 'border-green-500 cursor-pointer hover:scale-105' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'
                     }`}
                     onClick={() => {
-                      if (isOwned) {
-                        // Already owned - show what to do
-                        setSelectedCafe(cafe);
-                        setShowPurchaseSuccess(true);
+                      if (owned) {
+                        // Show owned popup with options
+                        setOwnedCafeToView(cafe);
+                        setShowOwnedPopup(true);
                       } else if (canAfford) {
                         // Show purchase confirmation
                         setSelectedCafe(cafe);
                         setShowPurchaseConfirm(true);
                       } else {
-                        // Can't afford - open coin shop
                         setShowCoinShop(true);
                       }
                     }}
                   >
-                    <img src={cafe.image} alt={cafe.name} className="w-full h-32 object-cover" />
+                    <div className="relative">
+                      <img src={cafe.image} alt={cafe.name} className="w-full h-32 object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90" />
+                      {owned && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          ✓ OWNED
+                        </div>
+                      )}
+                    </div>
                     <div className="p-3 bg-black/80">
                       <p className="text-white font-medium text-sm">{cafe.name}</p>
                       <div className="flex items-center gap-1 mt-1">
-                        {isOwned ? (
-                          <span className="text-green-400 text-sm font-medium">✓ Owned</span>
+                        {owned ? (
+                          <span className="text-green-400 text-sm">Tap to view options</span>
                         ) : (
                           <>
-                            <KokoroCoin size={16} />
-                            <span className={`font-bold text-sm ${canAfford ? 'text-amber-400' : 'text-red-400'}`}>{cafe.price}</span>
+                            <KokoroCoin size={18} />
+                            <span className={`font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>{cafe.price}</span>
                           </>
                         )}
                       </div>
@@ -1658,27 +1683,184 @@ export default function ConvosetTest() {
               })}
             </div>
             
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button 
                 onClick={() => setShowCoinShop(true)}
-                className="flex-1 py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg"
               >
                 💰 Buy Coins
               </button>
               <button 
                 onClick={() => {
                   setShowCafeShop(false);
-                  // Continue to next round or restart
-                  if (round < 5) {
-                    completeGame();
-                  } else {
-                    setRound(1);
-                    setGameState('intro');
-                  }
+                  setRound(1);
+                  setGameState('intro');
                 }}
-                className="flex-1 py-4 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
               >
-                😊 Keep Playing
+                🔄 Keep Playing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Confirmation Popup */}
+      {showPurchaseConfirm && selectedCafe && (
+        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/50 text-center">
+            <h3 className="text-2xl font-bold text-amber-400 mb-4">🏪 Purchase Café?</h3>
+            <img 
+              src={selectedCafe.image} 
+              alt={selectedCafe.name} 
+              className="w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-amber-500/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+            />
+            <p className="text-white text-xl font-semibold mb-2">{selectedCafe.name}</p>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-zinc-400">Price:</span>
+              <KokoroCoin size={24} />
+              <span className="text-yellow-400 font-bold text-xl">{selectedCafe.price}</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-6 bg-black/50 py-2 px-4 rounded-full inline-flex">
+              <span className="text-zinc-400">Your balance:</span>
+              <KokoroCoin size={20} />
+              <span className="text-yellow-400 font-semibold">{coins}</span>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPurchaseConfirm(false);
+                  setSelectedCafe(null);
+                }}
+                className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Process purchase
+                  setCoins(prev => prev - selectedCafe.price);
+                  setPurchasedCafes(prev => [...prev, selectedCafe.id]);
+                  setShowPurchaseConfirm(false);
+                  // Show just purchased popup
+                  setJustPurchasedCafe(selectedCafe);
+                  setShowJustPurchased(true);
+                  setSelectedCafe(null);
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-bold rounded-lg"
+              >
+                ✓ Buy Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Just Purchased Popup */}
+      {showJustPurchased && justPurchasedCafe && (
+        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-green-900/80 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h3 className="text-3xl font-bold text-green-400 mb-4">Congratulations!</h3>
+            <img 
+              src={justPurchasedCafe.image} 
+              alt={justPurchasedCafe.name} 
+              className="w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+            />
+            <p className="text-white text-xl mb-2">{justPurchasedCafe.name}</p>
+            <p className="text-green-300 mb-6">is now in your inventory!</p>
+            <p className="text-zinc-400 text-sm mb-6">What would you like to do?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowJustPurchased(false);
+                  setJustPurchasedCafe(null);
+                  alert('🗺️ M31 Map coming soon! Your café is saved in inventory.');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg"
+              >
+                🗺️ Place on M31 Map
+              </button>
+              <button
+                onClick={() => {
+                  setShowJustPurchased(false);
+                  setJustPurchasedCafe(null);
+                  alert('📦 Inventory view coming soon!');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg"
+              >
+                📦 Check Inventory
+              </button>
+              <button
+                onClick={() => {
+                  setShowJustPurchased(false);
+                  setJustPurchasedCafe(null);
+                }}
+                className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+              >
+                Keep Shopping
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Owned Cafe Popup */}
+      {showOwnedPopup && ownedCafeToView && (
+        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center">
+            <div className="absolute top-4 right-4 bg-green-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+              ✓ OWNED
+            </div>
+            <h3 className="text-2xl font-bold text-green-400 mb-4">🏪 {ownedCafeToView.name}</h3>
+            <img 
+              src={ownedCafeToView.image} 
+              alt={ownedCafeToView.name} 
+              className="w-48 h-48 object-cover rounded-xl mx-auto mb-6 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+            />
+            <p className="text-zinc-300 mb-6">This café is in your inventory. What would you like to do?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowOwnedPopup(false);
+                  setOwnedCafeToView(null);
+                  alert('🗺️ M31 Map coming soon! Your café is saved in inventory.');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg"
+              >
+                🗺️ Place on M31 Map
+              </button>
+              <button
+                onClick={() => {
+                  setShowOwnedPopup(false);
+                  setOwnedCafeToView(null);
+                  alert('📦 Inventory view coming soon!');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg"
+              >
+                📦 Check Inventory
+              </button>
+              <button
+                onClick={() => {
+                  setShowOwnedPopup(false);
+                  setOwnedCafeToView(null);
+                  // Go back to Netflix hub (placeholder)
+                  setShowCafeShop(false);
+                  setRound(1);
+                  setGameState('intro');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
+              >
+                🎮 Back to Hub
+              </button>
+              <button
+                onClick={() => {
+                  setShowOwnedPopup(false);
+                  setOwnedCafeToView(null);
+                }}
+                className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -1687,21 +1869,19 @@ export default function ConvosetTest() {
 
       {/* Coin Shop */}
       {showCoinShop && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
+        <div className="fixed inset-0 bg-black/90 z-[80] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
           <div 
-            className="bg-gradient-to-b from-amber-900/90 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-amber-500/50 shadow-2xl"
+            className="bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-3xl font-bold text-center text-amber-300 mb-6 flex items-center justify-center gap-2">
-              <KokoroCoin size={32} /> Coin Shop
-            </h2>
+            <h2 className="text-3xl font-bold text-center text-purple-300 mb-6">💰 Coin Shop</h2>
             
             <div className="space-y-4 mb-6">
               {coinBundles.map((bundle) => (
                 <div 
                   key={bundle.id}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
-                    bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-amber-500'
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${
+                    bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'
                   }`}
                   onClick={() => {
                     // Simulate purchase (in real app, this would go to payment)
@@ -1718,8 +1898,8 @@ export default function ConvosetTest() {
                     <div>
                       <p className="text-white font-bold text-lg">{bundle.label}</p>
                       <div className="flex items-center gap-2">
-                        <KokoroCoin size={24} />
-                        <span className="text-amber-400 font-bold text-2xl">{bundle.coins.toLocaleString()}</span>
+                        <KokoroCoin size={28} />
+                        <span className="text-yellow-400 font-bold text-2xl">{bundle.coins.toLocaleString()}</span>
                       </div>
                     </div>
                     <div className="bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl text-xl">
@@ -1732,98 +1912,10 @@ export default function ConvosetTest() {
             
             <button 
               onClick={() => setShowCoinShop(false)}
-              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-medium"
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
             >
               Maybe Later
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Purchase Confirmation Popup */}
-      {showPurchaseConfirm && selectedCafe && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/30 shadow-2xl text-center">
-            <h3 className="text-2xl font-bold text-amber-400 mb-4">Confirm Purchase</h3>
-            <img src={selectedCafe.image} alt={selectedCafe.name} className="w-40 h-40 object-cover mx-auto rounded-xl mb-4" />
-            <p className="text-white text-xl mb-2">{selectedCafe.name}</p>
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <KokoroCoin size={28} />
-              <span className="text-amber-400 font-bold text-2xl">{selectedCafe.price}</span>
-            </div>
-            <p className="text-zinc-400 mb-6">Would you like to buy {selectedCafe.name} for {selectedCafe.price} coins?</p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowPurchaseConfirm(false)}
-                className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setCoins(prev => prev - selectedCafe.price);
-                  setPurchasedCafes(prev => [...prev, selectedCafe.id]);
-                  setShowPurchaseConfirm(false);
-                  setShowPurchaseSuccess(true);
-                }}
-                className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl font-bold"
-              >
-                Buy Now ✓
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Purchase Success / Owned Guide Popup */}
-      {showPurchaseSuccess && selectedCafe && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/30 shadow-2xl text-center">
-            <div className="text-5xl mb-4">🎉</div>
-            <h3 className="text-2xl font-bold text-green-400 mb-2">
-              {purchasedCafes.includes(selectedCafe.id) ? 'You own this!' : 'Purchase Complete!'}
-            </h3>
-            <img src={selectedCafe.image} alt={selectedCafe.name} className="w-32 h-32 object-cover mx-auto rounded-xl mb-4 border-2 border-green-500" />
-            <p className="text-white text-lg mb-6">{selectedCafe.name} is in your inventory!</p>
-            <p className="text-zinc-400 mb-6">What would you like to do?</p>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  setShowPurchaseSuccess(false);
-                  // TODO: Navigate to inventory view
-                  alert('Inventory view coming soon!');
-                }}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white rounded-xl font-medium"
-              >
-                📦 View in Inventory
-              </button>
-              <button
-                onClick={() => {
-                  setShowPurchaseSuccess(false);
-                  // TODO: Navigate to map placement
-                  alert('Map placement coming soon!');
-                }}
-                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl font-medium"
-              >
-                🗺️ Place on M31 Map
-              </button>
-              <button
-                onClick={() => {
-                  setShowPurchaseSuccess(false);
-                  // TODO: Navigate to hub
-                  alert('Netflix-style hub coming soon!');
-                }}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-medium"
-              >
-                🎮 Back to Hub
-              </button>
-              <button
-                onClick={() => setShowPurchaseSuccess(false)}
-                className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-medium"
-              >
-                Keep Shopping
-              </button>
-            </div>
           </div>
         </div>
       )}
