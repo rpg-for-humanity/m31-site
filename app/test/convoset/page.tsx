@@ -39,13 +39,18 @@ export default function ConvosetTest() {
   const [showCoinShop, setShowCoinShop] = useState(false);
   const [purchasedCafes, setPurchasedCafes] = useState<string[]>([]);
   
-  // Cafe options
+  // Purchase confirmation states
+  const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
+  const [selectedCafe, setSelectedCafe] = useState<{id: string, name: string, price: number, image: string} | null>(null);
+  const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
+  
+  // Cafe options - updated prices
   const cafeOptions = [
-    { id: 'coffeepost', name: 'Coffee Post', price: 300, image: '/coffeepost.png' },
-    { id: 'retrocafe', name: 'Retro Café', price: 500, image: '/retrocafe.png' },
-    { id: 'flowercafe', name: 'Flower Café', price: 700, image: '/flowercafe.png' },
-    { id: 'moderncafe', name: 'Modern Café', price: 900, image: '/moderncafe.png' },
-    { id: 'rocococafe', name: 'Rococo Café', price: 1100, image: '/rocococafe.png' },
+    { id: 'coffeepost', name: 'Coffee Post', price: 500, image: '/coffeepost.png' },
+    { id: 'retrocafe', name: 'Retro Café', price: 800, image: '/retrocafe.png' },
+    { id: 'flowercafe', name: 'Flower Café', price: 1000, image: '/flowercafe.png' },
+    { id: 'moderncafe', name: 'Modern Café', price: 1500, image: '/moderncafe.png' },
+    { id: 'rocococafe', name: 'Rococo Café', price: 2000, image: '/rocococafe.png' },
   ];
   
   // Coin bundles
@@ -150,12 +155,16 @@ export default function ConvosetTest() {
     }
   }, [gameState]);
 
-  const triggerCoinAnimation = () => {
+  // Bellagio fountain coin animation - progressive heights per round
+  const triggerCoinAnimation = (currentRound: number = round) => {
     const newCoins: Coin[] = [];
-    // Create 120 coins that shoot up like Bellagio fountain
-    for (let i = 0; i < 120; i++) {
+    // More coins and taller fountain for higher rounds
+    const coinCount = 60 + (currentRound * 20); // 80, 100, 120, 140, 160
+    const baseVelocity = 200 + (currentRound * 60); // Taller each round
+    
+    for (let i = 0; i < coinCount; i++) {
       const angle = (Math.random() * 120 - 60) * (Math.PI / 180); // -60 to 60 degrees spread
-      const velocity = 300 + Math.random() * 400; // varying heights
+      const velocity = baseVelocity + Math.random() * (baseVelocity * 0.5); // varying heights
       newCoins.push({
         id: i,
         x: Math.cos(angle) * velocity * 0.5, // horizontal spread
@@ -446,7 +455,7 @@ export default function ConvosetTest() {
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
-        triggerCoinAnimation();
+        triggerCoinAnimation(round);
         const messages: Record<number, string> = {
           1: "Well done!",
           2: "Great job!",
@@ -535,7 +544,7 @@ export default function ConvosetTest() {
         }
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
-          triggerCoinAnimation();
+          triggerCoinAnimation(round);
           setInvestorMessage("Impressive!");
           setGameState('investor');
         });
@@ -864,7 +873,7 @@ export default function ConvosetTest() {
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 500);
-      triggerCoinAnimation();
+      triggerCoinAnimation(round);
       setInvestorMessage("🎉 You're a natural!");
       setGameState('investor');
     });
@@ -934,13 +943,13 @@ export default function ConvosetTest() {
   };
 
   // Kokoro Star Coin - uses your custom kokoro-star.png
-  const KokoroCoin = ({ className = "", size = 24 }: { className?: string, size?: number }) => (
+  const KokoroCoin = ({ size = 24 }: { size?: number }) => (
     <img 
       src="/kokoro-star.png" 
       alt="coin" 
       width={size} 
       height={size}
-      className={`inline-block ${className}`}
+      className="inline-block"
       style={{ 
         width: size, 
         height: size,
@@ -983,7 +992,7 @@ export default function ConvosetTest() {
             >
               <div className="w-12 h-12 relative">
                 <div className="absolute inset-0 bg-yellow-400/60 rounded-full blur-md" />
-                <KokoroCoin size={48} className=" drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]" />
+                <KokoroCoin size={48} />
               </div>
             </div>
           ))}
@@ -1011,7 +1020,7 @@ export default function ConvosetTest() {
             <span className="text-yellow-400 font-mono font-semibold text-lg">{coins}</span>
           </div>
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30">
-            <span className="text-purple-400 font-mono">Round {round}/5</span>
+            <span className="text-purple-400 font-mono">Round {round}/3</span>
           </div>
         </div>
       </div>
@@ -1283,7 +1292,7 @@ export default function ConvosetTest() {
                         }
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
-                          triggerCoinAnimation();
+                          triggerCoinAnimation(round);
                           setInvestorMessage("Impressive!");
                           setGameState('investor');
                         });
@@ -1446,28 +1455,20 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay on image - lower position to not cover face */}
-          <div className="absolute top-[45%] left-1/2 -translate-x-1/2 text-center z-50">
+          {/* Text overlay - positioned based on round */}
+          <div className={`absolute z-50 text-center ${round === 5 ? 'top-[35%] left-[55%]' : 'top-[45%] left-1/2 -translate-x-1/2'}`}>
             <div className="flex items-center justify-center gap-2 mb-2">
               <KokoroCoin size={32} />
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
             </div>
-            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
+            <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              {round === 3 ? "Excellent! Can she take your orders, too?" : investorMessage}
+            </p>
           </div>
 
-          {/* Button below control keyboard */}
-          <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 z-50 flex gap-4">
-            {round === 3 && (
-              <button
-                onClick={() => {
-                  setShowCafeShop(true);
-                }}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
-              >
-                🏪 Build Your Café
-              </button>
-            )}
-            {round === 5 && (
+          {/* CTA Buttons - positioned higher near control panel, right side for round 5 */}
+          <div className={`absolute z-50 flex gap-4 ${round === 5 ? 'bottom-[30%] right-[15%]' : 'bottom-[25%] left-1/2 -translate-x-1/2'}`}>
+            {(round >= 3) && (
               <button
                 onClick={() => {
                   setShowCafeShop(true);
@@ -1599,31 +1600,41 @@ export default function ConvosetTest() {
 
       {/* Cafe Shop */}
       {showCafeShop && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-bold text-amber-400">🏪 Choose Your Café</h2>
-              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
-                <span className="text-yellow-400 text-xl">🪙</span>
-                <span className="text-yellow-400 font-bold text-xl">{coins}</span>
+              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full border border-amber-500/30">
+                <KokoroCoin size={28} />
+                <span className="text-amber-400 font-bold text-xl">{coins.toLocaleString()}</span>
               </div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
               {cafeOptions.map((cafe) => {
-                const owned = purchasedCafes.includes(cafe.id);
+                const isOwned = purchasedCafes.includes(cafe.id);
                 const canAfford = coins >= cafe.price;
                 return (
                   <div 
                     key={cafe.id}
-                    className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                      owned ? 'border-green-500 opacity-60' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'
+                    className={`relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      isOwned 
+                        ? 'border-green-500 ring-2 ring-green-500/30' 
+                        : canAfford 
+                          ? 'border-amber-500/50 hover:border-amber-400 hover:scale-105' 
+                          : 'border-zinc-600 opacity-50'
                     }`}
                     onClick={() => {
-                      if (!owned && canAfford) {
-                        setCoins(prev => prev - cafe.price);
-                        setPurchasedCafes(prev => [...prev, cafe.id]);
-                      } else if (!canAfford && !owned) {
+                      if (isOwned) {
+                        // Already owned - show what to do
+                        setSelectedCafe(cafe);
+                        setShowPurchaseSuccess(true);
+                      } else if (canAfford) {
+                        // Show purchase confirmation
+                        setSelectedCafe(cafe);
+                        setShowPurchaseConfirm(true);
+                      } else {
+                        // Can't afford - open coin shop
                         setShowCoinShop(true);
                       }
                     }}
@@ -1632,12 +1643,12 @@ export default function ConvosetTest() {
                     <div className="p-3 bg-black/80">
                       <p className="text-white font-medium text-sm">{cafe.name}</p>
                       <div className="flex items-center gap-1 mt-1">
-                        {owned ? (
-                          <span className="text-green-400 text-sm">✓ Owned</span>
+                        {isOwned ? (
+                          <span className="text-green-400 text-sm font-medium">✓ Owned</span>
                         ) : (
                           <>
-                            <span className="text-yellow-400">🪙</span>
-                            <span className={`font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>{cafe.price}</span>
+                            <KokoroCoin size={16} />
+                            <span className={`font-bold text-sm ${canAfford ? 'text-amber-400' : 'text-red-400'}`}>{cafe.price}</span>
                           </>
                         )}
                       </div>
@@ -1647,22 +1658,27 @@ export default function ConvosetTest() {
               })}
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button 
                 onClick={() => setShowCoinShop(true)}
-                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg"
+                className="flex-1 py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 transition-all"
               >
                 💰 Buy Coins
               </button>
               <button 
                 onClick={() => {
                   setShowCafeShop(false);
-                  setRound(1);
-                  setGameState('intro');
+                  // Continue to next round or restart
+                  if (round < 5) {
+                    completeGame();
+                  } else {
+                    setRound(1);
+                    setGameState('intro');
+                  }
                 }}
-                className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
+                className="flex-1 py-4 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 transition-all"
               >
-                🔄 Keep Playing
+                😊 Keep Playing
               </button>
             </div>
           </div>
@@ -1671,19 +1687,21 @@ export default function ConvosetTest() {
 
       {/* Coin Shop */}
       {showCoinShop && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
           <div 
-            className="bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50"
+            className="bg-gradient-to-b from-amber-900/90 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-amber-500/50 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-3xl font-bold text-center text-purple-300 mb-6">💰 Coin Shop</h2>
+            <h2 className="text-3xl font-bold text-center text-amber-300 mb-6 flex items-center justify-center gap-2">
+              <KokoroCoin size={32} /> Coin Shop
+            </h2>
             
             <div className="space-y-4 mb-6">
               {coinBundles.map((bundle) => (
                 <div 
                   key={bundle.id}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${
-                    bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
+                    bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-amber-500'
                   }`}
                   onClick={() => {
                     // Simulate purchase (in real app, this would go to payment)
@@ -1699,7 +1717,10 @@ export default function ConvosetTest() {
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-white font-bold text-lg">{bundle.label}</p>
-                      <p className="text-yellow-400 font-bold text-2xl">🪙 {bundle.coins.toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        <KokoroCoin size={24} />
+                        <span className="text-amber-400 font-bold text-2xl">{bundle.coins.toLocaleString()}</span>
+                      </div>
                     </div>
                     <div className="bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl text-xl">
                       {bundle.price}
@@ -1711,10 +1732,98 @@ export default function ConvosetTest() {
             
             <button 
               onClick={() => setShowCoinShop(false)}
-              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+              className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-medium"
             >
               Maybe Later
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Confirmation Popup */}
+      {showPurchaseConfirm && selectedCafe && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/30 shadow-2xl text-center">
+            <h3 className="text-2xl font-bold text-amber-400 mb-4">Confirm Purchase</h3>
+            <img src={selectedCafe.image} alt={selectedCafe.name} className="w-40 h-40 object-cover mx-auto rounded-xl mb-4" />
+            <p className="text-white text-xl mb-2">{selectedCafe.name}</p>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <KokoroCoin size={28} />
+              <span className="text-amber-400 font-bold text-2xl">{selectedCafe.price}</span>
+            </div>
+            <p className="text-zinc-400 mb-6">Would you like to buy {selectedCafe.name} for {selectedCafe.price} coins?</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowPurchaseConfirm(false)}
+                className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setCoins(prev => prev - selectedCafe.price);
+                  setPurchasedCafes(prev => [...prev, selectedCafe.id]);
+                  setShowPurchaseConfirm(false);
+                  setShowPurchaseSuccess(true);
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl font-bold"
+              >
+                Buy Now ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Success / Owned Guide Popup */}
+      {showPurchaseSuccess && selectedCafe && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/30 shadow-2xl text-center">
+            <div className="text-5xl mb-4">🎉</div>
+            <h3 className="text-2xl font-bold text-green-400 mb-2">
+              {purchasedCafes.includes(selectedCafe.id) ? 'You own this!' : 'Purchase Complete!'}
+            </h3>
+            <img src={selectedCafe.image} alt={selectedCafe.name} className="w-32 h-32 object-cover mx-auto rounded-xl mb-4 border-2 border-green-500" />
+            <p className="text-white text-lg mb-6">{selectedCafe.name} is in your inventory!</p>
+            <p className="text-zinc-400 mb-6">What would you like to do?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowPurchaseSuccess(false);
+                  // TODO: Navigate to inventory view
+                  alert('Inventory view coming soon!');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white rounded-xl font-medium"
+              >
+                📦 View in Inventory
+              </button>
+              <button
+                onClick={() => {
+                  setShowPurchaseSuccess(false);
+                  // TODO: Navigate to map placement
+                  alert('Map placement coming soon!');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl font-medium"
+              >
+                🗺️ Place on M31 Map
+              </button>
+              <button
+                onClick={() => {
+                  setShowPurchaseSuccess(false);
+                  // TODO: Navigate to hub
+                  alert('Netflix-style hub coming soon!');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-medium"
+              >
+                🎮 Back to Hub
+              </button>
+              <button
+                onClick={() => setShowPurchaseSuccess(false)}
+                className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-medium"
+              >
+                Keep Shopping
+              </button>
+            </div>
           </div>
         </div>
       )}
