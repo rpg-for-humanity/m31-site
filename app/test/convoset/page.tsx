@@ -34,6 +34,7 @@ export default function ConvosetTest() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [animatedCoins, setAnimatedCoins] = useState<Coin[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // Menu and Shop states
   const [showMenu, setShowMenu] = useState(false);
@@ -48,6 +49,37 @@ export default function ConvosetTest() {
   const [justPurchasedCafe, setJustPurchasedCafe] = useState<{id: string, name: string, price: number, image: string} | null>(null);
   const [showOwnedPopup, setShowOwnedPopup] = useState(false);
   const [ownedCafeToView, setOwnedCafeToView] = useState<{id: string, name: string, image: string} | null>(null);
+
+  // Auto-load saved progress on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedData = localStorage.getItem('m31-coffee-save');
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          if (data.coins !== undefined) setCoins(data.coins);
+          if (data.purchasedCafes) setPurchasedCafes(data.purchasedCafes);
+          console.log('🎮 Progress loaded:', data);
+        }
+      } catch (e) {
+        console.log('No saved progress found');
+      }
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Auto-save when coins or purchases change
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
+      const saveData = {
+        coins,
+        purchasedCafes,
+        lastSaved: new Date().toISOString()
+      };
+      localStorage.setItem('m31-coffee-save', JSON.stringify(saveData));
+      console.log('💾 Auto-saved:', saveData);
+    }
+  }, [coins, purchasedCafes, isLoaded]);
   
   // Cafe options - Updated prices
   const cafeOptions = [
@@ -296,11 +328,13 @@ export default function ConvosetTest() {
     }
   };
 
-  const playRoundOrder = () => {
+  const playRoundOrder = (forceRound?: number) => {
     // Only for rounds 1-3 (listen & select)
-    if (!currentRoundConfig) return;
+    const targetRound = forceRound || round;
+    const config = roundConfigs[targetRound as 1 | 2 | 3];
+    if (!config) return;
     
-    console.log(`Playing round ${round} order audio...`);
+    console.log(`Playing round ${targetRound} order audio: ${config.audio}`);
     
     // Pause background music while voice plays
     if (audioRef) {
@@ -309,7 +343,7 @@ export default function ConvosetTest() {
     
     const audio = new Audio();
     audio.preload = 'auto';
-    audio.src = currentRoundConfig.audio;
+    audio.src = config.audio;
     audio.volume = 0.8;
     setIsNpcSpeaking(true);
     
@@ -319,23 +353,23 @@ export default function ConvosetTest() {
         console.log('Audio playing successfully');
       }).catch(err => {
         console.error('Play failed:', err);
-        speakTTS(currentRoundConfig.npcOrder);
+        speakTTS(config.npcOrder);
       });
     };
     
     audio.onended = () => {
       console.log('Audio ended');
       setIsNpcSpeaking(false);
-      startBackgroundMusic();
+      startBackgroundMusic(targetRound);
     };
     
     audio.onerror = (e) => {
       console.error('Audio load error - trying fetch:', e);
-      fetch(currentRoundConfig.audio)
+      fetch(config.audio)
         .then(res => {
           console.log('Fetch status:', res.status, res.statusText);
           if (!res.ok) {
-            speakTTS(currentRoundConfig.npcOrder);
+            speakTTS(config.npcOrder);
           }
         })
         .catch(fetchErr => {
@@ -346,16 +380,17 @@ export default function ConvosetTest() {
   };
 
   const getMusicForRound = (r: number) => {
-    switch(r) {
-      case 1: return '/Audio/music-round1.mp3';
-      case 2: return '/Audio/music-round2.mp3';
-      case 3: return '/Audio/music-round3.mp3';
-      default: return '/Audio/music-round1.mp3';
-    }
+    // music-round1.mp3 for Round 1-2, music-round2.mp3 for round 3, music-round3.mp3 for round 4,5
+    if (r <= 2) return '/Audio/music-round1.mp3';
+    if (r === 3) return '/Audio/music-round2.mp3';
+    return '/Audio/music-round3.mp3'; // rounds 4 and 5
   };
 
-  const startBackgroundMusic = (forceNewTrack = false) => {
-    const musicFile = getMusicForRound(round);
+  const startBackgroundMusic = (forceRound?: number | boolean) => {
+    // forceRound can be a round number or boolean (for backwards compatibility)
+    const targetRound = typeof forceRound === 'number' ? forceRound : round;
+    const forceNewTrack = typeof forceRound === 'boolean' ? forceRound : typeof forceRound === 'number';
+    const musicFile = getMusicForRound(targetRound);
     
     if (!musicStarted || forceNewTrack) {
       // Stop existing music if switching tracks
@@ -928,10 +963,10 @@ export default function ConvosetTest() {
         setCurrentItem({});
         setShowTranscript(false);
         setShowFullBody(false);
-        // Play the round audio after a short delay
+        // Play the round audio after a short delay - pass the correct round number!
         setTimeout(() => {
-          playRoundOrder();
-          startBackgroundMusic();
+          playRoundOrder(nextRound);
+          startBackgroundMusic(nextRound);
         }, 500);
       } else if (nextRound === 4) {
         // Round 4: Typing - go directly to playing
@@ -1013,13 +1048,13 @@ export default function ConvosetTest() {
       {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent" />
 
-      {/* Bellagio-style Gold Coin Fountain Animation */}
+      {/* Bellagio-style Gold Coin Fountain Animation - from center */}
       {showCoinAnimation && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center">
           {animatedCoins.map((coin) => (
             <div
               key={coin.id}
-              className="absolute bottom-0 left-1/2 animate-fountain-jet"
+              className="absolute animate-fountain-jet"
               style={{
                 '--jx': `${coin.x}px`,
                 '--jy': `${coin.y}px`,
@@ -1155,7 +1190,7 @@ export default function ConvosetTest() {
                           disabled={coins < 10}
                           className={`text-base px-6 py-2 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${
                             coins >= 10 
-                              ? 'bg-yellow-500/30 text-yellow-400 hover:bg-yellow-500/40 border border-yellow-500/60' 
+                              ? 'bg-black/80 text-yellow-400 hover:bg-black/90 border border-yellow-500/60' 
                               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                           }`}
                         >
@@ -1168,7 +1203,7 @@ export default function ConvosetTest() {
                       onClick={replayVoice}
                       className="mt-3 text-base text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
                     >
-                      🔊 Replay voice
+                      🔊 Replay voice (free)
                     </button>
                   </div>
                 </div>
@@ -1459,13 +1494,13 @@ export default function ConvosetTest() {
             <span className="text-green-400 text-xl font-mono font-semibold">LIVE</span>
           </div>
 
-          {/* Bellagio-style fountain jets - multiple vertical columns */}
+          {/* Bellagio-style fountain jets - starts from center, shoots up, then to balance */}
           {showCoinAnimation && (
-            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center">
               {animatedCoins.map((coin) => (
                 <div
                   key={coin.id}
-                  className="absolute bottom-0 left-1/2 animate-fountain-jet"
+                  className="absolute animate-fountain-jet"
                   style={{
                     '--jx': `${coin.x}px`,
                     '--jy': `${coin.y}px`,
@@ -1492,10 +1527,10 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - positioned to the right on rounds 3-5 to not cover characters */}
+          {/* Text overlay - positioned center-right on rounds 3-5 */}
           <div className={`absolute z-50 ${
             round >= 3 
-              ? 'top-[30%] right-[8%] text-right' 
+              ? 'top-[35%] right-[15%] text-right' 
               : 'top-[45%] left-1/2 -translate-x-1/2 text-center'
           }`}>
             <div className={`flex items-center gap-2 mb-2 ${round >= 3 ? 'justify-end' : 'justify-center'}`}>
@@ -1512,10 +1547,10 @@ export default function ConvosetTest() {
             )}
           </div>
 
-          {/* CTAs - Higher position (where controller/keyboard area is), Rounds 3-5 positioned to the right */}
+          {/* CTAs - Rounds 3-5 positioned center-right */}
           <div className={`absolute z-50 flex gap-4 ${
             round >= 3 
-              ? 'bottom-[30%] right-[8%] flex-col items-end' 
+              ? 'bottom-[35%] right-[15%] flex-col items-end' 
               : 'bottom-[25%] left-1/2 -translate-x-1/2'
           }`}>
             {(round === 3 || round === 4) && (
@@ -1553,35 +1588,31 @@ export default function ConvosetTest() {
         @keyframes fountain-jet {
           0% {
             opacity: 0;
-            transform: translateX(var(--jx)) translateY(100vh) scale(0.3);
+            transform: translateX(var(--jx)) translateY(0) scale(0.3);
           }
-          10% {
-            opacity: 1;
-            transform: translateX(var(--jx)) translateY(50vh) scale(var(--s));
-          }
-          30% {
+          15% {
             opacity: 1;
             transform: translateX(var(--jx)) translateY(var(--jy)) scale(var(--s));
           }
-          50% {
+          35% {
             opacity: 1;
-            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.8)) scale(var(--s)) rotate(180deg);
+            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.7)) scale(var(--s)) rotate(90deg);
           }
-          70% {
-            opacity: 0.9;
-            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.4)) scale(var(--s)) rotate(270deg);
+          55% {
+            opacity: 1;
+            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.4)) scale(var(--s)) rotate(180deg);
           }
-          85% {
-            opacity: 0.6;
-            transform: translateX(var(--jx)) translateY(20vh) scale(calc(var(--s) * 0.7)) rotate(360deg);
+          75% {
+            opacity: 0.8;
+            transform: translateX(calc(var(--jx) * 0.5 + 35vw)) translateY(calc(var(--jy) * 0.2 - 40vh)) scale(calc(var(--s) * 0.6)) rotate(270deg);
           }
           100% {
             opacity: 0;
-            transform: translateX(var(--jx)) translateY(60vh) scale(0.2);
+            transform: translateX(45vw) translateY(-45vh) scale(0.15);
           }
         }
         .animate-fountain-jet {
-          animation: fountain-jet 2.5s ease-out forwards;
+          animation: fountain-jet 2.8s ease-out forwards;
         }
         @keyframes walk {
           0% { transform: translateY(0) rotate(0deg); }
@@ -1724,22 +1755,61 @@ export default function ConvosetTest() {
               })}
             </div>
             
-            <div className="flex gap-3">
+            {/* Big Action Buttons */}
+            <div className="flex gap-3 mb-4">
+              <button 
+                onClick={() => {
+                  setShowCafeShop(false);
+                  // Continue to next round / try next set
+                  completeGame();
+                }}
+                className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl text-lg shadow-lg"
+              >
+                🎯 Try a New Set
+              </button>
+              <button 
+                onClick={() => {
+                  alert('🏪 More outposts coming soon! Restaurant, Department Store, and more.');
+                }}
+                className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-xl text-lg shadow-lg"
+              >
+                🏬 Choose New Outpost
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => {
+                alert('🗺️ M31 Map coming soon! Your cafés are saved in inventory.');
+              }}
+              className="w-full py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white font-bold rounded-xl text-lg shadow-lg mb-4"
+            >
+              🗺️ Go to M31 Map
+            </button>
+            
+            {/* Small Links */}
+            <div className="flex justify-center gap-6 pt-2 border-t border-zinc-700">
               <button 
                 onClick={() => setShowCoinShop(true)}
-                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg"
+                className="text-purple-400 hover:text-purple-300 text-sm font-medium transition"
               >
                 💰 Buy Coins
               </button>
               <button 
                 onClick={() => {
-                  setShowCafeShop(false);
-                  // Continue to next round instead of resetting
-                  completeGame();
+                  alert('📦 Inventory view coming soon!');
                 }}
-                className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
+                className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
               >
-                🔄 Keep Playing
+                📦 Check Inventory
+              </button>
+              <button 
+                onClick={() => {
+                  setShowCafeShop(false);
+                  // Stay where they are - just close the shop (auto-saved already)
+                }}
+                className="text-zinc-400 hover:text-zinc-300 text-sm font-medium transition"
+              >
+                💾 Save & Exit
               </button>
             </div>
           </div>
@@ -1849,10 +1919,7 @@ export default function ConvosetTest() {
       {/* Owned Cafe Popup */}
       {showOwnedPopup && ownedCafeToView && (
         <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center">
-            <div className="absolute top-4 right-4 bg-green-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-              ✓ OWNED
-            </div>
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center relative">
             <h3 className="text-2xl font-bold text-green-400 mb-4">🏪 {ownedCafeToView.name}</h3>
             <img 
               src={ownedCafeToView.image} 
@@ -1885,14 +1952,14 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowOwnedPopup(false);
                   setOwnedCafeToView(null);
-                  // Restart game (Netflix hub coming later)
+                  // Go to Netflix hub / try new conversation set
                   setShowCafeShop(false);
                   setRound(1);
                   setGameState('intro');
                 }}
                 className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
               >
-                🎮 Restart Game
+                🎯 Try a New Set
               </button>
               <button
                 onClick={() => {
