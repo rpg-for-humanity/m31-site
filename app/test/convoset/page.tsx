@@ -1569,7 +1569,7 @@ export default function ConvosetTest() {
           {/* Text overlay - positioned per round */}
           <div className={`absolute z-50 text-center ${
             round === 5 
-              ? 'top-[38%] right-[18%] text-right'  /* Round 5: lower, to the right, closer to CTAs */
+              ? 'top-[38%] right-[28%] text-right'  /* Round 5: moved 1 inch left */
               : round === 4 
                 ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 4: bring message down closer to CTAs */
                 : round === 3 
@@ -1593,7 +1593,7 @@ export default function ConvosetTest() {
           {/* CTAs - positioned per round */}
           <div className={`absolute z-50 flex gap-4 flex-col ${
             round === 5 
-              ? 'bottom-[28%] right-[18%] items-end'  /* Round 5: to the right, lower */
+              ? 'bottom-[28%] right-[28%] items-end'  /* Round 5: moved 1 inch left */
               : 'bottom-[25%] left-1/2 -translate-x-1/2 items-center'
           }`}>
             {/* Rounds 3 and 4: Build Your Café + Next Round */}
@@ -1835,8 +1835,7 @@ export default function ConvosetTest() {
                 <div className="flex gap-3 mb-4">
                   <button 
                     onClick={() => {
-                      setShowCafeShop(false);
-                      completeGame();
+                      alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                     }}
                     className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600"
                     style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -2057,10 +2056,7 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowOwnedPopup(false);
                   setOwnedCafeToView(null);
-                  // Go to Netflix hub / try new conversation set
-                  setShowCafeShop(false);
-                  setRound(1);
-                  setGameState('intro');
+                  alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                 }}
                 className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
               >
