@@ -192,48 +192,48 @@ export default function ConvosetTest() {
     }
   }, [gameState]);
 
-  // Bellagio-style fountain with multiple vertical jets at different heights
+  // Bellagio-style fountain - vertical jets spread from left to right, shoot up, then go to balance
   const triggerCoinAnimation = (currentRound: number) => {
     const newCoins: Coin[] = [];
     
-    // Number of vertical jets increases with round (like Bellagio has ~30 jets)
+    // Number of vertical jets increases with round
     const jetCounts = { 1: 12, 2: 18, 3: 24, 4: 30, 5: 36 };
     const coinsPerJet = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 };
+    // Heights increase per round
     const maxHeightMultipliers = { 1: 0.4, 2: 0.55, 3: 0.7, 4: 0.85, 5: 1.0 };
     
     const numJets = jetCounts[currentRound as keyof typeof jetCounts] || 20;
     const coinsInJet = coinsPerJet[currentRound as keyof typeof coinsPerJet] || 5;
     const heightMult = maxHeightMultipliers[currentRound as keyof typeof maxHeightMultipliers] || 1;
     
-    // Create jets spread across the screen width
+    // Create jets spread across the screen width (left to right)
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const jetSpacing = screenWidth / (numJets + 1);
     
     let coinId = 0;
     
     for (let jet = 0; jet < numJets; jet++) {
-      // Each jet has a different max height (like Bellagio's varying heights)
       // Center jets are taller, edge jets are shorter
       const centerDistance = Math.abs(jet - numJets / 2) / (numJets / 2);
-      const jetHeightVariation = 1 - (centerDistance * 0.5); // Center = 1, edges = 0.5
+      const jetHeightVariation = 1 - (centerDistance * 0.5);
       
-      // Add some randomness to make it look more organic
+      // Add some randomness
       const randomHeightBoost = 0.8 + Math.random() * 0.4;
       const jetMaxHeight = 300 + (200 * jetHeightVariation * randomHeightBoost * heightMult);
       
-      // X position for this jet (spread across screen, centered)
+      // X position for this jet (spread across screen from left to right)
       const jetX = (jet * jetSpacing) - (screenWidth / 2) + jetSpacing;
       
-      // Create multiple coins in each jet (stacked vertically, staggered timing)
+      // Create multiple coins in each jet
       for (let c = 0; c < coinsInJet; c++) {
-        const coinHeight = jetMaxHeight * (0.5 + (c / coinsInJet) * 0.5); // Coins at different heights
+        const coinHeight = jetMaxHeight * (0.5 + (c / coinsInJet) * 0.5);
         newCoins.push({
           id: coinId++,
-          x: jetX + (Math.random() * 10 - 5), // Slight horizontal wobble
-          y: -coinHeight,
+          x: jetX + (Math.random() * 10 - 5), // Slight wobble
+          y: -coinHeight, // negative = up
           rotation: Math.random() * 360,
           scale: 0.25 + Math.random() * 0.2,
-          delay: (c * 0.08) + (Math.random() * 0.1), // Staggered launch within jet
+          delay: (c * 0.08) + (Math.random() * 0.1),
           jetIndex: jet,
           coinInJet: c
         });
@@ -255,15 +255,8 @@ export default function ConvosetTest() {
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
 
-  // Switch music when round changes
-  useEffect(() => {
-    if (musicStarted && round > 1) {
-      // Small delay to let the round transition happen
-      setTimeout(() => {
-        startBackgroundMusic(true);
-      }, 500);
-    }
-  }, [round]);
+  // REMOVED: useEffect that was causing music overlap
+  // Music is now ONLY started in specific places, not on every round change
 
   const getVoice = () => {
     const preferred = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Zira', 'Hazel'];
@@ -360,7 +353,11 @@ export default function ConvosetTest() {
     audio.onended = () => {
       console.log('Audio ended');
       setIsNpcSpeaking(false);
-      startBackgroundMusic(targetRound);
+      // DON'T start music here - it's already started in completeGame
+      // Just resume if it was paused
+      if (audioRef && musicPlaying) {
+        audioRef.play().catch(() => {});
+      }
     };
     
     audio.onerror = (e) => {
@@ -386,16 +383,31 @@ export default function ConvosetTest() {
     return '/Audio/music-round3.mp3'; // rounds 4 and 5
   };
 
+  // Use a module-level variable to ensure only ONE audio instance exists
   const startBackgroundMusic = (forceRound?: number | boolean) => {
-    // ALWAYS stop any existing music first to prevent overlap
+    // CRITICAL: First, stop and destroy ANY existing audio
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
       audioRef.src = '';
     }
     
+    // Also find and kill any orphaned audio elements playing music
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && audioEl.src.includes('music-round')) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          audioEl.src = '';
+        }
+      });
+    }
+    
     const targetRound = typeof forceRound === 'number' ? forceRound : round;
     const musicFile = getMusicForRound(targetRound);
+    
+    console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
     
     const audio = new Audio(musicFile);
     audio.loop = true;
@@ -406,14 +418,26 @@ export default function ConvosetTest() {
     setMusicPlaying(true);
   };
   
-  // Stop all music
+  // Stop all music completely
   const stopBackgroundMusic = () => {
+    console.log('🔇 Stopping all music');
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
       audioRef.src = '';
-      setMusicPlaying(false);
     }
+    // Kill any orphaned audio
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && audioEl.src.includes('music-round')) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          audioEl.src = '';
+        }
+      });
+    }
+    setMusicPlaying(false);
   };
 
   const speakTTS = (text: string) => {
@@ -428,7 +452,10 @@ export default function ConvosetTest() {
       setIsNpcSpeaking(true);
       utterance.onend = () => {
         setIsNpcSpeaking(false);
-        startBackgroundMusic();
+        // Just resume existing music, don't start new
+        if (audioRef && musicPlaying) {
+          audioRef.play().catch(() => {});
+        }
       };
       window.speechSynthesis.speak(utterance);
     }
@@ -442,13 +469,27 @@ export default function ConvosetTest() {
   };
 
   const toggleMusic = () => {
-    if (audioRef) {
-      if (musicPlaying) {
+    if (musicPlaying) {
+      // Stop ALL music
+      if (audioRef) {
         audioRef.pause();
-      } else {
-        audioRef.play();
       }
-      setMusicPlaying(!musicPlaying);
+      // Also stop any orphaned audio
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('audio').forEach((el) => {
+          const audioEl = el as HTMLAudioElement;
+          if (audioEl.src && audioEl.src.includes('music-round')) {
+            audioEl.pause();
+          }
+        });
+      }
+      setMusicPlaying(false);
+    } else {
+      // Resume only the main audioRef
+      if (audioRef) {
+        audioRef.play().catch(() => {});
+      }
+      setMusicPlaying(true);
     }
   };
 
@@ -1522,35 +1563,35 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - positioned more center for round 5 */}
-          <div className={`absolute z-50 ${
-            round === 5
-              ? 'top-[28%] right-[30%] text-right'
-              : round >= 3 
-                ? 'top-[35%] right-[20%] text-right' 
-                : 'top-[45%] left-1/2 -translate-x-1/2 text-center'
+          {/* Text overlay - positioned per round */}
+          <div className={`absolute z-50 text-center ${
+            round === 5 
+              ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 5: centered on the table */
+              : round === 4 
+                ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 4: bring message down closer to CTAs */
+                : round === 3 
+                  ? 'top-[30%] left-1/2 -translate-x-1/2' 
+                  : 'top-[45%] left-1/2 -translate-x-1/2'
           }`}>
-            <div className={`flex items-center gap-2 mb-2 ${round >= 3 ? 'justify-end' : 'justify-center'}`}>
+            <div className="flex items-center gap-2 mb-2 justify-center">
               <KokoroCoin size={32} />
               <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>from our Earth Investors</span>
             </div>
             {round === 3 ? (
               <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                <p className="text-5xl font-bold mb-2">Excellent!</p>
+                <p className="text-5xl font-bold mb-2">🎉 Excellent!</p>
                 <p className="text-3xl font-semibold">Can she take your orders, too?</p>
               </div>
             ) : (
-              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>{investorMessage}</p>
+              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🎉 {investorMessage}</p>
             )}
           </div>
 
-          {/* CTAs - Different for rounds 3-4 vs round 5 */}
-          <div className={`absolute z-50 flex gap-4 ${
-            round === 5
-              ? 'bottom-[30%] right-[30%] flex-col items-end'  
-              : round >= 3 
-                ? 'bottom-[35%] right-[20%] flex-col items-end' 
-                : 'bottom-[25%] left-1/2 -translate-x-1/2'
+          {/* CTAs - positioned per round */}
+          <div className={`absolute z-50 flex gap-3 flex-col items-center left-1/2 -translate-x-1/2 ${
+            round === 5 
+              ? 'bottom-[18%]'
+              : 'bottom-[25%]'
           }`}>
             {/* Rounds 3 and 4: Build Your Café + Next Round */}
             {(round === 3 || round === 4) && (
@@ -1573,7 +1614,7 @@ export default function ConvosetTest() {
                 </button>
               </>
             )}
-            {/* Round 5: Build Your Café + Try a New Set + Save & Exit link */}
+            {/* Round 5: Build Your Café, Try a New Set, Save & Exit */}
             {round === 5 && (
               <>
                 <button
@@ -1586,7 +1627,9 @@ export default function ConvosetTest() {
                   🏪 Build Your Café
                 </button>
                 <button
-                  onClick={completeGame}
+                  onClick={() => {
+                    alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
+                  }}
                   className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
@@ -1594,13 +1637,13 @@ export default function ConvosetTest() {
                 </button>
                 <button
                   onClick={() => {
-                    // Save & Exit - just go back to intro
-                    setGameState('intro');
+                    // Save progress is automatic, just close/exit
+                    alert('✅ Progress saved! Your coins and cafés are stored.');
                   }}
-                  className="text-amber-400 hover:text-amber-300 text-sm font-medium transition mt-2"
+                  className="text-white/80 hover:text-white underline text-lg mt-2 transition"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
-                  💾 Save & Exit
+                  Save & Exit
                 </button>
               </>
             )}
@@ -1797,8 +1840,7 @@ export default function ConvosetTest() {
                 <div className="flex gap-3 mb-4">
                   <button 
                     onClick={() => {
-                      setShowCafeShop(false);
-                      completeGame();
+                      alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                     }}
                     className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600"
                     style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -1973,11 +2015,9 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowJustPurchased(false);
                   setJustPurchasedCafe(null);
-                  setShowCafeShop(false);
-                  // Start a new set
-                  completeGame();
+                  alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                 }}
-                className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
               >
                 🎯 Try a New Set
               </button>
@@ -2022,10 +2062,7 @@ export default function ConvosetTest() {
                 onClick={() => {
                   setShowOwnedPopup(false);
                   setOwnedCafeToView(null);
-                  // Go to Netflix hub / try new conversation set
-                  setShowCafeShop(false);
-                  setRound(1);
-                  setGameState('intro');
+                  alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                 }}
                 className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg"
               >
