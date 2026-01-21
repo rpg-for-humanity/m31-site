@@ -33,6 +33,8 @@ export default function M31CoffeeOutpost() {
   const [kokoroOpacity, setKokoroOpacity] = useState(1);
   const [kokoroX, setKokoroX] = useState(-200);
   const [missionVisible, setMissionVisible] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
+  const [isWalking, setIsWalking] = useState(false);
   
   // Round states
   const [round1Selections, setRound1Selections] = useState<OrderItem[]>([]);
@@ -136,6 +138,36 @@ export default function M31CoffeeOutpost() {
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
+
+  // Intro walking animation - Kokorobot walks to center-left, then mission fades in
+  useEffect(() => {
+    if (gameState === 'intro') {
+      setKokoroX(-200);
+      setIsWalking(true);
+      setIntroReady(false);
+      setMissionVisible(false);
+      
+      const walkIn = setInterval(() => {
+        setKokoroX(prev => {
+          // Walk to about 25% from left
+          const target = typeof window !== 'undefined' ? window.innerWidth * 0.25 : 300;
+          if (prev >= target) {
+            clearInterval(walkIn);
+            setIsWalking(false);
+            // Mission fades in after Kokorobot stops
+            setTimeout(() => {
+              setMissionVisible(true);
+              setTimeout(() => setIntroReady(true), 400);
+            }, 200);
+            return target;
+          }
+          return prev + 10;
+        });
+      }, 20);
+      
+      return () => clearInterval(walkIn);
+    }
+  }, [gameState]);
 
   // Get preferred voice
   const getVoice = () => {
@@ -622,17 +654,42 @@ export default function M31CoffeeOutpost() {
     }
   };
 
-  // Kokoro Star Coin Component
-  const KokoroCoin = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
-    <img 
-      src="/images/kokoro-star.png" 
-      alt="coin" 
-      width={size} 
-      height={size}
-      className={`inline-block ${className}`}
-      style={{ imageRendering: 'auto' }}
-    />
+  // Gold Coin SVG Component (inline, no external image dependency)
+  const GoldCoin = ({ className = "", size = 24 }: { className?: string, size?: number }) => (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="url(#goldGradient)" stroke="#B8860B" strokeWidth="1.5"/>
+      <circle cx="12" cy="12" r="7" fill="none" stroke="#DAA520" strokeWidth="0.75"/>
+      <text x="12" y="16" textAnchor="middle" fill="#8B6914" fontSize="10" fontWeight="bold">$</text>
+      <defs>
+        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFD700"/>
+          <stop offset="50%" stopColor="#FFA500"/>
+          <stop offset="100%" stopColor="#DAA520"/>
+        </linearGradient>
+      </defs>
+    </svg>
   );
+
+  // Kokoro Star Coin Component - uses image if available, falls back to GoldCoin SVG
+  const KokoroCoin = ({ size = 24, className = "" }: { size?: number, className?: string }) => {
+    const [imgError, setImgError] = useState(false);
+    
+    if (imgError) {
+      return <GoldCoin size={size} className={className} />;
+    }
+    
+    return (
+      <img 
+        src="/images/kokoro-star.png" 
+        alt="coin" 
+        width={size} 
+        height={size}
+        className={`inline-block ${className}`}
+        style={{ imageRendering: 'auto' }}
+        onError={() => setImgError(true)}
+      />
+    );
+  };
 
   // Reset game
   const resetGame = () => {
@@ -681,8 +738,8 @@ export default function M31CoffeeOutpost() {
           </button>
           {/* Coins */}
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-yellow-500/30 flex items-center gap-2">
-            <KokoroCoin size={24} />
-            <span className="text-yellow-400 font-mono">{coins}</span>
+            <GoldCoin size={22} />
+            <span className="text-yellow-400 font-mono font-bold">{coins}</span>
           </div>
           {/* Round counter - FIXED: 5/5 */}
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-purple-500/30">
@@ -712,26 +769,46 @@ export default function M31CoffeeOutpost() {
         </div>
       )}
 
-      {/* Intro Screen */}
+      {/* Kokorobot walking during intro */}
       {gameState === 'intro' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-amber-400 mb-2 drop-shadow-lg">M31 Coffee Outpost</h1>
-            <p className="text-amber-200/80">Train to be a barista on Andromeda</p>
-          </div>
-          
+        <div 
+          className="absolute bottom-28 z-10 transition-all duration-100"
+          style={{ left: `${kokoroX}px` }}
+        >
           <img 
             src="/kokorobot.png" 
             alt="Kokorobot" 
-            className="h-64 w-auto mb-8 drop-shadow-2xl animate-pulse"
+            className={`h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`}
+            style={{ filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5))' }}
           />
-          
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-bold py-4 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg shadow-amber-500/30"
-          >
-            Start Training
-          </button>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+            <span className="text-xs text-amber-400 font-mono bg-black/70 px-3 py-1 rounded-full border border-amber-500/30">
+              Kokorobot-1
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Intro Screen - Mission text fades in after Kokorobot stops */}
+      {gameState === 'intro' && (
+        <div className={`absolute inset-0 flex items-center justify-center z-20 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <div className="text-center max-w-xl px-8">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 drop-shadow-lg">
+              M31 Coffee Outpost
+            </h1>
+            <p className="text-amber-200/90 mb-8 text-lg md:text-xl leading-relaxed">
+              Kokorobot-1 dreams of becoming a barista someday.<br />
+              Listen carefully. Can you take her order?<br />
+              <span className="text-yellow-400">Earn coins to build Andromeda's first café!</span>
+            </p>
+            <button
+              onClick={startGame}
+              disabled={!introReady}
+              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-bold py-4 px-14 rounded-full text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start Training
+            </button>
+          </div>
         </div>
       )}
 
@@ -1283,6 +1360,13 @@ export default function M31CoffeeOutpost() {
             transform: translateY(100px) rotate(var(--coin-rotation)) scale(0.3);
             opacity: 0;
           }
+        }
+        @keyframes walk {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        .animate-walk {
+          animation: walk 0.4s ease-in-out infinite;
         }
       `}</style>
     </div>
