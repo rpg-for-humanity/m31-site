@@ -192,53 +192,51 @@ export default function ConvosetTest() {
     }
   }, [gameState]);
 
-  // Bellagio-style fountain with multiple vertical jets at different heights
-  // ALL jets start from center, heights increase with round number
+  // Bellagio-style fountain - starts from bottom center, spreads wider and taller per round
   const triggerCoinAnimation = (currentRound: number) => {
     const newCoins: Coin[] = [];
     
-    // Number of vertical jets increases with round (like Bellagio has ~30 jets)
-    const jetCounts = { 1: 12, 2: 18, 3: 24, 4: 30, 5: 36 };
-    const coinsPerJet = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 };
-    // Heights increase significantly per round - round 5 is the tallest
-    const baseHeights = { 1: 150, 2: 200, 3: 280, 4: 380, 5: 500 };
-    const heightVariations = { 1: 80, 2: 120, 3: 180, 4: 260, 5: 350 };
+    // More jets and wider spread per round
+    const jetCounts = { 1: 10, 2: 14, 3: 20, 4: 28, 5: 36 };
+    const coinsPerJet = { 1: 3, 2: 4, 3: 5, 4: 6, 5: 8 };
+    // Heights start modest and get MUCH taller
+    const baseHeights = { 1: 80, 2: 120, 3: 180, 4: 260, 5: 380 };
+    const heightVariations = { 1: 60, 2: 100, 3: 160, 4: 240, 5: 350 };
+    // Spread width increases per round (as percentage of screen)
+    const spreadWidths = { 1: 0.4, 2: 0.5, 3: 0.65, 4: 0.8, 5: 0.95 };
     
     const numJets = jetCounts[currentRound as keyof typeof jetCounts] || 20;
     const coinsInJet = coinsPerJet[currentRound as keyof typeof coinsPerJet] || 5;
     const baseHeight = baseHeights[currentRound as keyof typeof baseHeights] || 200;
     const heightVar = heightVariations[currentRound as keyof typeof heightVariations] || 100;
+    const spreadWidth = spreadWidths[currentRound as keyof typeof spreadWidths] || 0.7;
     
-    // Create jets spread across the screen width - ALL starting from center
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const jetSpacing = screenWidth / (numJets + 1);
+    const totalSpread = screenWidth * spreadWidth;
+    const jetSpacing = totalSpread / (numJets + 1);
+    const startX = -totalSpread / 2;
     
     let coinId = 0;
     
     for (let jet = 0; jet < numJets; jet++) {
-      // Each jet has a different max height (like Bellagio's varying heights)
-      // Center jets are taller, edge jets are shorter
+      // Center jets are taller (Bellagio style)
       const centerDistance = Math.abs(jet - numJets / 2) / (numJets / 2);
-      const jetHeightVariation = 1 - (centerDistance * 0.6); // Center = 1, edges = 0.4
-      
-      // Add some randomness to make it look more organic
-      const randomHeightBoost = 0.85 + Math.random() * 0.3;
+      const jetHeightVariation = 1 - (centerDistance * 0.5);
+      const randomHeightBoost = 0.9 + Math.random() * 0.2;
       const jetMaxHeight = baseHeight + (heightVar * jetHeightVariation * randomHeightBoost);
       
-      // X position for this jet (spread across screen, but all START from center)
-      // The animation will move them outward - this is just the FINAL spread position
-      const finalJetX = (jet * jetSpacing) - (screenWidth / 2) + jetSpacing;
+      // Final X position (spread across based on round)
+      const finalJetX = startX + (jet + 1) * jetSpacing;
       
-      // Create multiple coins in each jet (stacked vertically, staggered timing)
       for (let c = 0; c < coinsInJet; c++) {
-        const coinHeight = jetMaxHeight * (0.5 + (c / coinsInJet) * 0.5); // Coins at different heights
+        const coinHeight = jetMaxHeight * (0.4 + (c / coinsInJet) * 0.6);
         newCoins.push({
           id: coinId++,
-          x: finalJetX, // Where they END UP (spread out)
-          y: -coinHeight, // How high they go (negative = up)
+          x: finalJetX,
+          y: -coinHeight, // negative = up
           rotation: Math.random() * 360,
-          scale: 0.25 + Math.random() * 0.2,
-          delay: (c * 0.08) + (Math.random() * 0.1), // Staggered launch within jet
+          scale: 0.22 + Math.random() * 0.18,
+          delay: (c * 0.06) + (Math.random() * 0.08),
           jetIndex: jet,
           coinInJet: c
         });
@@ -260,8 +258,8 @@ export default function ConvosetTest() {
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
 
-  // REMOVED: This useEffect was causing music overlap by starting music again when round changes
-  // Music is now started explicitly only in completeGame and playRoundOrder
+  // REMOVED: useEffect that was causing music overlap
+  // Music is now ONLY started in specific places, not on every round change
 
   const getVoice = () => {
     const preferred = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Zira', 'Hazel'];
@@ -358,7 +356,11 @@ export default function ConvosetTest() {
     audio.onended = () => {
       console.log('Audio ended');
       setIsNpcSpeaking(false);
-      startBackgroundMusic(targetRound);
+      // DON'T start music here - it's already started in completeGame
+      // Just resume if it was paused
+      if (audioRef && musicPlaying) {
+        audioRef.play().catch(() => {});
+      }
     };
     
     audio.onerror = (e) => {
@@ -384,28 +386,31 @@ export default function ConvosetTest() {
     return '/Audio/music-round3.mp3'; // rounds 4 and 5
   };
 
+  // Use a module-level variable to ensure only ONE audio instance exists
   const startBackgroundMusic = (forceRound?: number | boolean) => {
-    // CRITICAL: Stop ALL existing audio instances before starting new one
-    // This prevents music overlap when transitioning between rounds
+    // CRITICAL: First, stop and destroy ANY existing audio
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
       audioRef.src = '';
-      // Remove the old audio element to prevent ghost playback
-      audioRef.remove?.();
     }
     
-    // Also stop any orphaned audio elements playing our music files
-    document.querySelectorAll('audio').forEach(el => {
-      if (el.src.includes('music-round')) {
-        el.pause();
-        el.currentTime = 0;
-        el.src = '';
-      }
-    });
+    // Also find and kill any orphaned audio elements playing music
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && audioEl.src.includes('music-round')) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          audioEl.src = '';
+        }
+      });
+    }
     
     const targetRound = typeof forceRound === 'number' ? forceRound : round;
     const musicFile = getMusicForRound(targetRound);
+    
+    console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
     
     const audio = new Audio(musicFile);
     audio.loop = true;
@@ -416,23 +421,26 @@ export default function ConvosetTest() {
     setMusicPlaying(true);
   };
   
-  // Stop all music - more thorough cleanup
+  // Stop all music completely
   const stopBackgroundMusic = () => {
+    console.log('🔇 Stopping all music');
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
       audioRef.src = '';
-      audioRef.remove?.();
-      setMusicPlaying(false);
     }
-    // Also stop any orphaned audio elements
-    document.querySelectorAll('audio').forEach(el => {
-      if (el.src.includes('music-round')) {
-        el.pause();
-        el.currentTime = 0;
-        el.src = '';
-      }
-    });
+    // Kill any orphaned audio
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && audioEl.src.includes('music-round')) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          audioEl.src = '';
+        }
+      });
+    }
+    setMusicPlaying(false);
   };
 
   const speakTTS = (text: string) => {
@@ -447,7 +455,10 @@ export default function ConvosetTest() {
       setIsNpcSpeaking(true);
       utterance.onend = () => {
         setIsNpcSpeaking(false);
-        startBackgroundMusic();
+        // Just resume existing music, don't start new
+        if (audioRef && musicPlaying) {
+          audioRef.play().catch(() => {});
+        }
       };
       window.speechSynthesis.speak(utterance);
     }
@@ -461,19 +472,27 @@ export default function ConvosetTest() {
   };
 
   const toggleMusic = () => {
-    if (audioRef) {
-      if (musicPlaying) {
+    if (musicPlaying) {
+      // Stop ALL music
+      if (audioRef) {
         audioRef.pause();
-        // Also pause any other music instances
-        document.querySelectorAll('audio').forEach(el => {
-          if (el.src.includes('music-round')) {
-            el.pause();
+      }
+      // Also stop any orphaned audio
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('audio').forEach((el) => {
+          const audioEl = el as HTMLAudioElement;
+          if (audioEl.src && audioEl.src.includes('music-round')) {
+            audioEl.pause();
           }
         });
-      } else {
+      }
+      setMusicPlaying(false);
+    } else {
+      // Resume only the main audioRef
+      if (audioRef) {
         audioRef.play().catch(() => {});
       }
-      setMusicPlaying(!musicPlaying);
+      setMusicPlaying(true);
     }
   };
 
@@ -1547,11 +1566,15 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - centered for all rounds */}
-          <div className={`absolute z-50 ${
-            round >= 3 
-              ? 'top-[30%] left-1/2 -translate-x-1/2 text-center' 
-              : 'top-[45%] left-1/2 -translate-x-1/2 text-center'
+          {/* Text overlay - positioned per round */}
+          <div className={`absolute z-50 left-1/2 -translate-x-1/2 text-center ${
+            round === 4 
+              ? 'top-[42%]'  /* Round 4: bring message down closer to CTAs */
+              : round === 5 
+                ? 'top-[28%]' /* Round 5: bring message down 1 inch */
+                : round === 3 
+                  ? 'top-[30%]' 
+                  : 'top-[45%]'
           }`}>
             <div className="flex items-center gap-2 mb-2 justify-center">
               <KokoroCoin size={32} />
@@ -1567,11 +1590,11 @@ export default function ConvosetTest() {
             )}
           </div>
 
-          {/* CTAs - Centered for all rounds */}
-          <div className={`absolute z-50 flex gap-4 ${
-            round >= 3 
-              ? 'bottom-[25%] left-1/2 -translate-x-1/2 flex-col items-center' 
-              : 'bottom-[25%] left-1/2 -translate-x-1/2'
+          {/* CTAs - positioned per round */}
+          <div className={`absolute z-50 flex gap-4 left-1/2 -translate-x-1/2 flex-col items-center ${
+            round === 5 
+              ? 'bottom-[35%]' /* Round 5: bring CTAs up 1 inch */
+              : 'bottom-[25%]'
           }`}>
             {/* Rounds 3 and 4: Build Your Café + Next Round */}
             {(round === 3 || round === 4) && (
@@ -1634,35 +1657,35 @@ export default function ConvosetTest() {
         @keyframes fountain-jet {
           0% {
             opacity: 0;
-            transform: translateX(0) translateY(0) scale(0.3);
+            transform: translateX(0) translateY(25vh) scale(0.2);
           }
-          10% {
+          8% {
             opacity: 1;
-            transform: translateX(0) translateY(calc(var(--jy) * 0.3)) scale(var(--s));
+            transform: translateX(0) translateY(20vh) scale(var(--s));
           }
           25% {
             opacity: 1;
-            transform: translateX(calc(var(--jx) * 0.3)) translateY(var(--jy)) scale(var(--s)) rotate(90deg);
+            transform: translateX(calc(var(--jx) * 0.3)) translateY(var(--jy)) scale(var(--s)) rotate(60deg);
           }
           45% {
             opacity: 1;
-            transform: translateX(calc(var(--jx) * 0.6)) translateY(calc(var(--jy) * 0.6)) scale(var(--s)) rotate(180deg);
+            transform: translateX(calc(var(--jx) * 0.7)) translateY(calc(var(--jy) * 0.5)) scale(var(--s)) rotate(150deg);
           }
           65% {
             opacity: 0.9;
-            transform: translateX(calc(var(--jx) * 0.8)) translateY(calc(var(--jy) * 0.3)) scale(calc(var(--s) * 0.8)) rotate(270deg);
+            transform: translateX(calc(var(--jx) * 0.9)) translateY(calc(var(--jy) * 0.2)) scale(calc(var(--s) * 0.8)) rotate(240deg);
           }
           80% {
             opacity: 0.7;
-            transform: translateX(calc(var(--jx) * 0.5 + 30vw)) translateY(calc(var(--jy) * 0.1 - 35vh)) scale(calc(var(--s) * 0.5)) rotate(360deg);
+            transform: translateX(calc(var(--jx) * 0.6 + 25vw)) translateY(calc(var(--jy) * 0.1 - 30vh)) scale(calc(var(--s) * 0.5)) rotate(320deg);
           }
           100% {
             opacity: 0;
-            transform: translateX(45vw) translateY(-45vh) scale(0.15);
+            transform: translateX(42vw) translateY(-42vh) scale(0.12);
           }
         }
         .animate-fountain-jet {
-          animation: fountain-jet 2.8s ease-out forwards;
+          animation: fountain-jet 3s ease-out forwards;
         }
         @keyframes walk {
           0% { transform: translateY(0) rotate(0deg); }
