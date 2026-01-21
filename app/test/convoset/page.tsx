@@ -387,28 +387,32 @@ export default function ConvosetTest() {
   };
 
   const startBackgroundMusic = (forceRound?: number | boolean) => {
-    // forceRound can be a round number or boolean (for backwards compatibility)
+    // ALWAYS stop any existing music first to prevent overlap
+    if (audioRef) {
+      audioRef.pause();
+      audioRef.currentTime = 0;
+      audioRef.src = '';
+    }
+    
     const targetRound = typeof forceRound === 'number' ? forceRound : round;
-    const forceNewTrack = typeof forceRound === 'boolean' ? forceRound : typeof forceRound === 'number';
     const musicFile = getMusicForRound(targetRound);
     
-    if (!musicStarted || forceNewTrack) {
-      // Stop existing music if switching tracks
-      if (audioRef) {
-        audioRef.pause();
-        audioRef.src = '';
-      }
-      
-      const audio = new Audio(musicFile);
-      audio.loop = true;
-      audio.volume = 0.05;
-      audio.play().catch(() => {});
-      setAudioRef(audio);
-      setMusicStarted(true);
-      setMusicPlaying(true);
-    } else if (audioRef && !musicPlaying) {
-      audioRef.play().catch(() => {});
-      setMusicPlaying(true);
+    const audio = new Audio(musicFile);
+    audio.loop = true;
+    audio.volume = 0.05; // 5% volume
+    audio.play().catch(() => {});
+    setAudioRef(audio);
+    setMusicStarted(true);
+    setMusicPlaying(true);
+  };
+  
+  // Stop all music
+  const stopBackgroundMusic = () => {
+    if (audioRef) {
+      audioRef.pause();
+      audioRef.currentTime = 0;
+      audioRef.src = '';
+      setMusicPlaying(false);
     }
   };
 
@@ -514,11 +518,8 @@ export default function ConvosetTest() {
     const isCorrect = normalize(round1Selections) === normalize(currentRoundConfig.correctOrder);
     
     if (isCorrect) {
-      // Stop background music
-      if (audioRef) {
-        audioRef.pause();
-        setMusicPlaying(false);
-      }
+      // Stop background music completely
+      stopBackgroundMusic();
       // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
       const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
       // Play celebration sound
@@ -606,11 +607,8 @@ export default function ConvosetTest() {
       if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect') || input.includes('that\'s it') || input.includes('thats it') || input.includes('thank you') || input.includes('thanks') || input.includes('good') || input.includes('yep') || input.includes('yup') || input.includes('sure') || input.includes('okay') || input.includes('ok')) {
         const response = "Thank you, it will be at the pick up counter.";
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-        // Stop background music
-        if (audioRef) {
-          audioRef.pause();
-          setMusicPlaying(false);
-        }
+        // Stop background music completely
+        stopBackgroundMusic();
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
           triggerCoinAnimation(round);
@@ -934,11 +932,8 @@ export default function ConvosetTest() {
   };
 
   const acceptRound3Score = () => {
-    // Stop background music
-    if (audioRef) {
-      audioRef.pause();
-      setMusicPlaying(false);
-    }
+    // Stop background music completely
+    stopBackgroundMusic();
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 500);
@@ -1527,58 +1522,84 @@ export default function ConvosetTest() {
             </div>
           </div>
 
-          {/* Text overlay - positioned center-right on rounds 3-5 */}
+          {/* Text overlay - positioned more center for rounds 3-5 */}
           <div className={`absolute z-50 ${
             round >= 3 
-              ? 'top-[35%] right-[15%] text-right' 
+              ? 'top-[35%] right-[20%] text-right' 
               : 'top-[45%] left-1/2 -translate-x-1/2 text-center'
           }`}>
             <div className={`flex items-center gap-2 mb-2 ${round >= 3 ? 'justify-end' : 'justify-center'}`}>
               <KokoroCoin size={32} />
-              <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">from our Earth Investors</span>
+              <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>from our Earth Investors</span>
             </div>
             {round === 3 ? (
-              <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 <p className="text-5xl font-bold mb-2">Excellent!</p>
                 <p className="text-3xl font-semibold">Can she take your orders, too?</p>
               </div>
             ) : (
-              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{investorMessage}</p>
+              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>{investorMessage}</p>
             )}
           </div>
 
-          {/* CTAs - Rounds 3-5 positioned center-right */}
+          {/* CTAs - Different for rounds 3-4 vs round 5 */}
           <div className={`absolute z-50 flex gap-4 ${
             round >= 3 
-              ? 'bottom-[35%] right-[15%] flex-col items-end' 
+              ? 'bottom-[35%] right-[20%] flex-col items-end' 
               : 'bottom-[25%] left-1/2 -translate-x-1/2'
           }`}>
+            {/* Rounds 3 and 4: Build Your Café + Next Round */}
             {(round === 3 || round === 4) && (
-              <button
-                onClick={() => {
-                  setShowCafeShop(true);
-                }}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
-              >
-                🏪 Build Your Café
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setShowCafeShop(true);
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  🏪 Build Your Café
+                </button>
+                <button
+                  onClick={completeGame}
+                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  Next Round →
+                </button>
+              </>
             )}
+            {/* Round 5: Build Your Café + Play Again */}
             {round === 5 && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowCafeShop(true);
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  🏪 Build Your Café
+                </button>
+                <button
+                  onClick={completeGame}
+                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  Play Again 🔄
+                </button>
+              </>
+            )}
+            {/* Rounds 1-2: Just Next Round */}
+            {round < 3 && (
               <button
-                onClick={() => {
-                  setShowCafeShop(true);
-                }}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
+                onClick={completeGame}
+                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                🏪 Build Your Café
+                Next Round →
               </button>
             )}
-            <button
-              onClick={completeGame}
-              className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
-            >
-              {round < 5 ? 'Next Round →' : 'Play Again 🔄'}
-            </button>
           </div>
         </div>
       )}
@@ -1698,7 +1719,7 @@ export default function ConvosetTest() {
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold text-amber-400">🏪 Choose Your Café</h2>
+              <h2 className="text-3xl font-bold text-amber-400" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🏪 Choose Your Café</h2>
               <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
                 <KokoroCoin size={28} />
                 <span className="text-yellow-400 font-bold text-xl">{coins}</span>
@@ -1738,7 +1759,7 @@ export default function ConvosetTest() {
                       )}
                     </div>
                     <div className="p-3 bg-black/80">
-                      <p className="text-white font-medium text-sm">{cafe.name}</p>
+                      <p className="text-white font-medium text-sm" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>{cafe.name}</p>
                       <div className="flex items-center gap-1 mt-1">
                         {owned ? (
                           <span className="text-green-400 text-sm">Tap to view options</span>
@@ -1755,63 +1776,95 @@ export default function ConvosetTest() {
               })}
             </div>
             
-            {/* Big Action Buttons */}
-            <div className="flex gap-3 mb-4">
-              <button 
-                onClick={() => {
-                  setShowCafeShop(false);
-                  // Continue to next round / try next set
-                  completeGame();
-                }}
-                className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl text-lg shadow-lg"
-              >
-                🎯 Try a New Set
-              </button>
-              <button 
-                onClick={() => {
-                  alert('🏪 More outposts coming soon! Restaurant, Department Store, and more.');
-                }}
-                className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-xl text-lg shadow-lg"
-              >
-                🏬 Choose New Outpost
-              </button>
-            </div>
-            
-            <button 
-              onClick={() => {
-                alert('🗺️ M31 Map coming soon! Your cafés are saved in inventory.');
-              }}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white font-bold rounded-xl text-lg shadow-lg mb-4"
-            >
-              🗺️ Go to M31 Map
-            </button>
-            
-            {/* Small Links */}
-            <div className="flex justify-center gap-6 pt-2 border-t border-zinc-700">
-              <button 
-                onClick={() => setShowCoinShop(true)}
-                className="text-purple-400 hover:text-purple-300 text-sm font-medium transition"
-              >
-                💰 Buy Coins
-              </button>
-              <button 
-                onClick={() => {
-                  alert('📦 Inventory view coming soon!');
-                }}
-                className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
-              >
-                📦 Check Inventory
-              </button>
-              <button 
-                onClick={() => {
-                  setShowCafeShop(false);
-                  // Stay where they are - just close the shop (auto-saved already)
-                }}
-                className="text-zinc-400 hover:text-zinc-300 text-sm font-medium transition"
-              >
-                💾 Save & Exit
-              </button>
-            </div>
+            {/* Different buttons based on whether game is complete (round 5) or mid-game */}
+            {round === 5 ? (
+              <>
+                {/* Round 5 Complete: Full options */}
+                <div className="flex gap-3 mb-4">
+                  <button 
+                    onClick={() => {
+                      setShowCafeShop(false);
+                      completeGame();
+                    }}
+                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    🎯 Try a New Set
+                  </button>
+                  <button 
+                    onClick={() => {
+                      alert('🏪 More outposts coming soon! Restaurant, Department Store, and more.');
+                    }}
+                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    🏬 Choose New Outpost
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    alert('🗺️ M31 Map coming soon! Your cafés are saved in inventory.');
+                  }}
+                  className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600 mb-4"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  🗺️ Go to M31 Map
+                </button>
+                
+                {/* Small Links - all mustard yellow */}
+                <div className="flex justify-center gap-6 pt-2 border-t border-zinc-700">
+                  <button 
+                    onClick={() => setShowCoinShop(true)}
+                    className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    💰 Buy Coins
+                  </button>
+                  <button 
+                    onClick={() => {
+                      alert('📦 Inventory view coming soon!');
+                    }}
+                    className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    📦 Check Inventory
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowCafeShop(false);
+                    }}
+                    className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    💾 Save & Exit
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Mid-game (rounds 3-4): Simple options */}
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setShowCoinShop(true)}
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-semibold rounded-lg border border-zinc-600"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    💰 Buy Coins
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowCafeShop(false);
+                      completeGame();
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-lg"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    ▶️ Keep Playing
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
