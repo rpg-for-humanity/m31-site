@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
+import { SupportedLanguage, getVoiceForLang, getStoredLanguage, languageInfo } from '../../utils/tts';
+import posthog from 'posthog-js';
 type Round = 1 | 2 | 3 | 4 | 5;
 type GameState = 'intro' | 'walking' | 'playing' | 'investor';
 type OrderItem = {
@@ -35,7 +36,7 @@ export default function ConvosetTest() {
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [animatedCoins, setAnimatedCoins] = useState<Coin[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>('en-US');
   // Menu and Shop states
   const [showMenu, setShowMenu] = useState(false);
   const [showCafeShop, setShowCafeShop] = useState(false);
@@ -67,6 +68,8 @@ export default function ConvosetTest() {
       } catch (e) {
         console.log('No saved progress found');
       }
+      // Load language preference
+      setSelectedLanguage(getStoredLanguage());
       setIsLoaded(true);
     }
   }, []);
@@ -86,12 +89,12 @@ export default function ConvosetTest() {
   
   // Cafe options - Updated prices
   const cafeOptions = [
-    { id: 'coffeepost', name: 'Coffee Post', price: 500, image: '/coffeepost.png' },
-    { id: 'retrocafe', name: 'Retro Café', price: 800, image: '/retrocafe.png' },
-    { id: 'flowercafe', name: 'Flower Café', price: 1000, image: '/flowercafe.png' },
-    { id: 'moderncafe', name: 'Modern Café', price: 1500, image: '/moderncafe.png' },
-    { id: 'rocococafe', name: 'Rococo Café', price: 2000, image: '/rocococafe.png' },
-  ];
+  { id: 'coffeepost', name: 'Coffee Post', price: 800, image: '/coffeepost.png' },
+  { id: 'retrocafe', name: 'Retro Café', price: 1500, image: '/retrocafe.png' },
+  { id: 'flowercafe', name: 'Flower Café', price: 2500, image: '/flowercafe.png' },
+  { id: 'moderncafe', name: 'Modern Café', price: 4000, image: '/moderncafe.png' },
+  { id: 'rocococafe', name: 'Rococo Café', price: 6000, image: '/rocococafe.png' },
+];
   
   // Coin bundles
   const coinBundles = [
@@ -262,20 +265,25 @@ export default function ConvosetTest() {
   // Music is now ONLY started in specific places, not on every round change
 
   const getVoice = () => {
-    const preferred = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Zira', 'Hazel'];
-    
-    for (const name of preferred) {
-      const voice = voices.find(v => v.name.includes(name));
-      if (voice) return voice;
-    }
-    
-    const englishVoice = voices.find(v => 
-      v.lang.startsWith('en') && 
-      !v.name.toLowerCase().includes('male')
-    );
-    
-    return englishVoice || voices.find(v => v.lang.startsWith('en')) || voices[0];
-  };
+  // Use multi-language voice selection
+  const voice = getVoiceForLang(voices, selectedLanguage);
+  if (voice) return voice;
+  
+  // Fallback to original English logic if utility fails
+  const preferred = ['Samantha', 'Karen', 'Moira', 'Tessa', 'Fiona', 'Victoria', 'Zira', 'Hazel'];
+  
+  for (const name of preferred) {
+    const v = voices.find(v => v.name.includes(name));
+    if (v) return v;
+  }
+  
+  const englishVoice = voices.find(v => 
+    v.lang.startsWith('en') && 
+    !v.name.toLowerCase().includes('male')
+  );
+  
+  return englishVoice || voices.find(v => v.lang.startsWith('en')) || voices[0];
+};
 
   const speak = (text: string, audioFile?: string) => {
     // If audio file provided, play it instead of TTS
@@ -447,6 +455,7 @@ export default function ConvosetTest() {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = selectedLanguage;
       const voice = getVoice();
       if (voice) utterance.voice = voice;
       utterance.rate = 1.0;
@@ -468,6 +477,13 @@ export default function ConvosetTest() {
     if (coins >= 10) {
       setCoins(prev => prev - 10);
       setShowTranscript(true);
+
+      // Track transcript purchased event
+      posthog.capture('transcript_purchased', {
+        round: round,
+        coins_spent: 10,
+        language_code: selectedLanguage,
+      });
     }
   };
 
@@ -487,12 +503,18 @@ export default function ConvosetTest() {
         });
       }
       setMusicPlaying(false);
+
+      // Track music toggled event
+      posthog.capture('music_toggled', { enabled: false });
     } else {
       // Resume only the main audioRef
       if (audioRef) {
         audioRef.play().catch(() => {});
       }
       setMusicPlaying(true);
+
+      // Track music toggled event
+      posthog.capture('music_toggled', { enabled: true });
     }
   };
 
@@ -500,7 +522,14 @@ export default function ConvosetTest() {
     setGameState('walking');
     setShowTranscript(false);
     setIsWalking(true);
-    
+
+    // Track game mission started event
+    posthog.capture('game_mission_started', {
+      round: round,
+      language_code: selectedLanguage,
+      outpost_name: 'Coffee Outpost',
+    });
+
     // Walk to center then transition
     const walkToCenter = setInterval(() => {
       setKokoroX(prev => {
@@ -567,6 +596,16 @@ export default function ConvosetTest() {
       stopBackgroundMusic();
       // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
       const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
+
+      // Track round completed event
+      posthog.capture('round_completed', {
+        round: round,
+        coins_earned: coinReward,
+        language_code: selectedLanguage,
+        outpost_name: 'Coffee Outpost',
+        mode: 'listen_and_select',
+      });
+
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
@@ -582,6 +621,14 @@ export default function ConvosetTest() {
         setGameState('investor');
       });
     } else {
+      // Track round failed event
+      posthog.capture('round_failed', {
+        round: round,
+        language_code: selectedLanguage,
+        outpost_name: 'Coffee Outpost',
+        mode: 'listen_and_select',
+      });
+
       playAudio('/Audio/kokorobot-wrong.mp3');
       setRound1Selections([]);
       setCurrentItem({});
@@ -654,6 +701,16 @@ export default function ConvosetTest() {
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
         // Stop background music completely
         stopBackgroundMusic();
+
+        // Track round completed event
+        posthog.capture('round_completed', {
+          round: round,
+          coins_earned: 80,
+          language_code: selectedLanguage,
+          outpost_name: 'Coffee Outpost',
+          mode: 'typing',
+        });
+
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
           triggerCoinAnimation(round);
@@ -818,19 +875,25 @@ export default function ConvosetTest() {
       alert('Speech recognition not supported. Try Chrome.');
       return;
     }
-    
+
+    // Track speech recognition used event
+    posthog.capture('speech_recognition_used', {
+      round: round,
+      language_code: selectedLanguage,
+    });
+
     // Pause music while speaking
     if (audioRef) {
       audioRef.pause();
     }
-    
+
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     const recognition = new SpeechRecognition();
-    
+
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';
-    
+    recognition.lang = selectedLanguage;
+
     setRound3Listening(true);
     setRound3Transcript('');
     setRound3Feedback([]);
@@ -979,6 +1042,16 @@ export default function ConvosetTest() {
   const acceptRound3Score = () => {
     // Stop background music completely
     stopBackgroundMusic();
+
+    // Track round completed event
+    posthog.capture('round_completed', {
+      round: round,
+      coins_earned: 500,
+      language_code: selectedLanguage,
+      outpost_name: 'Coffee Outpost',
+      mode: 'speaking',
+    });
+
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 500);
@@ -1125,6 +1198,11 @@ export default function ConvosetTest() {
               <span className="text-amber-400 text-lg">{musicPlaying ? '🔊' : '🔇'}</span>
             </button>
           )}
+          {/* Language Pill */}
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-cyan-500/30 flex items-center gap-2">
+            <span>{languageInfo[selectedLanguage].flag}</span>
+            <span className="text-cyan-400 font-mono text-sm">{languageInfo[selectedLanguage].shortCode}</span>
+        </div>
         </div>
         <div className="flex gap-3">
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2">
@@ -1393,7 +1471,7 @@ export default function ConvosetTest() {
                     >
                       ✏️ Modify
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         const response = "Thank you, it will be at the pick up counter.";
                         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
@@ -1402,6 +1480,16 @@ export default function ConvosetTest() {
                           audioRef.pause();
                           setMusicPlaying(false);
                         }
+
+                        // Track round completed event
+                        posthog.capture('round_completed', {
+                          round: round,
+                          coins_earned: 80,
+                          language_code: selectedLanguage,
+                          outpost_name: 'Coffee Outpost',
+                          mode: 'typing',
+                        });
+
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
                           triggerCoinAnimation(round);
@@ -1967,6 +2055,15 @@ export default function ConvosetTest() {
                   setCoins(prev => prev - selectedCafe.price);
                   setPurchasedCafes(prev => [...prev, selectedCafe.id]);
                   setShowPurchaseConfirm(false);
+
+                  // Track cafe purchased event
+                  posthog.capture('cafe_purchased', {
+                    cafe_id: selectedCafe.id,
+                    cafe_name: selectedCafe.name,
+                    price: selectedCafe.price,
+                    total_cafes_owned: purchasedCafes.length + 1,
+                  });
+
                   // Show just purchased popup
                   setJustPurchasedCafe(selectedCafe);
                   setShowJustPurchased(true);
@@ -2109,6 +2206,14 @@ export default function ConvosetTest() {
                     // Simulate purchase (in real app, this would go to payment)
                     setCoins(prev => prev + bundle.coins);
                     setShowCoinShop(false);
+
+                    // Track coin bundle purchased event
+                    posthog.capture('coin_bundle_purchased', {
+                      bundle_id: bundle.id,
+                      bundle_label: bundle.label,
+                      coins_received: bundle.coins,
+                      price: bundle.price,
+                    });
                   }}
                 >
                   {bundle.best && (

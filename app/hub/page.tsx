@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { languageOptions, SupportedLanguage } from '../contexts/LanguageContext';
+import posthog from 'posthog-js';
 
 type Track = 'player' | 'creator';
 
@@ -53,12 +54,26 @@ export default function HubPage() {
     setIsFirstTime(false);
     setShowLanguageModal(false);
     setShowLanguageDropdown(false);
+
+    // Track language selection event
+    posthog.capture('language_selected', {
+      language_code: lang,
+      language_name: languageOptions.find(l => l.code === lang)?.label || 'Unknown',
+    });
   };
 
   const handlePlayWithLanguage = (lang: SupportedLanguage) => {
     // Set language and navigate to game
     localStorage.setItem('m31-language', lang);
     localStorage.setItem('m31-language-chosen', 'true');
+
+    // Track outpost started event
+    posthog.capture('outpost_started', {
+      outpost_name: 'Coffee Outpost',
+      language_code: lang,
+      language_name: languageOptions.find(l => l.code === lang)?.label || 'Unknown',
+    });
+
     router.push('/test/convoset');
   };
 
@@ -66,6 +81,13 @@ export default function HubPage() {
     if (isFirstTime) {
       setShowLanguageModal(true);
     } else {
+      // Track outpost started event
+      posthog.capture('outpost_started', {
+        outpost_name: 'Coffee Outpost',
+        language_code: selectedLanguage,
+        language_name: languageOptions.find(l => l.code === selectedLanguage)?.label || 'Unknown',
+      });
+
       router.push('/test/convoset');
     }
   };
@@ -75,6 +97,15 @@ export default function HubPage() {
     localStorage.setItem('m31-language-chosen', 'true');
     setIsFirstTime(false);
     setShowLanguageModal(false);
+
+    // Track outpost started event
+    posthog.capture('outpost_started', {
+      outpost_name: 'Coffee Outpost',
+      language_code: selectedLanguage,
+      language_name: languageOptions.find(l => l.code === selectedLanguage)?.label || 'Unknown',
+      is_first_time: true,
+    });
+
     router.push('/test/convoset');
   };
 
@@ -155,7 +186,10 @@ export default function HubPage() {
       <div className="pt-24 px-6 max-w-7xl mx-auto">
         <div className="flex gap-2 mb-8">
           <button
-            onClick={() => setActiveTrack('player')}
+            onClick={() => {
+              setActiveTrack('player');
+              posthog.capture('track_switched', { track: 'player' });
+            }}
             className={`px-6 py-3 rounded-full font-semibold text-lg transition-all ${
               activeTrack === 'player'
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
@@ -165,7 +199,10 @@ export default function HubPage() {
             🎮 Player
           </button>
           <button
-            onClick={() => setActiveTrack('creator')}
+            onClick={() => {
+              setActiveTrack('creator');
+              posthog.capture('track_switched', { track: 'creator' });
+            }}
             className={`px-6 py-3 rounded-full font-semibold text-lg transition-all ${
               activeTrack === 'creator'
                 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30'

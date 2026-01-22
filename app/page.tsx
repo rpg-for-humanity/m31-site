@@ -1,4 +1,18 @@
+'use client';
+
+import posthog from 'posthog-js';
+
 export default function Home() {
+  const handleEmailSignup = (e: React.FormEvent<HTMLFormElement>) => {
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+
+    // Track email signup event
+    posthog.capture('email_signup_submitted', {
+      email_domain: email.split('@')[1] || 'unknown',
+    });
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center text-white px-6 relative overflow-hidden">
       
@@ -41,9 +55,10 @@ export default function Home() {
           Complete missions. Build your habitat on M31.
         </p>
 
-        <form 
-          action="https://formspree.io/f/mjgknkoy" 
+        <form
+          action="https://formspree.io/f/mjgknkoy"
           method="POST"
+          onSubmit={handleEmailSignup}
           className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6 max-w-md mx-auto"
         >
           <input 
