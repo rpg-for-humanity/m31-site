@@ -138,19 +138,20 @@ export default function ConvosetTest() {
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(true);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const [voiceAudio, setVoiceAudio] = useState<HTMLAudioElement | null>(null);
 
   // Round-specific orders and audio
   const roundConfigs = {
     1: {
       audio: '/Audio/round1-order.mp3',
-      npcOrder: "Hi, a caramel macchiato, medium please.",
-      correctOrder: [{ type: 'Macchiato', size: 'Medium', syrup: 'Caramel' }] as OrderItem[],
+      npcOrder: "Hi, a medium caramel macchiato, with half & half please.",
+      correctOrder: [{ type: 'Macchiato', size: 'Medium', milk: 'Half & Half', syrup: 'Caramel' }] as OrderItem[],
       itemCount: 1
     },
     2: {
       audio: '/Audio/round2-order.mp3', 
-      npcOrder: "Hi, I'd like a large flat white, with hazelnut syrup please.",
-      correctOrder: [{ type: 'Flat White', size: 'Large', syrup: 'Hazelnut' }] as OrderItem[],
+      npcOrder: "Hi, I'd like a large flat white with nonfat milk, and hazelnut syrup please.",
+      correctOrder: [{ type: 'Flat White', size: 'Large', milk: 'Nonfat', syrup: 'Hazelnut' }] as OrderItem[],
       itemCount: 1
     },
     3: {
@@ -332,120 +333,104 @@ export default function ConvosetTest() {
   };
 
   const playRoundOrder = (forceRound?: number) => {
-    // Only for rounds 1-3 (listen & select)
     const targetRound = forceRound || round;
     const config = roundConfigs[targetRound as 1 | 2 | 3];
     if (!config) return;
     
-    console.log(`Playing round ${targetRound} order audio: ${config.audio}`);
+    console.log(`🎤 Playing order audio: ${config.audio}`);
     
-    // Pause background music while voice plays
+    // STOP any existing voice audio
+    if (voiceAudio) {
+      voiceAudio.pause();
+      voiceAudio.currentTime = 0;
+      setVoiceAudio(null);
+    }
+    
+    // STOP music while voice plays
     if (audioRef) {
       audioRef.pause();
     }
     
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = config.audio;
+    const audio = new Audio(config.audio);
     audio.volume = 0.8;
+    setVoiceAudio(audio);
     setIsNpcSpeaking(true);
     
-    audio.oncanplay = () => {
-      console.log('Audio can play');
-      audio.play().then(() => {
-        console.log('Audio playing successfully');
-      }).catch(err => {
-        console.error('Play failed:', err);
-        speakTTS(config.npcOrder);
-      });
-    };
+    // Simple: just play it
+    audio.play().then(() => {
+      console.log('🎤 Voice playing');
+    }).catch(err => {
+      console.error('Voice play failed:', err);
+      speakTTS(config.npcOrder);
+    });
     
     audio.onended = () => {
-      console.log('Audio ended');
+      console.log('🎤 Voice ended');
       setIsNpcSpeaking(false);
-      // DON'T start music here - it's already started in completeGame
-      // Just resume if it was paused
-      if (audioRef && musicPlaying) {
+      setVoiceAudio(null);
+      // NOW start music (after voice ends)
+      if (musicPlaying && audioRef) {
         audioRef.play().catch(() => {});
+      } else if (!musicStarted) {
+        // First time - start music
+        startBackgroundMusic(targetRound);
       }
-    };
-    
-    audio.onerror = (e) => {
-      console.error('Audio load error - trying fetch:', e);
-      fetch(config.audio)
-        .then(res => {
-          console.log('Fetch status:', res.status, res.statusText);
-          if (!res.ok) {
-            speakTTS(config.npcOrder);
-          }
-        })
-        .catch(fetchErr => {
-          console.error('Fetch also failed:', fetchErr);
-          speakTTS(config.npcOrder);
-        });
     };
   };
 
   const getMusicForRound = (r: number) => {
-    // music-round1.mp3 for Round 1-2, music-round2.mp3 for round 3, music-round3.mp3 for round 4,5
     if (r <= 2) return '/Audio/music-round1.mp3';
     if (r === 3) return '/Audio/music-round2.mp3';
-    return '/Audio/music-round3.mp3'; // rounds 4 and 5
+    return '/Audio/music-round3.mp3';
   };
 
-  // Use a module-level variable to ensure only ONE audio instance exists
-  const startBackgroundMusic = (forceRound?: number | boolean) => {
-    // CRITICAL: First, stop and destroy ANY existing audio
+  // Simple and bulletproof audio control
+  const stopAllAudio = () => {
+    console.log('🔇 Stopping all audio');
+    // Stop music
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
-      audioRef.src = '';
+    }
+    // Stop voice
+    if (voiceAudio) {
+      voiceAudio.pause();
+      voiceAudio.currentTime = 0;
+    }
+  };
+
+  const startBackgroundMusic = (forceRound?: number | boolean) => {
+    // Don't start if user muted
+    if (musicStarted && !musicPlaying) {
+      console.log('🎵 Music muted, skipping');
+      return;
     }
     
-    // Also find and kill any orphaned audio elements playing music
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('audio').forEach((el) => {
-        const audioEl = el as HTMLAudioElement;
-        if (audioEl.src && audioEl.src.includes('music-round')) {
-          audioEl.pause();
-          audioEl.currentTime = 0;
-          audioEl.src = '';
-        }
-      });
+    // Stop existing music first
+    if (audioRef) {
+      audioRef.pause();
+      audioRef.currentTime = 0;
     }
     
     const targetRound = typeof forceRound === 'number' ? forceRound : round;
     const musicFile = getMusicForRound(targetRound);
     
-    console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
+    console.log(`🎵 Starting music: ${musicFile}`);
     
-    const audio = new Audio(musicFile);
-    audio.loop = true;
-    audio.volume = 0.05; // 5% volume
-    audio.play().catch(() => {});
-    setAudioRef(audio);
+    const newAudio = new Audio(musicFile);
+    newAudio.loop = true;
+    newAudio.volume = 0.05;
+    newAudio.play().catch((e) => console.log('Music play failed:', e));
+    setAudioRef(newAudio);
     setMusicStarted(true);
     setMusicPlaying(true);
   };
   
-  // Stop all music completely
   const stopBackgroundMusic = () => {
-    console.log('🔇 Stopping all music');
+    console.log('🔇 Stopping music');
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
-      audioRef.src = '';
-    }
-    // Kill any orphaned audio
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('audio').forEach((el) => {
-        const audioEl = el as HTMLAudioElement;
-        if (audioEl.src && audioEl.src.includes('music-round')) {
-          audioEl.pause();
-          audioEl.currentTime = 0;
-          audioEl.src = '';
-        }
-      });
     }
     setMusicPlaying(false);
   };
@@ -481,22 +466,14 @@ export default function ConvosetTest() {
 
   const toggleMusic = () => {
     if (musicPlaying) {
-      // Stop ALL music
+      console.log('🔇 User toggled music OFF');
       if (audioRef) {
         audioRef.pause();
-      }
-      // Also stop any orphaned audio
-      if (typeof document !== 'undefined') {
-        document.querySelectorAll('audio').forEach((el) => {
-          const audioEl = el as HTMLAudioElement;
-          if (audioEl.src && audioEl.src.includes('music-round')) {
-            audioEl.pause();
-          }
-        });
+        audioRef.currentTime = 0;
       }
       setMusicPlaying(false);
     } else {
-      // Resume only the main audioRef
+      console.log('🔊 User toggled music ON');
       if (audioRef) {
         audioRef.play().catch(() => {});
       }
@@ -540,8 +517,7 @@ export default function ConvosetTest() {
         setShowFullBody(false);
         setGameState('playing');
         setShowDialogue(true);
-        playRoundOrder();
-        startBackgroundMusic(1); // Start music for Round 1
+        playRoundOrder(); // Music will start AFTER this voice ends
       }
     }, 25);
   };
@@ -1121,57 +1097,57 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* HUD */}
-      <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-30">
-        <div className="flex items-center gap-3">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-amber-500/30">
-            <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
+      {/* HUD - Responsive for mobile */}
+      <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30">
+        <div className="flex items-center gap-1 md:gap-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/30">
+            <span className="text-amber-400 font-mono text-xs md:text-base">M31 Coffee Outpost</span>
           </div>
           {musicStarted && (
             <button 
               onClick={toggleMusic}
-              className="bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-amber-500/30 hover:bg-black/80 transition"
+              className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-amber-500/30 hover:bg-black/80 transition"
             >
-              <span className="text-amber-400 text-lg">{musicPlaying ? '🔊' : '🔇'}</span>
+              <span className="text-amber-400 text-sm md:text-lg">{musicPlaying ? '🔊' : '🔇'}</span>
             </button>
           )}
           {/* Language Pill */}
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-cyan-500/30 flex items-center gap-2">
-            <span>{languageInfo[selectedLanguage].flag}</span>
-            <span className="text-cyan-400 font-mono text-sm">{languageInfo[selectedLanguage].shortCode}</span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-cyan-500/30 flex items-center gap-1 md:gap-2">
+            <span className="text-sm md:text-base">{languageInfo[selectedLanguage].flag}</span>
+            <span className="text-cyan-400 font-mono text-xs md:text-sm">{languageInfo[selectedLanguage].shortCode}</span>
         </div>
         </div>
-        <div className="flex gap-3">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2">
-            <KokoroCoin size={24} />
-            <span className="text-yellow-400 font-mono font-semibold text-lg">{coins}</span>
+        <div className="flex gap-1 md:gap-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/30 flex items-center gap-1 md:gap-2">
+            <KokoroCoin size={16} className="md:w-6 md:h-6" />
+            <span className="text-yellow-400 font-mono font-semibold text-sm md:text-lg">{coins}</span>
           </div>
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30">
-            <span className="text-purple-400 font-mono">Round {round}/5</span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/30">
+            <span className="text-purple-400 font-mono text-xs md:text-base">Round {round}/5</span>
           </div>
         </div>
       </div>
 
-      {/* Full Body Kokorobot - Side view when walking */}
+      {/* Full Body Kokorobot - Side view when walking - Smaller on mobile */}
       {showFullBody && (gameState === 'intro' || gameState === 'walking') && (
         <div 
-          className="absolute bottom-16 z-20"
+          className="absolute bottom-4 md:bottom-16 z-5"
           style={{ 
             left: `${kokoroX}px`,
-            transform: `scale(${kokoroScale})`,
+            transform: `scale(${kokoroScale * 0.6})`,
             opacity: kokoroOpacity
           }}
         >
           <img 
             src={isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png"}
             alt="Kokorobot" 
-            className={`h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`}
+            className={`h-48 md:h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`}
             style={{
               filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5))'
             }}
           />
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-            <span className="text-xs text-amber-400 font-mono bg-black/70 px-3 py-1 rounded-full border border-amber-500/30">
+            <span className="text-xs text-amber-400 font-mono bg-black/70 px-2 md:px-3 py-1 rounded-full border border-amber-500/30">
               Kokorobot-1
             </span>
           </div>
@@ -1180,42 +1156,12 @@ export default function ConvosetTest() {
 
       {/* INTRO - Mission text CENTERED with dark box */}
       {gameState === 'intro' && (
-        <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="text-center max-w-2xl px-8 md:px-12 py-8 md:py-10 bg-black/70 rounded-3xl shadow-2xl mx-4">
-            <p className="text-purple-400 font-medium mb-2 text-base md:text-lg">Round {round} of 5</p>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+        <div className={`absolute inset-0 flex items-center justify-center z-30 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="text-center max-w-2xl px-6 md:px-12 py-6 md:py-10 bg-black/80 rounded-3xl shadow-2xl mx-4">
+            <p className="text-purple-400 font-medium mb-2 text-sm md:text-lg">Round {round} of 5</p>
+            <h1 className="text-2xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
               M31 Coffee Outpost
             </h1>
-            {round <= 3 && currentRoundConfig && (
-              <>
-                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  You're the cashier. Kokorobot-1 is your customer.
-                </p>
-                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  🎧 Listen to {currentRoundConfig.itemCount === 1 ? 'the order' : `all ${currentRoundConfig.itemCount} orders`}, then submit exactly what you hear.
-                </p>
-              </>
-            )}
-            {round === 4 && (
-              <>
-                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  Now YOU are the customer!
-                </p>
-                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  ⌨️ Type your coffee order to the barista.
-                </p>
-              </>
-            )}
-            {round === 5 && (
-              <>
-                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  Final round — speak like a pro!
-                </p>
-                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-                  🎤 Say your coffee order out loud.
-                </p>
-              </>
-            )}
             <p className="text-yellow-400 font-medium mb-6 md:mb-8 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
               Earn coins to build Andromeda's first café!
             </p>
@@ -1245,45 +1191,49 @@ export default function ConvosetTest() {
             {/* Listen & Select UI - Rounds 1-3 */}
             {(round === 1 || round === 2 || round === 3) && currentRoundConfig && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl">
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-4">
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-28 h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
-                    <p className="text-amber-400 text-xl mb-2 font-mono font-semibold">Kokorobot-1</p>
+                    <p className="text-amber-400 text-lg md:text-xl mb-1 font-mono font-semibold">Kokorobot-1</p>
                     
                     {showTranscript ? (
-                      <p className="text-xl leading-relaxed text-white">{currentRoundConfig.npcOrder}</p>
+                      <p className="text-base md:text-xl leading-relaxed text-white">{currentRoundConfig.npcOrder}</p>
                     ) : (
-                      <div className="bg-amber-900/40 rounded-xl p-4 text-center border border-amber-500/30">
-                        <p className="text-amber-300/80 mb-3 text-lg">🎧 Listen to the order...</p>
+                      <div className="bg-black/60 rounded-xl p-3 border border-amber-500/30">
+                        <p className="text-amber-300 mb-1 text-sm md:text-base font-medium">📋 Register Training</p>
+                        <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokorobot-1's exact order.</p>
                         
-                        {/* Two CTAs side by side under Listen box */}
-                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                        {/* Slim modern buttons - black bg, amber text */}
+                        <div className="flex gap-3 justify-center">
                           <button 
                             onClick={replayVoice}
-                            className="px-5 py-2.5 rounded-full transition font-semibold flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-base"
+                            className="px-3 py-1.5 rounded transition font-medium flex items-center gap-2 bg-black/80 hover:bg-black text-amber-400 text-sm border border-amber-500/40"
                           >
-                            🔊 Replay Voice (Free)
+                            <span>🔊</span> <span>Replay (Free)</span>
                           </button>
                           <button 
                             onClick={buyTranscript}
                             disabled={coins < 10}
-                            className={`px-5 py-2.5 rounded-full transition font-semibold flex items-center justify-center gap-2 text-base ${
+                            className={`px-3 py-1.5 rounded transition font-medium flex items-center gap-2 text-sm border ${
                               coins >= 10 
-                                ? 'bg-black/80 text-yellow-400 hover:bg-black/90 border border-yellow-500/60' 
-                                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                ? 'bg-black/80 hover:bg-black text-amber-400 border-amber-500/40' 
+                                : 'bg-black/40 text-slate-500 border-slate-600 cursor-not-allowed'
                             }`}
                           >
-                            💡 Show Text <KokoroCoin size={16} /> 10
+                            <span>💡</span> <span>Show Text</span> <KokoroCoin size={14} /> <span>10</span>
                           </button>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
+                
+                {/* Instruction hint */}
+                <p className="text-amber-400/60 text-xs text-center mb-3">Tap Type → Size → Milk → Syrup. Add item, then submit.</p>
                 
                 {/* Order Builder - Mobile Responsive */}
                 <div className="border-t border-amber-500/30 pt-4">
@@ -1370,7 +1320,7 @@ export default function ConvosetTest() {
                     <div className="bg-black/30 rounded-xl p-2 md:p-3">
                       <p className="text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide">Milk 🥛</p>
                       <div className="flex flex-col gap-1">
-                        {['None', 'Whole', 'Oat', 'Almond', 'Nonfat'].map((milk) => (
+                        {['None', 'Whole', 'Half & Half', 'Oat', 'Almond', 'Nonfat'].map((milk) => (
                           <button
                             key={milk}
                             onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
@@ -1610,18 +1560,18 @@ export default function ConvosetTest() {
             className="absolute inset-0 w-full h-full object-cover"
           />
           
-          {/* HUD - with solid black background */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
-            <div className="bg-black rounded-full px-5 py-2 border border-amber-500/50">
-              <span className="text-amber-400 font-mono">M31 Coffee Outpost</span>
+          {/* HUD - with solid black background - Responsive */}
+          <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-50">
+            <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/50">
+              <span className="text-amber-400 font-mono text-xs md:text-base">M31 Coffee Outpost</span>
             </div>
-            <div className="flex gap-3">
-              <div className="bg-black rounded-full px-5 py-2 border border-yellow-500/50 flex items-center gap-2">
-                <KokoroCoin size={24} />
-                <span className="text-yellow-400 font-mono font-semibold text-lg">{coins}</span>
+            <div className="flex gap-1 md:gap-3">
+              <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/50 flex items-center gap-1 md:gap-2">
+                <KokoroCoin size={16} className="md:w-6 md:h-6" />
+                <span className="text-yellow-400 font-mono font-semibold text-sm md:text-lg">{coins}</span>
               </div>
-              <div className="bg-black rounded-full px-5 py-2 border border-purple-500/50">
-                <span className="text-purple-400 font-mono">Round {round}/5</span>
+              <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/50">
+                <span className="text-purple-400 font-mono text-xs md:text-base">Round {round}/5</span>
               </div>
             </div>
           </div>

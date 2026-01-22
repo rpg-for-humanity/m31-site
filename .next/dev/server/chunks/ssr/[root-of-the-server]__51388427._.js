@@ -174,7 +174,7 @@ function ConvosetTest() {
         purchasedCafes,
         isLoaded
     ]);
-    // Cafe options - Updated prices
+    // Cafe options - Updated prices for Level 3 economy
     const cafeOptions = [
         {
             id: 'coffeepost',
@@ -286,15 +286,17 @@ function ConvosetTest() {
     const [musicStarted, setMusicStarted] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [musicPlaying, setMusicPlaying] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
     const [audioRef, setAudioRef] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [voiceAudio, setVoiceAudio] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     // Round-specific orders and audio
     const roundConfigs = {
         1: {
             audio: '/Audio/round1-order.mp3',
-            npcOrder: "Hi, a caramel macchiato, medium please.",
+            npcOrder: "Hi, a medium caramel macchiato, with half & half please.",
             correctOrder: [
                 {
                     type: 'Macchiato',
                     size: 'Medium',
+                    milk: 'Half & Half',
                     syrup: 'Caramel'
                 }
             ],
@@ -302,11 +304,12 @@ function ConvosetTest() {
         },
         2: {
             audio: '/Audio/round2-order.mp3',
-            npcOrder: "Hi, I'd like a large flat white, with hazelnut syrup please.",
+            npcOrder: "Hi, I'd like a large flat white with nonfat milk, and hazelnut syrup please.",
             correctOrder: [
                 {
                     type: 'Flat White',
                     size: 'Large',
+                    milk: 'Nonfat',
                     syrup: 'Hazelnut'
                 }
             ],
@@ -500,105 +503,90 @@ function ConvosetTest() {
         }
     };
     const playRoundOrder = (forceRound)=>{
-        // Only for rounds 1-3 (listen & select)
         const targetRound = forceRound || round;
         const config = roundConfigs[targetRound];
         if (!config) return;
-        console.log(`Playing round ${targetRound} order audio: ${config.audio}`);
-        // Pause background music while voice plays
+        console.log(`🎤 Playing order audio: ${config.audio}`);
+        // STOP any existing voice audio
+        if (voiceAudio) {
+            voiceAudio.pause();
+            voiceAudio.currentTime = 0;
+            setVoiceAudio(null);
+        }
+        // STOP music while voice plays
         if (audioRef) {
             audioRef.pause();
         }
-        const audio = new Audio();
-        audio.preload = 'auto';
-        audio.src = config.audio;
+        const audio = new Audio(config.audio);
         audio.volume = 0.8;
+        setVoiceAudio(audio);
         setIsNpcSpeaking(true);
-        audio.oncanplay = ()=>{
-            console.log('Audio can play');
-            audio.play().then(()=>{
-                console.log('Audio playing successfully');
-            }).catch((err)=>{
-                console.error('Play failed:', err);
-                speakTTS(config.npcOrder);
-            });
-        };
+        // Simple: just play it
+        audio.play().then(()=>{
+            console.log('🎤 Voice playing');
+        }).catch((err)=>{
+            console.error('Voice play failed:', err);
+            speakTTS(config.npcOrder);
+        });
         audio.onended = ()=>{
-            console.log('Audio ended');
+            console.log('🎤 Voice ended');
             setIsNpcSpeaking(false);
-            // DON'T start music here - it's already started in completeGame
-            // Just resume if it was paused
-            if (audioRef && musicPlaying) {
+            setVoiceAudio(null);
+            // NOW start music (after voice ends)
+            if (musicPlaying && audioRef) {
                 audioRef.play().catch(()=>{});
+            } else if (!musicStarted) {
+                // First time - start music
+                startBackgroundMusic(targetRound);
             }
-        };
-        audio.onerror = (e)=>{
-            console.error('Audio load error - trying fetch:', e);
-            fetch(config.audio).then((res)=>{
-                console.log('Fetch status:', res.status, res.statusText);
-                if (!res.ok) {
-                    speakTTS(config.npcOrder);
-                }
-            }).catch((fetchErr)=>{
-                console.error('Fetch also failed:', fetchErr);
-                speakTTS(config.npcOrder);
-            });
         };
     };
     const getMusicForRound = (r)=>{
-        // music-round1.mp3 for Round 1-2, music-round2.mp3 for round 3, music-round3.mp3 for round 4,5
         if (r <= 2) return '/Audio/music-round1.mp3';
         if (r === 3) return '/Audio/music-round2.mp3';
-        return '/Audio/music-round3.mp3'; // rounds 4 and 5
+        return '/Audio/music-round3.mp3';
     };
-    // Use a module-level variable to ensure only ONE audio instance exists
-    const startBackgroundMusic = (forceRound)=>{
-        // CRITICAL: First, stop and destroy ANY existing audio
+    // Simple and bulletproof audio control
+    const stopAllAudio = ()=>{
+        console.log('🔇 Stopping all audio');
+        // Stop music
         if (audioRef) {
             audioRef.pause();
             audioRef.currentTime = 0;
-            audioRef.src = '';
         }
-        // Also find and kill any orphaned audio elements playing music
-        if (typeof document !== 'undefined') {
-            document.querySelectorAll('audio').forEach((el)=>{
-                const audioEl = el;
-                if (audioEl.src && audioEl.src.includes('music-round')) {
-                    audioEl.pause();
-                    audioEl.currentTime = 0;
-                    audioEl.src = '';
-                }
-            });
+        // Stop voice
+        if (voiceAudio) {
+            voiceAudio.pause();
+            voiceAudio.currentTime = 0;
+        }
+    };
+    const startBackgroundMusic = (forceRound)=>{
+        // Don't start if user muted
+        if (musicStarted && !musicPlaying) {
+            console.log('🎵 Music muted, skipping');
+            return;
+        }
+        // Stop existing music first
+        if (audioRef) {
+            audioRef.pause();
+            audioRef.currentTime = 0;
         }
         const targetRound = typeof forceRound === 'number' ? forceRound : round;
         const musicFile = getMusicForRound(targetRound);
-        console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
-        const audio = new Audio(musicFile);
-        audio.loop = true;
-        audio.volume = 0.05; // 5% volume
-        audio.play().catch(()=>{});
-        setAudioRef(audio);
+        console.log(`🎵 Starting music: ${musicFile}`);
+        const newAudio = new Audio(musicFile);
+        newAudio.loop = true;
+        newAudio.volume = 0.05;
+        newAudio.play().catch((e)=>console.log('Music play failed:', e));
+        setAudioRef(newAudio);
         setMusicStarted(true);
         setMusicPlaying(true);
     };
-    // Stop all music completely
     const stopBackgroundMusic = ()=>{
-        console.log('🔇 Stopping all music');
+        console.log('🔇 Stopping music');
         if (audioRef) {
             audioRef.pause();
             audioRef.currentTime = 0;
-            audioRef.src = '';
-        }
-        // Kill any orphaned audio
-        if (typeof document !== 'undefined') {
-            document.querySelectorAll('audio').forEach((el)=>{
-                const audioEl = el;
-                if (audioEl.src && audioEl.src.includes('music-round')) {
-                    audioEl.pause();
-                    audioEl.currentTime = 0;
-                    audioEl.src = '';
-                }
-            });
         }
         setMusicPlaying(false);
     };
@@ -631,22 +619,14 @@ function ConvosetTest() {
     };
     const toggleMusic = ()=>{
         if (musicPlaying) {
-            // Stop ALL music
+            console.log('🔇 User toggled music OFF');
             if (audioRef) {
                 audioRef.pause();
-            }
-            // Also stop any orphaned audio
-            if (typeof document !== 'undefined') {
-                document.querySelectorAll('audio').forEach((el)=>{
-                    const audioEl = el;
-                    if (audioEl.src && audioEl.src.includes('music-round')) {
-                        audioEl.pause();
-                    }
-                });
+                audioRef.currentTime = 0;
             }
             setMusicPlaying(false);
         } else {
-            // Resume only the main audioRef
+            console.log('🔊 User toggled music ON');
             if (audioRef) {
                 audioRef.play().catch(()=>{});
             }
@@ -684,8 +664,7 @@ function ConvosetTest() {
                 setShowFullBody(false);
                 setGameState('playing');
                 setShowDialogue(true);
-                playRoundOrder();
-                startBackgroundMusic(1); // Start music for Round 1
+                playRoundOrder(); // Music will start AFTER this voice ends
             }
         }, 25);
     };
@@ -729,7 +708,9 @@ function ConvosetTest() {
                 setGameState('investor');
             });
         } else {
+            // Wrong answer - play error sound and show clear feedback
             playAudio('/Audio/kokorobot-wrong.mp3');
+            alert("❌ Not quite right!\n\nPress 🔊 to hear the order again.");
             setRound1Selections([]);
             setCurrentItem({});
         }
@@ -1386,7 +1367,7 @@ function ConvosetTest() {
             }
         }, void 0, false, {
             fileName: "[project]/app/test/convoset/page.tsx",
-            lineNumber: 1068,
+            lineNumber: 1046,
             columnNumber: 5
         }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1399,28 +1380,28 @@ function ConvosetTest() {
                 className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 bg-cover bg-center"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1085,
+                lineNumber: 1063,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 bg-black/20"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1091,
+                lineNumber: 1069,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-amber-950/90 via-amber-900/40 to-transparent"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1094,
+                lineNumber: 1072,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1097,
+                lineNumber: 1075,
                 columnNumber: 7
             }, this),
             showCoinAnimation && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1441,44 +1422,138 @@ function ConvosetTest() {
                                     className: "drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1114,
+                                    lineNumber: 1092,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-9 h-9 bg-yellow-400/40 rounded-full blur-md -z-10"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1115,
+                                    lineNumber: 1093,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1113,
+                            lineNumber: 1091,
                             columnNumber: 15
                         }, this)
                     }, coin.id, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1103,
+                        lineNumber: 1081,
                         columnNumber: 13
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1101,
+                lineNumber: 1079,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-4 left-4 right-4 flex justify-between items-center z-30",
+                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-3",
+                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1 md:gap-3",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-amber-500/30",
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/30",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono",
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono text-xs md:text-base",
                                     children: "M31 Coffee Outpost"
                                 }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1104,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1103,
+                                columnNumber: 11
+                            }, this),
+                            musicStarted && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: toggleMusic,
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-amber-500/30 hover:bg-black/80 transition",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-sm md:text-lg",
+                                    children: musicPlaying ? '🔊' : '🔇'
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1111,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1107,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-cyan-500/30 flex items-center gap-1 md:gap-2",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm md:text-base",
+                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].flag
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1116,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-cyan-400 font-mono text-xs md:text-sm",
+                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].shortCode
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1117,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1115,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/test/convoset/page.tsx",
+                        lineNumber: 1102,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-1 md:gap-3",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/30 flex items-center gap-1 md:gap-2",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                        size: 16,
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "md:w-6 md:h-6"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1122,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-sm md:text-lg",
+                                        children: coins
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1123,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1121,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/30",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono text-xs md:text-base",
+                                    children: [
+                                        "Round ",
+                                        round,
+                                        "/5"
+                                    ]
+                                }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
                                     lineNumber: 1126,
                                     columnNumber: 13
@@ -1487,120 +1562,26 @@ function ConvosetTest() {
                                 fileName: "[project]/app/test/convoset/page.tsx",
                                 lineNumber: 1125,
                                 columnNumber: 11
-                            }, this),
-                            musicStarted && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: toggleMusic,
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-amber-500/30 hover:bg-black/80 transition",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-lg",
-                                    children: musicPlaying ? '🔊' : '🔇'
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1133,
-                                    columnNumber: 15
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1129,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-cyan-500/30 flex items-center gap-2",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70",
-                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].flag
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1138,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-cyan-400 font-mono text-sm",
-                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].shortCode
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1139,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1137,
-                                columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1124,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-yellow-500/30 flex items-center gap-2",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                        size: 24,
-                                        className: "jsx-1be5a3ae20e8fc70"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1144,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-lg",
-                                        children: coins
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1145,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1143,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-5 py-2 border border-purple-500/30",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono",
-                                    children: [
-                                        "Round ",
-                                        round,
-                                        "/5"
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1148,
-                                    columnNumber: 13
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1147,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1142,
+                        lineNumber: 1120,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1123,
+                lineNumber: 1101,
                 columnNumber: 7
             }, this),
             showFullBody && (gameState === 'intro' || gameState === 'walking') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
                     left: `${kokoroX}px`,
-                    transform: `scale(${kokoroScale})`,
+                    transform: `scale(${kokoroScale * 0.6})`,
                     opacity: kokoroOpacity
                 },
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-16 z-20",
+                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-4 md:bottom-16 z-5",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                         src: isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png",
@@ -1608,40 +1589,40 @@ function ConvosetTest() {
                         style: {
                             filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5))'
                         },
-                        className: "jsx-1be5a3ae20e8fc70" + " " + `h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`
+                        className: "jsx-1be5a3ae20e8fc70" + " " + `h-48 md:h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`
                     }, void 0, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1163,
+                        lineNumber: 1141,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "jsx-1be5a3ae20e8fc70" + " " + "absolute -bottom-2 left-1/2 -translate-x-1/2",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400 font-mono bg-black/70 px-3 py-1 rounded-full border border-amber-500/30",
+                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400 font-mono bg-black/70 px-2 md:px-3 py-1 rounded-full border border-amber-500/30",
                             children: "Kokorobot-1"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1172,
+                            lineNumber: 1150,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1171,
+                        lineNumber: 1149,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1155,
+                lineNumber: 1133,
                 columnNumber: 9
             }, this),
             gameState === 'intro' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + `absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`,
+                className: "jsx-1be5a3ae20e8fc70" + " " + `absolute inset-0 flex items-center justify-center z-30 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`,
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-center max-w-2xl px-12 py-10 bg-black/70 rounded-3xl shadow-2xl",
+                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-center max-w-2xl px-6 md:px-12 py-6 md:py-10 bg-black/80 rounded-3xl shadow-2xl mx-4",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-medium mb-2 text-lg",
+                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-medium mb-2 text-sm md:text-lg",
                             children: [
                                 "Round ",
                                 round,
@@ -1649,60 +1630,44 @@ function ConvosetTest() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1183,
+                            lineNumber: 1161,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-5xl md:text-6xl font-semibold mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]",
+                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]",
                             children: "M31 Coffee Outpost"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1184,
+                            lineNumber: 1162,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-white mb-3 text-lg md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal",
-                            children: "Kokorobot-1 dreams of becoming a barista someday."
-                        }, void 0, false, {
-                            fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1187,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-100 mb-3 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal",
-                            children: round <= 3 && currentRoundConfig ? `Listen carefully. Can you take ${currentRoundConfig.itemCount === 1 ? 'this order' : `these ${currentRoundConfig.itemCount} orders`}?` : round === 4 ? "Type your order to the barista!" : "Speak your order out loud!"
-                        }, void 0, false, {
-                            fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1190,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-medium mb-8 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
+                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-medium mb-6 md:mb-8 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
                             children: "Earn coins to build Andromeda's first café!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1198,
+                            lineNumber: 1165,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: startGame,
                             disabled: !introReady,
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-4 px-14 rounded-full text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed",
+                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-3 md:py-4 px-10 md:px-14 rounded-full text-lg md:text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed",
                             children: "Begin Mission"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1201,
+                            lineNumber: 1168,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1182,
+                    lineNumber: 1160,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1181,
+                lineNumber: 1159,
                 columnNumber: 9
             }, this),
             gameState === 'walking' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1712,12 +1677,12 @@ function ConvosetTest() {
                     children: "Starting mission..."
                 }, void 0, false, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1215,
+                    lineNumber: 1182,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1214,
+                lineNumber: 1181,
                 columnNumber: 9
             }, this),
             gameState === 'playing' && showDialogue && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1729,114 +1694,170 @@ function ConvosetTest() {
                             className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-4 mb-6",
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-4 mb-4",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                             src: "/kokorobot-closeup.png",
                                             alt: "Kokorobot",
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-28 h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1228,
+                                            lineNumber: 1195,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-xl mb-2 font-mono font-semibold",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-lg md:text-xl mb-1 font-mono font-semibold",
                                                     children: "Kokorobot-1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1234,
+                                                    lineNumber: 1201,
                                                     columnNumber: 21
                                                 }, this),
                                                 showTranscript ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-xl leading-relaxed text-white",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-base md:text-xl leading-relaxed text-white",
                                                     children: currentRoundConfig.npcOrder
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1237,
+                                                    lineNumber: 1204,
                                                     columnNumber: 23
                                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-900/40 rounded-xl p-4 text-center border border-amber-500/30",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 rounded-xl p-3 border border-amber-500/30",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-300/80 mb-3 text-lg",
-                                                            children: "🎧 Listen to the order..."
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-300 mb-1 text-sm md:text-base font-medium",
+                                                            children: "📋 Register Training"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1240,
+                                                            lineNumber: 1207,
                                                             columnNumber: 25
                                                         }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                            onClick: buyTranscript,
-                                                            disabled: coins < 10,
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `text-base px-6 py-2 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${coins >= 10 ? 'bg-black/80 text-yellow-400 hover:bg-black/90 border border-yellow-500/60' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`,
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-100 text-xs md:text-sm mb-3",
+                                                            children: "You're on register. Enter Kokorobot-1's exact order."
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1208,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3 justify-center",
                                                             children: [
-                                                                "💡 Show Text for ",
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                                                    size: 16,
-                                                                    className: "jsx-1be5a3ae20e8fc70"
-                                                                }, void 0, false, {
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    onClick: replayVoice,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "px-3 py-1.5 rounded transition font-medium flex items-center gap-2 bg-black/80 hover:bg-black text-amber-400 text-sm border border-amber-500/40",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "jsx-1be5a3ae20e8fc70",
+                                                                            children: "🔊"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1216,
+                                                                            columnNumber: 29
+                                                                        }, this),
+                                                                        " ",
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "jsx-1be5a3ae20e8fc70",
+                                                                            children: "Replay (Free)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1216,
+                                                                            columnNumber: 45
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1250,
-                                                                    columnNumber: 44
+                                                                    lineNumber: 1212,
+                                                                    columnNumber: 27
                                                                 }, this),
-                                                                " 10"
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    onClick: buyTranscript,
+                                                                    disabled: coins < 10,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `px-3 py-1.5 rounded transition font-medium flex items-center gap-2 text-sm border ${coins >= 10 ? 'bg-black/80 hover:bg-black text-amber-400 border-amber-500/40' : 'bg-black/40 text-slate-500 border-slate-600 cursor-not-allowed'}`,
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "jsx-1be5a3ae20e8fc70",
+                                                                            children: "💡"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1227,
+                                                                            columnNumber: 29
+                                                                        }, this),
+                                                                        " ",
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "jsx-1be5a3ae20e8fc70",
+                                                                            children: "Show Text"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1227,
+                                                                            columnNumber: 45
+                                                                        }, this),
+                                                                        " ",
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                                                            size: 14,
+                                                                            className: "jsx-1be5a3ae20e8fc70"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1227,
+                                                                            columnNumber: 68
+                                                                        }, this),
+                                                                        " ",
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "jsx-1be5a3ae20e8fc70",
+                                                                            children: "10"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                                            lineNumber: 1227,
+                                                                            columnNumber: 93
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                                    lineNumber: 1218,
+                                                                    columnNumber: 27
+                                                                }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1241,
+                                                            lineNumber: 1211,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1239,
+                                                    lineNumber: 1206,
                                                     columnNumber: 23
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                    onClick: replayVoice,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "mt-3 text-base text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium",
-                                                    children: "🔊 Replay voice (free)"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1255,
-                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1233,
+                                            lineNumber: 1200,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1227,
+                                    lineNumber: 1194,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400/60 text-xs text-center mb-3",
+                                    children: "Tap Type → Size → Milk → Syrup. Add item, then submit."
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1236,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "border-t border-amber-500/30 pt-6",
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "border-t border-amber-500/30 pt-4",
                                     children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-lg text-amber-300/80 mb-4 font-medium",
-                                            children: [
-                                                "Build the order (",
-                                                round1Selections.length,
-                                                "/3 items)"
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1266,
-                                            columnNumber: 19
-                                        }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-wrap gap-2 mb-5 min-h-[48px]",
-                                            children: round1Selections.map((item, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-wrap gap-2 mb-4 min-h-[40px]",
+                                            children: round1Selections.length > 0 ? round1Selections.map((item, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                     onClick: ()=>removeFromOrder(i),
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-lg hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-500/30 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium",
                                                     children: [
                                                         item.size,
                                                         " ",
@@ -1849,30 +1870,142 @@ function ConvosetTest() {
                                                     ]
                                                 }, i, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1270,
-                                                    columnNumber: 23
-                                                }, this))
+                                                    lineNumber: 1244,
+                                                    columnNumber: 25
+                                                }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400/50 text-sm",
+                                                children: "Your order will appear here"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1253,
+                                                columnNumber: 23
+                                            }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1268,
+                                            lineNumber: 1241,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-4 gap-3 mb-6",
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-center gap-2 mb-4",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
                                                     children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm text-amber-400/60 mb-2 font-semibold",
-                                                            children: "TYPE"
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : 'bg-amber-900'}`
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1282,
+                                                            lineNumber: 1260,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
+                                                            children: "Type"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1261,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1259,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1264,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
+                                                            children: "Size"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1265,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1263,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1268,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
+                                                            children: "Milk"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1269,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1267,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1272,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
+                                                            children: "Syrup"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1273,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1271,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1258,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                            children: "Type ☕"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1281,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-2",
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
                                                             children: [
                                                                 'Americano',
                                                                 'Latte',
@@ -1886,37 +2019,37 @@ function ConvosetTest() {
                                                                             ...currentItem,
                                                                             type
                                                                         }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
                                                                     children: type
                                                                 }, type, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1285,
+                                                                    lineNumber: 1284,
                                                                     columnNumber: 27
                                                                 }, this))
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1283,
+                                                            lineNumber: 1282,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1281,
+                                                    lineNumber: 1280,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm text-amber-400/60 mb-2 font-semibold",
-                                                            children: "SIZE"
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                            children: "Size 📏"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1296,
+                                                            lineNumber: 1301,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-2",
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
                                                             children: [
                                                                 'Small',
                                                                 'Medium',
@@ -1926,40 +2059,41 @@ function ConvosetTest() {
                                                                             ...currentItem,
                                                                             size
                                                                         }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
                                                                     children: size
                                                                 }, size, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1299,
+                                                                    lineNumber: 1304,
                                                                     columnNumber: 27
                                                                 }, this))
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1297,
+                                                            lineNumber: 1302,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1295,
+                                                    lineNumber: 1300,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm text-amber-400/60 mb-2 font-semibold",
-                                                            children: "MILK"
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                            children: "Milk 🥛"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1310,
+                                                            lineNumber: 1321,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-2",
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
                                                             children: [
                                                                 'None',
                                                                 'Whole',
+                                                                'Half & Half',
                                                                 'Oat',
                                                                 'Almond',
                                                                 'Nonfat'
@@ -1968,37 +2102,37 @@ function ConvosetTest() {
                                                                             ...currentItem,
                                                                             milk: milk === 'None' ? undefined : milk
                                                                         }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.milk === milk || !currentItem.milk && milk === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.milk === milk || !currentItem.milk && milk === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
                                                                     children: milk
                                                                 }, milk, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1313,
+                                                                    lineNumber: 1324,
                                                                     columnNumber: 27
                                                                 }, this))
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1311,
+                                                            lineNumber: 1322,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1309,
+                                                    lineNumber: 1320,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm text-amber-400/60 mb-2 font-semibold",
-                                                            children: "SYRUP"
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                            children: "Syrup 🍯"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1324,
+                                                            lineNumber: 1341,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-2",
+                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
                                                             children: [
                                                                 'None',
                                                                 'Caramel',
@@ -2009,69 +2143,100 @@ function ConvosetTest() {
                                                                             ...currentItem,
                                                                             syrup: syrup === 'None' ? undefined : syrup
                                                                         }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.syrup === syrup || !currentItem.syrup && syrup === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.syrup === syrup || !currentItem.syrup && syrup === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
                                                                     children: syrup
                                                                 }, syrup, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1327,
+                                                                    lineNumber: 1344,
                                                                     columnNumber: 27
                                                                 }, this))
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1325,
+                                                            lineNumber: 1342,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1323,
+                                                    lineNumber: 1340,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1280,
+                                            lineNumber: 1278,
                                             columnNumber: 19
                                         }, this),
+                                        (currentItem.type || currentItem.size) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-900/30 rounded-lg p-2 mb-3 text-center",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-200 text-sm",
+                                                children: [
+                                                    "Building: ",
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "font-semibold",
+                                                        children: [
+                                                            currentItem.size || '___',
+                                                            " ",
+                                                            currentItem.type || '___',
+                                                            currentItem.milk && ` (${currentItem.milk})`,
+                                                            currentItem.syrup && ` + ${currentItem.syrup}`
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1364,
+                                                        columnNumber: 35
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1363,
+                                                columnNumber: 23
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1362,
+                                            columnNumber: 21
+                                        }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-4",
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                     onClick: addToOrder,
                                                     disabled: !currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed",
                                                     children: "+ Add Item"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1340,
+                                                    lineNumber: 1375,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                     onClick: checkRound1,
                                                     disabled: round1Selections.length !== currentRoundConfig.itemCount,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed",
+                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed",
                                                     children: "Submit ✓"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1347,
+                                                    lineNumber: 1382,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1339,
+                                            lineNumber: 1374,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1265,
+                                    lineNumber: 1239,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1226,
+                            lineNumber: 1193,
                             columnNumber: 15
                         }, this),
                         round === 4 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2086,7 +2251,7 @@ function ConvosetTest() {
                                             className: "jsx-1be5a3ae20e8fc70" + " " + "w-20 h-20 rounded-full object-cover border-2 border-amber-500/50"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1363,
+                                            lineNumber: 1398,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2097,7 +2262,7 @@ function ConvosetTest() {
                                                     children: "Kokorobot-1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1365,
+                                                    lineNumber: 1400,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2105,19 +2270,19 @@ function ConvosetTest() {
                                                     children: "Your turn! Order one drink by typing."
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1366,
+                                                    lineNumber: 1401,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1364,
+                                            lineNumber: 1399,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1362,
+                                    lineNumber: 1397,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2131,7 +2296,7 @@ function ConvosetTest() {
                                                     className: "jsx-1be5a3ae20e8fc70" + " " + "w-12 h-12 rounded-full mr-2 object-cover"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1374,
+                                                    lineNumber: 1409,
                                                     columnNumber: 25
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2139,18 +2304,18 @@ function ConvosetTest() {
                                                     children: msg.text
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1376,
+                                                    lineNumber: 1411,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, i, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1372,
+                                            lineNumber: 1407,
                                             columnNumber: 21
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1370,
+                                    lineNumber: 1405,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2181,12 +2346,12 @@ function ConvosetTest() {
                                             ]
                                         }, key, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1387,
+                                            lineNumber: 1422,
                                             columnNumber: 21
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1385,
+                                    lineNumber: 1420,
                                     columnNumber: 17
                                 }, this),
                                 round2ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2217,7 +2382,7 @@ function ConvosetTest() {
                                             children: "✏️ Modify"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1396,
+                                            lineNumber: 1431,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2246,13 +2411,13 @@ function ConvosetTest() {
                                             children: "✓ Confirm Order"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1409,
+                                            lineNumber: 1444,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1395,
+                                    lineNumber: 1430,
                                     columnNumber: 19
                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
@@ -2266,7 +2431,7 @@ function ConvosetTest() {
                                             className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1432,
+                                            lineNumber: 1467,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2275,19 +2440,19 @@ function ConvosetTest() {
                                             children: "Send"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1440,
+                                            lineNumber: 1475,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1431,
+                                    lineNumber: 1466,
                                     columnNumber: 19
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1361,
+                            lineNumber: 1396,
                             columnNumber: 15
                         }, this),
                         round === 5 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2299,7 +2464,7 @@ function ConvosetTest() {
                                     className: "jsx-1be5a3ae20e8fc70" + " " + "w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1451,
+                                    lineNumber: 1486,
                                     columnNumber: 17
                                 }, this),
                                 !round3ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -2309,7 +2474,7 @@ function ConvosetTest() {
                                             children: "Speak your order!"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1455,
+                                            lineNumber: 1490,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2319,7 +2484,7 @@ function ConvosetTest() {
                                             children: round3Listening ? '🎤' : '🎤 Speak'
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1457,
+                                            lineNumber: 1492,
                                             columnNumber: 21
                                         }, this),
                                         round3Transcript && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2330,7 +2495,7 @@ function ConvosetTest() {
                                                     children: "You said:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1469,
+                                                    lineNumber: 1504,
                                                     columnNumber: 25
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2342,13 +2507,13 @@ function ConvosetTest() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1470,
+                                                    lineNumber: 1505,
                                                     columnNumber: 25
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1468,
+                                            lineNumber: 1503,
                                             columnNumber: 23
                                         }, this),
                                         round3CurrentQuestion && !round3ConfirmStep && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2362,7 +2527,7 @@ function ConvosetTest() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1476,
+                                                    lineNumber: 1511,
                                                     columnNumber: 25
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2370,13 +2535,13 @@ function ConvosetTest() {
                                                     children: "Tap the mic to answer"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1477,
+                                                    lineNumber: 1512,
                                                     columnNumber: 25
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1475,
+                                            lineNumber: 1510,
                                             columnNumber: 23
                                         }, this)
                                     ]
@@ -2391,12 +2556,12 @@ function ConvosetTest() {
                                                     children: round3CurrentQuestion
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1486,
+                                                    lineNumber: 1521,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1485,
+                                                lineNumber: 1520,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2420,7 +2585,7 @@ function ConvosetTest() {
                                                         children: "✏️ Modify"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1490,
+                                                        lineNumber: 1525,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2429,37 +2594,37 @@ function ConvosetTest() {
                                                         children: "✓ Confirm Order"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1502,
+                                                        lineNumber: 1537,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1489,
+                                                lineNumber: 1524,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1484,
+                                        lineNumber: 1519,
                                         columnNumber: 21
                                     }, this)
                                 }, void 0, false)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1450,
+                            lineNumber: 1485,
                             columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1222,
+                    lineNumber: 1189,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1221,
+                lineNumber: 1188,
                 columnNumber: 9
             }, this),
             gameState === 'investor' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2471,59 +2636,59 @@ function ConvosetTest() {
                         className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-full h-full object-cover"
                     }, void 0, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1522,
+                        lineNumber: 1557,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-4 left-4 right-4 flex justify-between items-center z-50",
+                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-50",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-5 py-2 border border-amber-500/50",
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/50",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono",
+                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono text-xs md:text-base",
                                     children: "M31 Coffee Outpost"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1531,
+                                    lineNumber: 1566,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1530,
+                                lineNumber: 1565,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
+                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-1 md:gap-3",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-5 py-2 border border-yellow-500/50 flex items-center gap-2",
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/50 flex items-center gap-1 md:gap-2",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                                size: 24,
-                                                className: "jsx-1be5a3ae20e8fc70"
+                                                size: 16,
+                                                className: "jsx-1be5a3ae20e8fc70" + " " + "md:w-6 md:h-6"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1535,
+                                                lineNumber: 1570,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-lg",
+                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-sm md:text-lg",
                                                 children: coins
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1536,
+                                                lineNumber: 1571,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1534,
+                                        lineNumber: 1569,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-5 py-2 border border-purple-500/50",
+                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/50",
                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono",
+                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono text-xs md:text-base",
                                             children: [
                                                 "Round ",
                                                 round,
@@ -2531,24 +2696,24 @@ function ConvosetTest() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1539,
+                                            lineNumber: 1574,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1538,
+                                        lineNumber: 1573,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1533,
+                                lineNumber: 1568,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1529,
+                        lineNumber: 1564,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2558,7 +2723,7 @@ function ConvosetTest() {
                                 className: "jsx-1be5a3ae20e8fc70" + " " + "w-3 h-3 bg-green-500 rounded-full animate-pulse"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1546,
+                                lineNumber: 1581,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2566,13 +2731,13 @@ function ConvosetTest() {
                                 children: "LIVE"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1547,
+                                lineNumber: 1582,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1545,
+                        lineNumber: 1580,
                         columnNumber: 11
                     }, this),
                     showCoinAnimation && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2593,30 +2758,30 @@ function ConvosetTest() {
                                             className: "drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1566,
+                                            lineNumber: 1601,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1568,
+                                            lineNumber: 1603,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1564,
+                                    lineNumber: 1599,
                                     columnNumber: 19
                                 }, this)
                             }, coin.id, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1554,
+                                lineNumber: 1589,
                                 columnNumber: 17
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1552,
+                        lineNumber: 1587,
                         columnNumber: 13
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2629,7 +2794,7 @@ function ConvosetTest() {
                                     className: "jsx-1be5a3ae20e8fc70"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1578,
+                                    lineNumber: 1613,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2640,18 +2805,18 @@ function ConvosetTest() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1579,
+                                    lineNumber: 1614,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1577,
+                            lineNumber: 1612,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1576,
+                        lineNumber: 1611,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2665,7 +2830,7 @@ function ConvosetTest() {
                                         className: "jsx-1be5a3ae20e8fc70"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1594,
+                                        lineNumber: 1629,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2676,13 +2841,13 @@ function ConvosetTest() {
                                         children: "from our Earth Investors"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1595,
+                                        lineNumber: 1630,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1593,
+                                lineNumber: 1628,
                                 columnNumber: 13
                             }, this),
                             round === 3 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2696,7 +2861,7 @@ function ConvosetTest() {
                                         children: "🎉 Excellent!"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1599,
+                                        lineNumber: 1634,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2704,13 +2869,13 @@ function ConvosetTest() {
                                         children: "Can she take your orders, too?"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1600,
+                                        lineNumber: 1635,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1598,
+                                lineNumber: 1633,
                                 columnNumber: 15
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 style: {
@@ -2723,13 +2888,13 @@ function ConvosetTest() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1603,
+                                lineNumber: 1638,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1584,
+                        lineNumber: 1619,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2748,7 +2913,7 @@ function ConvosetTest() {
                                         children: "🏪 Build Your Café"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1616,
+                                        lineNumber: 1651,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2760,7 +2925,7 @@ function ConvosetTest() {
                                         children: "Next Round →"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1625,
+                                        lineNumber: 1660,
                                         columnNumber: 17
                                     }, this)
                                 ]
@@ -2778,7 +2943,7 @@ function ConvosetTest() {
                                         children: "🏪 Build Your Café"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1637,
+                                        lineNumber: 1672,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2792,7 +2957,7 @@ function ConvosetTest() {
                                         children: "🎯 Try a New Set"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1646,
+                                        lineNumber: 1681,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2807,7 +2972,7 @@ function ConvosetTest() {
                                         children: "Save & Exit"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1655,
+                                        lineNumber: 1690,
                                         columnNumber: 17
                                     }, this)
                                 ]
@@ -2821,19 +2986,19 @@ function ConvosetTest() {
                                 children: "Next Round →"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1669,
+                                lineNumber: 1704,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1608,
+                        lineNumber: 1643,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1520,
+                lineNumber: 1555,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -2860,7 +3025,7 @@ function ConvosetTest() {
                             children: "☕ Our Menu"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1767,
+                            lineNumber: 1802,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2879,7 +3044,7 @@ function ConvosetTest() {
                                                     children: item.name
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1774,
+                                                    lineNumber: 1809,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2887,13 +3052,13 @@ function ConvosetTest() {
                                                     children: item.desc
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1775,
+                                                    lineNumber: 1810,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1773,
+                                            lineNumber: 1808,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2901,18 +3066,18 @@ function ConvosetTest() {
                                             children: "•••"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1777,
+                                            lineNumber: 1812,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1772,
+                                    lineNumber: 1807,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1770,
+                            lineNumber: 1805,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2921,18 +3086,18 @@ function ConvosetTest() {
                             children: "Got it!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1781,
+                            lineNumber: 1816,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1759,
+                    lineNumber: 1794,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1758,
+                lineNumber: 1793,
                 columnNumber: 9
             }, this),
             showCafeShop && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2951,7 +3116,7 @@ function ConvosetTest() {
                                     children: "🏪 Choose Your Café"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1796,
+                                    lineNumber: 1831,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2962,7 +3127,7 @@ function ConvosetTest() {
                                             className: "jsx-1be5a3ae20e8fc70"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1798,
+                                            lineNumber: 1833,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2970,19 +3135,19 @@ function ConvosetTest() {
                                             children: coins
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1799,
+                                            lineNumber: 1834,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1797,
+                                    lineNumber: 1832,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1795,
+                            lineNumber: 1830,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3015,7 +3180,7 @@ function ConvosetTest() {
                                                     className: "jsx-1be5a3ae20e8fc70" + " " + "w-full h-32 object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1828,
+                                                    lineNumber: 1863,
                                                     columnNumber: 23
                                                 }, this),
                                                 owned && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3023,13 +3188,13 @@ function ConvosetTest() {
                                                     children: "✓ OWNED"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1830,
+                                                    lineNumber: 1865,
                                                     columnNumber: 25
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1827,
+                                            lineNumber: 1862,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3043,7 +3208,7 @@ function ConvosetTest() {
                                                     children: cafe.name
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1836,
+                                                    lineNumber: 1871,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3053,7 +3218,7 @@ function ConvosetTest() {
                                                         children: "Tap to view options"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1839,
+                                                        lineNumber: 1874,
                                                         columnNumber: 27
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                                         children: [
@@ -3061,7 +3226,7 @@ function ConvosetTest() {
                                                                 size: 18
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 1842,
+                                                                lineNumber: 1877,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3069,32 +3234,32 @@ function ConvosetTest() {
                                                                 children: cafe.price
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 1843,
+                                                                lineNumber: 1878,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, void 0, true)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1837,
+                                                    lineNumber: 1872,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1835,
+                                            lineNumber: 1870,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, cafe.id, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1808,
+                                    lineNumber: 1843,
                                     columnNumber: 19
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1803,
+                            lineNumber: 1838,
                             columnNumber: 13
                         }, this),
                         round === 5 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -3113,7 +3278,7 @@ function ConvosetTest() {
                                             children: "🎯 Try a New Set"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1858,
+                                            lineNumber: 1893,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3127,13 +3292,13 @@ function ConvosetTest() {
                                             children: "🏬 Choose New Outpost"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1867,
+                                            lineNumber: 1902,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1857,
+                                    lineNumber: 1892,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3147,7 +3312,7 @@ function ConvosetTest() {
                                     children: "🗺️ Go to M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1878,
+                                    lineNumber: 1913,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3162,7 +3327,7 @@ function ConvosetTest() {
                                             children: "💰 Buy Coins"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1890,
+                                            lineNumber: 1925,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3177,7 +3342,7 @@ function ConvosetTest() {
                                             children: "📦 Check Inventory"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1897,
+                                            lineNumber: 1932,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3191,13 +3356,13 @@ function ConvosetTest() {
                                             children: "💾 Save & Exit"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1907,
+                                            lineNumber: 1942,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1889,
+                                    lineNumber: 1924,
                                     columnNumber: 17
                                 }, this)
                             ]
@@ -3214,7 +3379,7 @@ function ConvosetTest() {
                                         children: "💰 Buy Coins"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1922,
+                                        lineNumber: 1957,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3229,25 +3394,25 @@ function ConvosetTest() {
                                         children: "▶️ Keep Playing"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1929,
+                                        lineNumber: 1964,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1921,
+                                lineNumber: 1956,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1794,
+                    lineNumber: 1829,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1793,
+                lineNumber: 1828,
                 columnNumber: 9
             }, this),
             showPurchaseConfirm && selectedCafe && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3260,7 +3425,7 @@ function ConvosetTest() {
                             children: "🏪 Purchase Café?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1950,
+                            lineNumber: 1985,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -3269,7 +3434,7 @@ function ConvosetTest() {
                             className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-amber-500/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1951,
+                            lineNumber: 1986,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3277,7 +3442,7 @@ function ConvosetTest() {
                             children: selectedCafe.name
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1956,
+                            lineNumber: 1991,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3288,7 +3453,7 @@ function ConvosetTest() {
                                     children: "Price:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1958,
+                                    lineNumber: 1993,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
@@ -3296,7 +3461,7 @@ function ConvosetTest() {
                                     className: "jsx-1be5a3ae20e8fc70"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1959,
+                                    lineNumber: 1994,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3304,13 +3469,13 @@ function ConvosetTest() {
                                     children: selectedCafe.price
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1960,
+                                    lineNumber: 1995,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1957,
+                            lineNumber: 1992,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3321,7 +3486,7 @@ function ConvosetTest() {
                                     children: "Your balance:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1963,
+                                    lineNumber: 1998,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
@@ -3329,7 +3494,7 @@ function ConvosetTest() {
                                     className: "jsx-1be5a3ae20e8fc70"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1964,
+                                    lineNumber: 1999,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3337,13 +3502,13 @@ function ConvosetTest() {
                                     children: coins
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1965,
+                                    lineNumber: 2000,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1962,
+                            lineNumber: 1997,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3358,7 +3523,7 @@ function ConvosetTest() {
                                     children: "Cancel"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1968,
+                                    lineNumber: 2003,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3379,24 +3544,24 @@ function ConvosetTest() {
                                     children: "✓ Buy Now"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1977,
+                                    lineNumber: 2012,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1967,
+                            lineNumber: 2002,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1949,
+                    lineNumber: 1984,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1948,
+                lineNumber: 1983,
                 columnNumber: 9
             }, this),
             showJustPurchased && justPurchasedCafe && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3409,7 +3574,7 @@ function ConvosetTest() {
                             children: "🎉"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2001,
+                            lineNumber: 2036,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3417,7 +3582,7 @@ function ConvosetTest() {
                             children: "Congratulations!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2002,
+                            lineNumber: 2037,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -3426,7 +3591,7 @@ function ConvosetTest() {
                             className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2003,
+                            lineNumber: 2038,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3434,7 +3599,7 @@ function ConvosetTest() {
                             children: justPurchasedCafe.name
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2008,
+                            lineNumber: 2043,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3442,7 +3607,7 @@ function ConvosetTest() {
                             children: "is now in your inventory!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2009,
+                            lineNumber: 2044,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3450,7 +3615,7 @@ function ConvosetTest() {
                             children: "What would you like to do?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2010,
+                            lineNumber: 2045,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3466,7 +3631,7 @@ function ConvosetTest() {
                                     children: "🗺️ Place on M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2012,
+                                    lineNumber: 2047,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3480,7 +3645,7 @@ function ConvosetTest() {
                                     children: "📦 Check Inventory"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2022,
+                                    lineNumber: 2057,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3493,24 +3658,24 @@ function ConvosetTest() {
                                     children: "🎯 Try a New Set"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2033,
+                                    lineNumber: 2068,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2011,
+                            lineNumber: 2046,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2000,
+                    lineNumber: 2035,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1999,
+                lineNumber: 2034,
                 columnNumber: 9
             }, this),
             showOwnedPopup && ownedCafeToView && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3526,7 +3691,7 @@ function ConvosetTest() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2052,
+                            lineNumber: 2087,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -3535,7 +3700,7 @@ function ConvosetTest() {
                             className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-6 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2053,
+                            lineNumber: 2088,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3543,7 +3708,7 @@ function ConvosetTest() {
                             children: "This café is in your inventory. What would you like to do?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2058,
+                            lineNumber: 2093,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3559,7 +3724,7 @@ function ConvosetTest() {
                                     children: "🗺️ Place on M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2060,
+                                    lineNumber: 2095,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3573,7 +3738,7 @@ function ConvosetTest() {
                                     children: "📦 Check Inventory"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2070,
+                                    lineNumber: 2105,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3586,7 +3751,7 @@ function ConvosetTest() {
                                     children: "🎯 Try a New Set"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2081,
+                                    lineNumber: 2116,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3598,24 +3763,24 @@ function ConvosetTest() {
                                     children: "Close"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2091,
+                                    lineNumber: 2126,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2059,
+                            lineNumber: 2094,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2051,
+                    lineNumber: 2086,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2050,
+                lineNumber: 2085,
                 columnNumber: 9
             }, this),
             showCoinShop && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3630,7 +3795,7 @@ function ConvosetTest() {
                             children: "💰 Coin Shop"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2112,
+                            lineNumber: 2147,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3648,7 +3813,7 @@ function ConvosetTest() {
                                             children: "⭐ BEST VALUE"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 2128,
+                                            lineNumber: 2163,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3662,7 +3827,7 @@ function ConvosetTest() {
                                                             children: bundle.label
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2134,
+                                                            lineNumber: 2169,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3672,7 +3837,7 @@ function ConvosetTest() {
                                                                     size: 28
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2136,
+                                                                    lineNumber: 2171,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3680,19 +3845,19 @@ function ConvosetTest() {
                                                                     children: bundle.coins.toLocaleString()
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2137,
+                                                                    lineNumber: 2172,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2135,
+                                                            lineNumber: 2170,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2133,
+                                                    lineNumber: 2168,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3700,24 +3865,24 @@ function ConvosetTest() {
                                                     children: bundle.price
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2140,
+                                                    lineNumber: 2175,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 2132,
+                                            lineNumber: 2167,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, bundle.id, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2116,
+                                    lineNumber: 2151,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2114,
+                            lineNumber: 2149,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3726,18 +3891,18 @@ function ConvosetTest() {
                             children: "Maybe Later"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2148,
+                            lineNumber: 2183,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2108,
+                    lineNumber: 2143,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2107,
+                lineNumber: 2142,
                 columnNumber: 9
             }, this),
             showInventory && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3755,7 +3920,7 @@ function ConvosetTest() {
                                         children: "←"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2167,
+                                        lineNumber: 2202,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3763,13 +3928,13 @@ function ConvosetTest() {
                                         children: "Back to Coffee Outpost"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2168,
+                                        lineNumber: 2203,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2163,
+                                lineNumber: 2198,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3780,7 +3945,7 @@ function ConvosetTest() {
                                         className: "jsx-1be5a3ae20e8fc70"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2171,
+                                        lineNumber: 2206,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3788,19 +3953,19 @@ function ConvosetTest() {
                                         children: coins
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2172,
+                                        lineNumber: 2207,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2170,
+                                lineNumber: 2205,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2162,
+                        lineNumber: 2197,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3812,7 +3977,7 @@ function ConvosetTest() {
                                 children: "🏪 Buildings"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2178,
+                                lineNumber: 2213,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3826,13 +3991,13 @@ function ConvosetTest() {
                                         children: "Soon"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2194,
+                                        lineNumber: 2229,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2188,
+                                lineNumber: 2223,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3845,19 +4010,19 @@ function ConvosetTest() {
                                         children: "Soon"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2201,
+                                        lineNumber: 2236,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2196,
+                                lineNumber: 2231,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2177,
+                        lineNumber: 2212,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3871,7 +4036,7 @@ function ConvosetTest() {
                                         children: "Your Buildings"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2209,
+                                        lineNumber: 2244,
                                         columnNumber: 17
                                     }, this),
                                     purchasedCafes.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3882,7 +4047,7 @@ function ConvosetTest() {
                                                 children: "🏪"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2213,
+                                                lineNumber: 2248,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3890,7 +4055,7 @@ function ConvosetTest() {
                                                 children: "No buildings yet!"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2214,
+                                                lineNumber: 2249,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3902,13 +4067,13 @@ function ConvosetTest() {
                                                 children: "🛒 Shop for Cafés"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2215,
+                                                lineNumber: 2250,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2212,
+                                        lineNumber: 2247,
                                         columnNumber: 19
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "jsx-1be5a3ae20e8fc70",
@@ -3930,7 +4095,7 @@ function ConvosetTest() {
                                                                     className: "jsx-1be5a3ae20e8fc70" + " " + "w-full aspect-square object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2243,
+                                                                    lineNumber: 2278,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3940,12 +4105,12 @@ function ConvosetTest() {
                                                                         children: cafe.name
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                                        lineNumber: 2249,
+                                                                        lineNumber: 2284,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2248,
+                                                                    lineNumber: 2283,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 isSelected && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3961,23 +4126,23 @@ function ConvosetTest() {
                                                                             className: "jsx-1be5a3ae20e8fc70"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 2254,
+                                                                            lineNumber: 2289,
                                                                             columnNumber: 35
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                                        lineNumber: 2253,
+                                                                        lineNumber: 2288,
                                                                         columnNumber: 33
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2252,
+                                                                    lineNumber: 2287,
                                                                     columnNumber: 31
                                                                 }, this)
                                                             ]
                                                         }, cafeId, true, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2234,
+                                                            lineNumber: 2269,
                                                             columnNumber: 27
                                                         }, this);
                                                     }),
@@ -3993,7 +4158,7 @@ function ConvosetTest() {
                                                                 children: "+"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 2270,
+                                                                lineNumber: 2305,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4001,19 +4166,19 @@ function ConvosetTest() {
                                                                 children: "Buy More"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 2271,
+                                                                lineNumber: 2306,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 2263,
+                                                        lineNumber: 2298,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2228,
+                                                lineNumber: 2263,
                                                 columnNumber: 21
                                             }, this),
                                             selectedInventoryItem && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4026,24 +4191,24 @@ function ConvosetTest() {
                                                     children: "🗺️ Place on M31 Map"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2278,
+                                                    lineNumber: 2313,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2277,
+                                                lineNumber: 2312,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2226,
+                                        lineNumber: 2261,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2208,
+                                lineNumber: 2243,
                                 columnNumber: 15
                             }, this),
                             inventoryTab === 'kokorobots' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4054,7 +4219,7 @@ function ConvosetTest() {
                                         children: "🤖"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2295,
+                                        lineNumber: 2330,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -4062,7 +4227,7 @@ function ConvosetTest() {
                                         children: "Kokorobots Coming Soon!"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2296,
+                                        lineNumber: 2331,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4070,19 +4235,19 @@ function ConvosetTest() {
                                         children: "Customize your Kokorobot's appearance — change hairstyles, suits, colors, and more!"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2297,
+                                        lineNumber: 2332,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2294,
+                                lineNumber: 2329,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2206,
+                        lineNumber: 2241,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4096,7 +4261,7 @@ function ConvosetTest() {
                                 children: "🏬 All Outposts"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2307,
+                                lineNumber: 2342,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4108,25 +4273,25 @@ function ConvosetTest() {
                                 children: "Save & Exit"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2315,
+                                lineNumber: 2350,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2306,
+                        lineNumber: 2341,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2160,
+                lineNumber: 2195,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/test/convoset/page.tsx",
-        lineNumber: 1083,
+        lineNumber: 1061,
         columnNumber: 5
     }, this);
 }

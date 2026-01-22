@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/clairhur/m31-site/instrumentation-client.ts"],"sourcesContent":["import posthog from \"posthog-js\"\n\nposthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {\n  api_host: \"/ingest\",\n  ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,\n  // Include the defaults option as required by PostHog\n  defaults: '2025-05-24',\n  // Enables capturing unhandled exceptions via Error Tracking\n  capture_exceptions: true,\n  // Turn on debug in development mode\n  debug: process.env.NODE_ENV === \"development\",\n});\n\n// IMPORTANT: Never combine this approach with other client-side PostHog initialization approaches,\n// especially components like a PostHogProvider. instrumentation-client.ts is the correct solution\n// for initializing client-side PostHog in Next.js 15.3+ apps.\n"],"names":[],"mappings":";AAEa;AAFb;;AAEA,6JAAO,CAAC,IAAI,sFAAuC;IACjD,UAAU;IACV,OAAO;IACP,qDAAqD;IACrD,UAAU;IACV,4DAA4D;IAC5D,oBAAoB;IACpB,oCAAoC;IACpC,OAAO,oDAAyB;AAClC,IAEA,mGAAmG;CACnG,kGAAkG;CAClG,8DAA8D"}}]
+}
