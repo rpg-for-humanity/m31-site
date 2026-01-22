@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { SupportedLanguage, getVoiceForLang, getStoredLanguage, languageInfo } from '../../utils/tts';
-import posthog from 'posthog-js';
 type Round = 1 | 2 | 3 | 4 | 5;
 type GameState = 'intro' | 'walking' | 'playing' | 'investor';
 type OrderItem = {
@@ -87,14 +86,14 @@ export default function ConvosetTest() {
     }
   }, [coins, purchasedCafes, isLoaded]);
   
-  // Cafe options - Updated prices
+  // Cafe options - Updated prices for Level 3 economy
   const cafeOptions = [
-  { id: 'coffeepost', name: 'Coffee Post', price: 800, image: '/coffeepost.png' },
-  { id: 'retrocafe', name: 'Retro Café', price: 1500, image: '/retrocafe.png' },
-  { id: 'flowercafe', name: 'Flower Café', price: 2500, image: '/flowercafe.png' },
-  { id: 'moderncafe', name: 'Modern Café', price: 4000, image: '/moderncafe.png' },
-  { id: 'rocococafe', name: 'Rococo Café', price: 6000, image: '/rocococafe.png' },
-];
+    { id: 'coffeepost', name: 'Coffee Post', price: 800, image: '/coffeepost.png' },
+    { id: 'retrocafe', name: 'Retro Café', price: 1500, image: '/retrocafe.png' },
+    { id: 'flowercafe', name: 'Flower Café', price: 2500, image: '/flowercafe.png' },
+    { id: 'moderncafe', name: 'Modern Café', price: 4000, image: '/moderncafe.png' },
+    { id: 'rocococafe', name: 'Rococo Café', price: 6000, image: '/rocococafe.png' },
+  ];
   
   // Coin bundles
   const coinBundles = [
@@ -477,13 +476,6 @@ export default function ConvosetTest() {
     if (coins >= 10) {
       setCoins(prev => prev - 10);
       setShowTranscript(true);
-
-      // Track transcript purchased event
-      posthog.capture('transcript_purchased', {
-        round: round,
-        coins_spent: 10,
-        language_code: selectedLanguage,
-      });
     }
   };
 
@@ -503,18 +495,12 @@ export default function ConvosetTest() {
         });
       }
       setMusicPlaying(false);
-
-      // Track music toggled event
-      posthog.capture('music_toggled', { enabled: false });
     } else {
       // Resume only the main audioRef
       if (audioRef) {
         audioRef.play().catch(() => {});
       }
       setMusicPlaying(true);
-
-      // Track music toggled event
-      posthog.capture('music_toggled', { enabled: true });
     }
   };
 
@@ -522,14 +508,7 @@ export default function ConvosetTest() {
     setGameState('walking');
     setShowTranscript(false);
     setIsWalking(true);
-
-    // Track game mission started event
-    posthog.capture('game_mission_started', {
-      round: round,
-      language_code: selectedLanguage,
-      outpost_name: 'Coffee Outpost',
-    });
-
+    
     // Walk to center then transition
     const walkToCenter = setInterval(() => {
       setKokoroX(prev => {
@@ -596,16 +575,6 @@ export default function ConvosetTest() {
       stopBackgroundMusic();
       // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
       const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
-
-      // Track round completed event
-      posthog.capture('round_completed', {
-        round: round,
-        coins_earned: coinReward,
-        language_code: selectedLanguage,
-        outpost_name: 'Coffee Outpost',
-        mode: 'listen_and_select',
-      });
-
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
@@ -621,15 +590,9 @@ export default function ConvosetTest() {
         setGameState('investor');
       });
     } else {
-      // Track round failed event
-      posthog.capture('round_failed', {
-        round: round,
-        language_code: selectedLanguage,
-        outpost_name: 'Coffee Outpost',
-        mode: 'listen_and_select',
-      });
-
+      // Wrong answer - play error sound and show clear feedback
       playAudio('/Audio/kokorobot-wrong.mp3');
+      alert("❌ Not quite right!\n\nPress 🔊 to hear the order again.");
       setRound1Selections([]);
       setCurrentItem({});
     }
@@ -701,16 +664,6 @@ export default function ConvosetTest() {
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
         // Stop background music completely
         stopBackgroundMusic();
-
-        // Track round completed event
-        posthog.capture('round_completed', {
-          round: round,
-          coins_earned: 80,
-          language_code: selectedLanguage,
-          outpost_name: 'Coffee Outpost',
-          mode: 'typing',
-        });
-
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
           triggerCoinAnimation(round);
@@ -875,25 +828,19 @@ export default function ConvosetTest() {
       alert('Speech recognition not supported. Try Chrome.');
       return;
     }
-
-    // Track speech recognition used event
-    posthog.capture('speech_recognition_used', {
-      round: round,
-      language_code: selectedLanguage,
-    });
-
+    
     // Pause music while speaking
     if (audioRef) {
       audioRef.pause();
     }
-
+    
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     const recognition = new SpeechRecognition();
-
+    
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = selectedLanguage;
-
+    
     setRound3Listening(true);
     setRound3Transcript('');
     setRound3Feedback([]);
@@ -1042,16 +989,6 @@ export default function ConvosetTest() {
   const acceptRound3Score = () => {
     // Stop background music completely
     stopBackgroundMusic();
-
-    // Track round completed event
-    posthog.capture('round_completed', {
-      round: round,
-      coins_earned: 500,
-      language_code: selectedLanguage,
-      outpost_name: 'Coffee Outpost',
-      mode: 'speaking',
-    });
-
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 500);
@@ -1244,29 +1181,48 @@ export default function ConvosetTest() {
       {/* INTRO - Mission text CENTERED with dark box */}
       {gameState === 'intro' && (
         <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="text-center max-w-2xl px-12 py-10 bg-black/70 rounded-3xl shadow-2xl">
-            <p className="text-purple-400 font-medium mb-2 text-lg">Round {round} of 5</p>
-            <h1 className="text-5xl md:text-6xl font-semibold mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+          <div className="text-center max-w-2xl px-8 md:px-12 py-8 md:py-10 bg-black/70 rounded-3xl shadow-2xl mx-4">
+            <p className="text-purple-400 font-medium mb-2 text-base md:text-lg">Round {round} of 5</p>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
               M31 Coffee Outpost
             </h1>
-            <p className="text-white mb-3 text-lg md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-              Kokorobot-1 dreams of becoming a barista someday.
-            </p>
-            <p className="text-amber-100 mb-3 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
-              {round <= 3 && currentRoundConfig 
-                ? `Listen carefully. Can you take ${currentRoundConfig.itemCount === 1 ? 'this order' : `these ${currentRoundConfig.itemCount} orders`}?`
-                : round === 4
-                  ? "Type your order to the barista!"
-                  : "Speak your order out loud!"
-              }
-            </p>
-            <p className="text-yellow-400 font-medium mb-8 text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+            {round <= 3 && currentRoundConfig && (
+              <>
+                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  You're the cashier. Kokorobot-1 is your customer.
+                </p>
+                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  🎧 Listen to {currentRoundConfig.itemCount === 1 ? 'the order' : `all ${currentRoundConfig.itemCount} orders`}, then submit exactly what you hear.
+                </p>
+              </>
+            )}
+            {round === 4 && (
+              <>
+                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  Now YOU are the customer!
+                </p>
+                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  ⌨️ Type your coffee order to the barista.
+                </p>
+              </>
+            )}
+            {round === 5 && (
+              <>
+                <p className="text-white mb-2 text-base md:text-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  Final round — speak like a pro!
+                </p>
+                <p className="text-amber-100 mb-3 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-normal">
+                  🎤 Say your coffee order out loud.
+                </p>
+              </>
+            )}
+            <p className="text-yellow-400 font-medium mb-6 md:mb-8 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
               Earn coins to build Andromeda's first café!
             </p>
             <button
               onClick={startGame}
               disabled={!introReady}
-              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-4 px-14 rounded-full text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-3 md:py-4 px-10 md:px-14 rounded-full text-lg md:text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Begin Mission
             </button>
@@ -1303,96 +1259,146 @@ export default function ConvosetTest() {
                     ) : (
                       <div className="bg-amber-900/40 rounded-xl p-4 text-center border border-amber-500/30">
                         <p className="text-amber-300/80 mb-3 text-lg">🎧 Listen to the order...</p>
-                        <button 
-                          onClick={buyTranscript}
-                          disabled={coins < 10}
-                          className={`text-base px-6 py-2 rounded-full transition font-semibold flex items-center gap-2 mx-auto ${
-                            coins >= 10 
-                              ? 'bg-black/80 text-yellow-400 hover:bg-black/90 border border-yellow-500/60' 
-                              : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                          }`}
-                        >
-                          💡 Show Text for <KokoroCoin size={16} /> 10
-                        </button>
+                        
+                        {/* Two CTAs side by side under Listen box */}
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                          <button 
+                            onClick={replayVoice}
+                            className="px-5 py-2.5 rounded-full transition font-semibold flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-base"
+                          >
+                            🔊 Replay Voice (Free)
+                          </button>
+                          <button 
+                            onClick={buyTranscript}
+                            disabled={coins < 10}
+                            className={`px-5 py-2.5 rounded-full transition font-semibold flex items-center justify-center gap-2 text-base ${
+                              coins >= 10 
+                                ? 'bg-black/80 text-yellow-400 hover:bg-black/90 border border-yellow-500/60' 
+                                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                            }`}
+                          >
+                            💡 Show Text <KokoroCoin size={16} /> 10
+                          </button>
+                        </div>
                       </div>
                     )}
-                    
-                    <button 
-                      onClick={replayVoice}
-                      className="mt-3 text-base text-amber-400/80 hover:text-amber-400 transition flex items-center gap-2 font-medium"
-                    >
-                      🔊 Replay voice (free)
-                    </button>
                   </div>
                 </div>
                 
-                {/* Order Builder */}
-                <div className="border-t border-amber-500/30 pt-6">
-                  <p className="text-lg text-amber-300/80 mb-4 font-medium">Build the order ({round1Selections.length}/3 items)</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-5 min-h-[48px]">
-                    {round1Selections.map((item, i) => (
-                      <button
-                        key={i}
-                        onClick={() => removeFromOrder(i)}
-                        className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-4 py-2 text-lg hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
-                      >
-                        {item.size} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
-                      </button>
-                    ))}
+                {/* Order Builder - Mobile Responsive */}
+                <div className="border-t border-amber-500/30 pt-4">
+                  {/* Current Order Summary */}
+                  <div className="flex flex-wrap gap-2 mb-4 min-h-[40px]">
+                    {round1Selections.length > 0 ? (
+                      round1Selections.map((item, i) => (
+                        <button
+                          key={i}
+                          onClick={() => removeFromOrder(i)}
+                          className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
+                        >
+                          {item.size} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
+                        </button>
+                      ))
+                    ) : (
+                      <p className="text-amber-400/50 text-sm">Your order will appear here</p>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-4 gap-3 mb-6">
-                    <div>
-                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">TYPE</p>
-                      <div className="flex flex-col gap-2">
+                  {/* Progress Indicator */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <div className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className="text-xs text-amber-400/60">Type</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className="text-xs text-amber-400/60">Size</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className="text-xs text-amber-400/60">Milk</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className="text-xs text-amber-400/60">Syrup</span>
+                    </div>
+                  </div>
+
+                  {/* Selection Grid - 2 columns on mobile, 4 on desktop */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto">
+                    {/* TYPE */}
+                    <div className="bg-black/30 rounded-xl p-2 md:p-3">
+                      <p className="text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide">Type ☕</p>
+                      <div className="flex flex-col gap-1">
                         {['Americano', 'Latte', 'Cappuccino', 'Flat White', 'Macchiato', 'Mocha', 'Espresso'].map((type) => (
                           <button
                             key={type}
                             onClick={() => setCurrentItem({...currentItem, type})}
-                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
+                              currentItem.type === type 
+                                ? 'bg-amber-500 text-black' 
+                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                            }`}
                           >
                             {type}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">SIZE</p>
-                      <div className="flex flex-col gap-2">
+
+                    {/* SIZE */}
+                    <div className="bg-black/30 rounded-xl p-2 md:p-3">
+                      <p className="text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide">Size 📏</p>
+                      <div className="flex flex-col gap-1">
                         {['Small', 'Medium', 'Large'].map((size) => (
                           <button
                             key={size}
                             onClick={() => setCurrentItem({...currentItem, size})}
-                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
+                              currentItem.size === size 
+                                ? 'bg-amber-500 text-black' 
+                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                            }`}
                           >
                             {size}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">MILK</p>
-                      <div className="flex flex-col gap-2">
+
+                    {/* MILK */}
+                    <div className="bg-black/30 rounded-xl p-2 md:p-3">
+                      <p className="text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide">Milk 🥛</p>
+                      <div className="flex flex-col gap-1">
                         {['None', 'Whole', 'Oat', 'Almond', 'Nonfat'].map((milk) => (
                           <button
                             key={milk}
                             onClick={() => setCurrentItem({...currentItem, milk: milk === 'None' ? undefined : milk})}
-                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${(currentItem.milk === milk || (!currentItem.milk && milk === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
+                              (currentItem.milk === milk || (!currentItem.milk && milk === 'None')) 
+                                ? 'bg-amber-500 text-black' 
+                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                            }`}
                           >
                             {milk}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-amber-400/60 mb-2 font-semibold">SYRUP</p>
-                      <div className="flex flex-col gap-2">
+
+                    {/* SYRUP */}
+                    <div className="bg-black/30 rounded-xl p-2 md:p-3">
+                      <p className="text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide">Syrup 🍯</p>
+                      <div className="flex flex-col gap-1">
                         {['None', 'Caramel', 'Vanilla', 'Hazelnut'].map((syrup) => (
                           <button
                             key={syrup}
                             onClick={() => setCurrentItem({...currentItem, syrup: syrup === 'None' ? undefined : syrup})}
-                            className={`py-2 px-3 rounded-lg text-sm transition font-medium ${(currentItem.syrup === syrup || (!currentItem.syrup && syrup === 'None')) ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`}
+                            className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
+                              (currentItem.syrup === syrup || (!currentItem.syrup && syrup === 'None')) 
+                                ? 'bg-amber-500 text-black' 
+                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                            }`}
                           >
                             {syrup}
                           </button>
@@ -1401,18 +1407,32 @@ export default function ConvosetTest() {
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
+                  {/* Current Selection Preview */}
+                  {(currentItem.type || currentItem.size) && (
+                    <div className="bg-amber-900/30 rounded-lg p-2 mb-3 text-center">
+                      <p className="text-amber-200 text-sm">
+                        Building: <span className="font-semibold">
+                          {currentItem.size || '___'} {currentItem.type || '___'}
+                          {currentItem.milk && ` (${currentItem.milk})`}
+                          {currentItem.syrup && ` + ${currentItem.syrup}`}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons - Always Visible */}
+                  <div className="flex gap-3">
                     <button
                       onClick={addToOrder}
                       disabled={!currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount}
-                      className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       + Add Item
                     </button>
                     <button
                       onClick={checkRound1}
                       disabled={round1Selections.length !== currentRoundConfig.itemCount}
-                      className="flex-1 py-4 rounded-xl font-semibold text-xl transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Submit ✓
                     </button>
@@ -1471,7 +1491,7 @@ export default function ConvosetTest() {
                     >
                       ✏️ Modify
                     </button>
-                    <button
+                    <button 
                       onClick={() => {
                         const response = "Thank you, it will be at the pick up counter.";
                         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
@@ -1480,16 +1500,6 @@ export default function ConvosetTest() {
                           audioRef.pause();
                           setMusicPlaying(false);
                         }
-
-                        // Track round completed event
-                        posthog.capture('round_completed', {
-                          round: round,
-                          coins_earned: 80,
-                          language_code: selectedLanguage,
-                          outpost_name: 'Coffee Outpost',
-                          mode: 'typing',
-                        });
-
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
                           triggerCoinAnimation(round);
@@ -2055,15 +2065,6 @@ export default function ConvosetTest() {
                   setCoins(prev => prev - selectedCafe.price);
                   setPurchasedCafes(prev => [...prev, selectedCafe.id]);
                   setShowPurchaseConfirm(false);
-
-                  // Track cafe purchased event
-                  posthog.capture('cafe_purchased', {
-                    cafe_id: selectedCafe.id,
-                    cafe_name: selectedCafe.name,
-                    price: selectedCafe.price,
-                    total_cafes_owned: purchasedCafes.length + 1,
-                  });
-
                   // Show just purchased popup
                   setJustPurchasedCafe(selectedCafe);
                   setShowJustPurchased(true);
@@ -2206,14 +2207,6 @@ export default function ConvosetTest() {
                     // Simulate purchase (in real app, this would go to payment)
                     setCoins(prev => prev + bundle.coins);
                     setShowCoinShop(false);
-
-                    // Track coin bundle purchased event
-                    posthog.capture('coin_bundle_purchased', {
-                      bundle_id: bundle.id,
-                      bundle_label: bundle.label,
-                      coins_received: bundle.coins,
-                      price: bundle.price,
-                    });
                   }}
                 >
                   {bundle.best && (
