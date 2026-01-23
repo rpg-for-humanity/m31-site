@@ -142,7 +142,9 @@ function ConvosetTest() {
     const [gameState, setGameState] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('intro');
     const [round, setRound] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(1);
     const [coins, setCoins] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(50);
-    const [investorMessage, setInvestorMessage] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [investorMessage, setInvestorMessage] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        title: "Great job!"
+    });
     const [showDialogue, setShowDialogue] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isNpcSpeaking, setIsNpcSpeaking] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [showTranscript, setShowTranscript] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
@@ -166,6 +168,60 @@ function ConvosetTest() {
     const [justPurchasedCafe, setJustPurchasedCafe] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [showOwnedPopup, setShowOwnedPopup] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [ownedCafeToView, setOwnedCafeToView] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    // Friendly feedback modal state
+    const [showFeedbackModal, setShowFeedbackModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    // Reward summary state (shown after Round 5 completion)
+    const [showRewardSummary, setShowRewardSummary] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [totalCoinsEarned, setTotalCoinsEarned] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
+    // Email capture modal state
+    const [showEmailModal, setShowEmailModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [emailInput, setEmailInput] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [emailSubmitted, setEmailSubmitted] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [emailError, setEmailError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    // Calculate coins earned per round
+    const getCoinsForRound = (r)=>{
+        const coinRewards = {
+            1: 20,
+            2: 30,
+            3: 50,
+            4: 80,
+            5: 100
+        };
+        return coinRewards[r] ?? 0;
+    };
+    // Feedback form
+    const FEEDBACK_FORM_URL = "https://forms.gle/H42F4Vz4uZXtqHaB8";
+    const openFeedbackForm = ()=>{
+        window.open(FEEDBACK_FORM_URL, "_blank", "noopener,noreferrer");
+    };
+    // Handle email submission
+    const handleEmailSubmit = async ()=>{
+        if (!emailInput || !emailInput.includes('@')) {
+            setEmailError('Please enter a valid email');
+            return;
+        }
+        try {
+            // For now, just save to localStorage (later: send to Supabase)
+            const waitlistData = {
+                email: emailInput,
+                coinsEarned: totalCoinsEarned,
+                timestamp: new Date().toISOString(),
+                source: 'coffee_outpost_demo'
+            };
+            // Store locally
+            const existing = JSON.parse(localStorage.getItem('rpg4h-waitlist') || '[]');
+            existing.push(waitlistData);
+            localStorage.setItem('rpg4h-waitlist', JSON.stringify(existing));
+            setEmailSubmitted(true);
+            setEmailError('');
+            // Close modal after 2 seconds
+            setTimeout(()=>{
+                setShowEmailModal(false);
+            }, 2000);
+        } catch (err) {
+            setEmailError('Something went wrong. Please try again.');
+        }
+    };
     // Auto-load saved progress on mount
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ConvosetTest.useEffect": ()=>{
@@ -317,7 +373,6 @@ function ConvosetTest() {
     const [musicStarted, setMusicStarted] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [musicPlaying, setMusicPlaying] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
     const [audioRef, setAudioRef] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
-    const [voiceAudio, setVoiceAudio] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     // Round-specific orders and audio
     const roundConfigs = {
         1: {
@@ -381,8 +436,10 @@ function ConvosetTest() {
                     "ConvosetTest.useEffect.walkIn": ()=>{
                         setKokoroX({
                             "ConvosetTest.useEffect.walkIn": (prev)=>{
-                                // Walk to about 25% from left
-                                const target = window.innerWidth * 0.25;
+                                // Walk more toward center - responsive target
+                                // Mobile: ~30% from left, Desktop: ~40% from left (closer to center)
+                                const isMobile = window.innerWidth < 768;
+                                const target = isMobile ? window.innerWidth * 0.30 : window.innerWidth * 0.40;
                                 if (prev >= target) {
                                     clearInterval(walkIn);
                                     setIsWalking(false);
@@ -550,92 +607,132 @@ function ConvosetTest() {
         }
     };
     const playRoundOrder = (forceRound)=>{
+        // Only for rounds 1-3 (listen & select)
         const targetRound = forceRound || round;
         const config = roundConfigs[targetRound];
         if (!config) return;
-        console.log(`🎤 Playing order audio: ${config.audio}`);
-        // STOP any existing voice audio
-        if (voiceAudio) {
-            voiceAudio.pause();
-            voiceAudio.currentTime = 0;
-            setVoiceAudio(null);
-        }
-        // STOP music while voice plays
+        console.log(`Playing round ${targetRound} order audio: ${config.audio}`);
+        // Pause background music while voice plays
         if (audioRef) {
             audioRef.pause();
         }
-        const audio = new Audio(config.audio);
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = config.audio;
         audio.volume = 0.8;
-        setVoiceAudio(audio);
         setIsNpcSpeaking(true);
-        // Simple: just play it
-        audio.play().then(()=>{
-            console.log('🎤 Voice playing');
-        }).catch((err)=>{
-            console.error('Voice play failed:', err);
-            speakTTS(config.npcOrder);
-        });
+        audio.oncanplay = ()=>{
+            console.log('Audio can play');
+            audio.play().then(()=>{
+                console.log('Audio playing successfully');
+            }).catch((err)=>{
+                console.error('Play failed:', err);
+                speakTTS(config.npcOrder);
+            });
+        };
         audio.onended = ()=>{
-            console.log('🎤 Voice ended');
+            console.log('Audio ended');
             setIsNpcSpeaking(false);
-            setVoiceAudio(null);
-            // NOW start music (after voice ends)
-            if (musicPlaying && audioRef) {
+            // DON'T start music here - it's already started in completeGame
+            // Just resume if it was paused
+            if (audioRef && musicPlaying) {
                 audioRef.play().catch(()=>{});
-            } else if (!musicStarted) {
-                // First time - start music
-                startBackgroundMusic(targetRound);
             }
+        };
+        audio.onerror = (e)=>{
+            console.error('Audio load error - trying fetch:', e);
+            fetch(config.audio).then((res)=>{
+                console.log('Fetch status:', res.status, res.statusText);
+                if (!res.ok) {
+                    speakTTS(config.npcOrder);
+                }
+            }).catch((fetchErr)=>{
+                console.error('Fetch also failed:', fetchErr);
+                speakTTS(config.npcOrder);
+            });
         };
     };
     const getMusicForRound = (r)=>{
+        // music-round1.mp3 for Round 1-2, music-round2.mp3 for round 3, music-round3.mp3 for round 4,5
         if (r <= 2) return '/Audio/music-round1.mp3';
         if (r === 3) return '/Audio/music-round2.mp3';
-        return '/Audio/music-round3.mp3';
+        return '/Audio/music-round3.mp3'; // rounds 4 and 5
     };
-    // Simple and bulletproof audio control
-    const stopAllAudio = ()=>{
-        console.log('🔇 Stopping all audio');
-        // Stop music
-        if (audioRef) {
-            audioRef.pause();
-            audioRef.currentTime = 0;
-        }
-        // Stop voice
-        if (voiceAudio) {
-            voiceAudio.pause();
-            voiceAudio.currentTime = 0;
-        }
-    };
+    // Use a module-level variable to ensure only ONE audio instance exists
     const startBackgroundMusic = (forceRound)=>{
-        // Don't start if user muted
-        if (musicStarted && !musicPlaying) {
-            console.log('🎵 Music muted, skipping');
+        // DON'T start music if user has turned it off
+        if (!musicPlaying && musicStarted) {
+            console.log('🎵 Music is muted, not starting');
             return;
         }
-        // Stop existing music first
+        // CRITICAL: First, stop and destroy ANY existing audio
         if (audioRef) {
             audioRef.pause();
             audioRef.currentTime = 0;
+            audioRef.src = '';
+        }
+        // Also find and kill any orphaned audio elements playing music
+        if (typeof document !== 'undefined') {
+            document.querySelectorAll('audio').forEach((el)=>{
+                const audioEl = el;
+                if (audioEl.src && audioEl.src.includes('music-round')) {
+                    audioEl.pause();
+                    audioEl.currentTime = 0;
+                    audioEl.src = '';
+                }
+            });
         }
         const targetRound = typeof forceRound === 'number' ? forceRound : round;
         const musicFile = getMusicForRound(targetRound);
-        console.log(`🎵 Starting music: ${musicFile}`);
-        const newAudio = new Audio(musicFile);
-        newAudio.loop = true;
-        newAudio.volume = 0.05;
-        newAudio.play().catch((e)=>console.log('Music play failed:', e));
-        setAudioRef(newAudio);
+        console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
+        // Stop existing before creating new
+        stopBackgroundMusic();
+        const audio = new Audio(musicFile);
+        audio.loop = true;
+        audio.volume = 0.05;
+        audio.play().catch(()=>{});
+        setAudioRef(audio);
         setMusicStarted(true);
         setMusicPlaying(true);
     };
+    // Stop all music completely
     const stopBackgroundMusic = ()=>{
-        console.log('🔇 Stopping music');
+        console.log('🔇 Stopping all music');
         if (audioRef) {
             audioRef.pause();
             audioRef.currentTime = 0;
+            try {
+                audioRef.src = '';
+            } catch (e) {}
         }
-        setMusicPlaying(false);
+        // Kill ALL audio elements playing music (aggressive cleanup)
+        if (typeof document !== 'undefined') {
+            document.querySelectorAll('audio').forEach((el)=>{
+                const audioEl = el;
+                if (audioEl.src && (audioEl.src.includes('music-round') || audioEl.src.includes('Audio'))) {
+                    audioEl.pause();
+                    audioEl.currentTime = 0;
+                    try {
+                        audioEl.src = '';
+                    } catch (e) {}
+                }
+            });
+        }
+    // Don't set musicPlaying to false here - that's only for user muting
+    };
+    // Pause music temporarily (for sound effects) - will auto-resume
+    const pauseBackgroundMusic = ()=>{
+        console.log('⏸️ Pausing music temporarily');
+        if (audioRef) {
+            audioRef.pause();
+        }
+    };
+    // Resume music after sound effect
+    const resumeBackgroundMusic = ()=>{
+        console.log('▶️ Resuming music');
+        if (audioRef && musicPlaying) {
+            audioRef.play().catch(()=>{});
+        }
     };
     const speakTTS = (text)=>{
         if ('speechSynthesis' in window) {
@@ -666,16 +763,40 @@ function ConvosetTest() {
     };
     const toggleMusic = ()=>{
         if (musicPlaying) {
-            console.log('🔇 User toggled music OFF');
+            // Stop ALL music
             if (audioRef) {
                 audioRef.pause();
-                audioRef.currentTime = 0;
+            }
+            // Also stop any orphaned audio
+            if (typeof document !== 'undefined') {
+                document.querySelectorAll('audio').forEach((el)=>{
+                    const audioEl = el;
+                    if (audioEl.src && audioEl.src.includes('music-round')) {
+                        audioEl.pause();
+                    }
+                });
             }
             setMusicPlaying(false);
         } else {
-            console.log('🔊 User toggled music ON');
-            if (audioRef) {
-                audioRef.play().catch(()=>{});
+            // Try to resume existing audioRef first
+            if (audioRef && audioRef.src) {
+                audioRef.play().catch(()=>{
+                    // If resume fails, create new audio
+                    const musicFile = getMusicForRound(round);
+                    const audio = new Audio(musicFile);
+                    audio.loop = true;
+                    audio.volume = 0.05;
+                    audio.play().catch(()=>{});
+                    setAudioRef(audio);
+                });
+            } else {
+                // No audioRef exists, create new one
+                const musicFile = getMusicForRound(round);
+                const audio = new Audio(musicFile);
+                audio.loop = true;
+                audio.volume = 0.05;
+                audio.play().catch(()=>{});
+                setAudioRef(audio);
             }
             setMusicPlaying(true);
         }
@@ -711,7 +832,8 @@ function ConvosetTest() {
                 setShowFullBody(false);
                 setGameState('playing');
                 setShowDialogue(true);
-                playRoundOrder(); // Music will start AFTER this voice ends
+                playRoundOrder();
+                startBackgroundMusic(1); // Start music for Round 1
             }
         }, 25);
     };
@@ -736,28 +858,43 @@ function ConvosetTest() {
         const normalize = (items)=>items.map((i)=>`${i.size}-${i.type}-${i.milk || 'none'}-${i.syrup || 'none'}`).sort().join(',');
         const isCorrect = normalize(round1Selections) === normalize(currentRoundConfig.correctOrder);
         if (isCorrect) {
-            // Stop background music completely
-            stopBackgroundMusic();
+            // Pause background music for celebration sound
+            pauseBackgroundMusic();
             // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
             const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
+            // Track total coins earned
+            setTotalCoinsEarned((prev)=>prev + coinReward);
             // Play celebration sound
             playAudio('/Audio/goodresult.mp3', ()=>{
                 setCoins((prev)=>prev + coinReward);
                 triggerCoinAnimation(round);
                 const messages = {
-                    1: "Well done!",
-                    2: "Great job!",
-                    3: "Excellent!\nCan she take your orders, too?",
-                    4: "Impressive!",
-                    5: "🎉 You're a natural!"
+                    1: {
+                        title: "Well done!"
+                    },
+                    2: {
+                        title: "Great job!"
+                    },
+                    3: {
+                        title: "Excellent!",
+                        subtitle: "Can she take your orders too?"
+                    },
+                    4: {
+                        title: "Impressive!"
+                    },
+                    5: {
+                        title: "You're a natural!"
+                    }
                 };
-                setInvestorMessage(messages[round] || "Great job!");
-                setGameState('investor');
+                setInvestorMessage(messages[round] ?? {
+                    title: "Great job!"
+                });
+                setGameState("investor");
             });
         } else {
-            // Wrong answer - play error sound and show clear feedback
+            // Wrong answer - play error sound and show friendly feedback
             playAudio('/Audio/kokorobot-wrong.mp3');
-            alert("❌ Not quite right!\n\nPress 🔊 to hear the order again.");
+            setShowFeedbackModal(true);
             setRound1Selections([]);
             setCurrentItem({});
         }
@@ -839,12 +976,16 @@ function ConvosetTest() {
                             text: response
                         }
                     ]);
-                // Stop background music completely
-                stopBackgroundMusic();
+                // Pause background music for celebration
+                pauseBackgroundMusic();
+                // Track total coins earned
+                setTotalCoinsEarned((prev)=>prev + 80);
                 playAudio('/Audio/goodresult.mp3', ()=>{
                     setCoins((prev)=>prev + 80);
                     triggerCoinAnimation(round);
-                    setInvestorMessage("Impressive!");
+                    setInvestorMessage({
+                        title: "Impressive!"
+                    });
                     setGameState('investor');
                 });
                 return;
@@ -1302,13 +1443,17 @@ function ConvosetTest() {
         }
     };
     const acceptRound3Score = ()=>{
-        // Stop background music completely
-        stopBackgroundMusic();
+        // Pause background music for celebration
+        pauseBackgroundMusic();
+        // Track total coins earned (Round 5 = 100 coins)
+        setTotalCoinsEarned((prev)=>prev + 100);
         // Play celebration sound and go straight to investor
         playAudio('/Audio/goodresult.mp3', ()=>{
-            setCoins((prev)=>prev + 500);
+            setCoins((prev)=>prev + 100);
             triggerCoinAnimation(round);
-            setInvestorMessage("🎉 You're a natural!");
+            setInvestorMessage({
+                title: "You're a natural!"
+            });
             setGameState('investor');
         });
     };
@@ -1414,45 +1559,45 @@ function ConvosetTest() {
             }
         }, void 0, false, {
             fileName: "[project]/app/test/convoset/page.tsx",
-            lineNumber: 1046,
+            lineNumber: 1187,
             columnNumber: 5
         }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "jsx-1be5a3ae20e8fc70" + " " + "min-h-screen bg-black text-white overflow-hidden relative",
+        className: "jsx-aec33852ef9bce6a" + " " + "min-h-screen bg-black text-white overflow-hidden relative",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
                     backgroundImage: `url('/m31.jpg')`
                 },
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 bg-cover bg-center"
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 bg-cover bg-center"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1063,
+                lineNumber: 1204,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 bg-black/20"
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 bg-black/20"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1069,
+                lineNumber: 1210,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-amber-950/90 via-amber-900/40 to-transparent"
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-amber-950/90 via-amber-900/40 to-transparent"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1072,
+                lineNumber: 1213,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent"
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent"
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1075,
+                lineNumber: 1216,
                 columnNumber: 7
             }, this),
             showCoinAnimation && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center",
                 children: animatedCoins.map((coin)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
                             '--jx': `${coin.x}px`,
@@ -1460,216 +1605,245 @@ function ConvosetTest() {
                             '--s': coin.scale,
                             animationDelay: `${coin.delay}s`
                         },
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute animate-fountain-jet",
+                        className: "jsx-aec33852ef9bce6a" + " " + "absolute animate-fountain-jet",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "relative",
+                            className: "jsx-aec33852ef9bce6a" + " " + "relative",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                     size: 36,
                                     className: "drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1092,
+                                    lineNumber: 1233,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-9 h-9 bg-yellow-400/40 rounded-full blur-md -z-10"
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 w-9 h-9 bg-yellow-400/40 rounded-full blur-md -z-10"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1093,
+                                    lineNumber: 1234,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1091,
+                            lineNumber: 1232,
                             columnNumber: 15
                         }, this)
                     }, coin.id, false, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1081,
+                        lineNumber: 1222,
                         columnNumber: 13
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1079,
+                lineNumber: 1220,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30",
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute top-6 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1 md:gap-3",
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1 md:gap-3",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/30",
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono text-xs md:text-base",
-                                    children: "M31 Coffee Outpost"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1104,
-                                    columnNumber: 13
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1103,
-                                columnNumber: 11
-                            }, this),
-                            musicStarted && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: toggleMusic,
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-amber-500/30 hover:bg-black/80 transition",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-sm md:text-lg",
-                                    children: musicPlaying ? '🔊' : '🔇'
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1111,
-                                    columnNumber: 15
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1107,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-cyan-500/30 flex items-center gap-1 md:gap-2",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-sm md:text-base",
-                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].flag
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1116,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-cyan-400 font-mono text-xs md:text-sm",
-                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].shortCode
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1117,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1115,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1102,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-1 md:gap-3",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/30 flex items-center gap-1 md:gap-2",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                        size: 16,
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "md:w-6 md:h-6"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1122,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-sm md:text-lg",
-                                        children: coins
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1123,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1121,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/30",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono text-xs md:text-base",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 font-sans text-xs md:text-sm",
                                     children: [
-                                        "Round ",
+                                        "M31 · Lv.3 · ",
                                         round,
                                         "/5"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1126,
+                                    lineNumber: 1245,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1125,
+                                lineNumber: 1244,
+                                columnNumber: 11
+                            }, this),
+                            musicStarted && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: toggleMusic,
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 text-xs md:text-sm",
+                                    children: musicPlaying ? '🔊' : '🔇'
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1252,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1248,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-xs md:text-sm",
+                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].flag
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1257,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 font-sans text-xs md:text-sm",
+                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$utils$2f$tts$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["languageInfo"][selectedLanguage].shortCode
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1258,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1256,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1120,
+                        lineNumber: 1243,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1 md:gap-3",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                        size: 20,
+                                        className: "jsx-aec33852ef9bce6a"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1263,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 font-sans text-xs md:text-sm",
+                                        children: coins
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1264,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1262,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>alert('✅ Progress saved locally!'),
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 text-xs md:text-sm",
+                                    children: "✅"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1271,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1267,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>{
+                                    if (confirm('Exit game? Your progress is saved.')) window.location.href = '/';
+                                },
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 text-xs md:text-sm",
+                                    children: "✕"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1278,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1274,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/test/convoset/page.tsx",
+                        lineNumber: 1261,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1101,
+                lineNumber: 1242,
                 columnNumber: 7
             }, this),
             showFullBody && (gameState === 'intro' || gameState === 'walking') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
                     left: `${kokoroX}px`,
-                    transform: `scale(${kokoroScale * 0.6})`,
+                    transform: 'translateX(-50%)',
                     opacity: kokoroOpacity
                 },
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-4 md:bottom-16 z-5",
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                        src: isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png",
-                        alt: "Kokorobot",
-                        style: {
-                            filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5))'
-                        },
-                        className: "jsx-1be5a3ae20e8fc70" + " " + `h-48 md:h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`
-                    }, void 0, false, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1141,
-                        columnNumber: 11
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute -bottom-2 left-1/2 -translate-x-1/2",
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400 font-mono bg-black/70 px-2 md:px-3 py-1 rounded-full border border-amber-500/30",
-                            children: "Kokorobot-1"
+                className: "jsx-aec33852ef9bce6a" + " " + `absolute bottom-24 md:bottom-28 z-[60] pointer-events-none ${isWalking ? '' : 'transition-opacity duration-300'}`,
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "jsx-aec33852ef9bce6a" + " " + "relative w-fit",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                            src: isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png",
+                            alt: "Kokorobot",
+                            style: {
+                                height: 'clamp(160px, 26vh, 260px)'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + ([
+                                "block w-auto drop-shadow-2xl",
+                                isWalking ? "animate-walk" : ""
+                            ].join(" ") || "")
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1150,
+                            lineNumber: 1296,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "jsx-aec33852ef9bce6a" + " " + "absolute -bottom-3 left-1/2 -translate-x-1/2",
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400 font-sans font-medium bg-black/70 px-2 py-1 rounded-full border border-amber-500/30 whitespace-nowrap",
+                                children: "Kokoro"
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1308,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 1307,
                             columnNumber: 13
                         }, this)
-                    }, void 0, false, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1149,
-                        columnNumber: 11
-                    }, this)
-                ]
-            }, void 0, true, {
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/app/test/convoset/page.tsx",
+                    lineNumber: 1295,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1133,
+                lineNumber: 1285,
                 columnNumber: 9
             }, this),
-            gameState === 'intro' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + `absolute inset-0 flex items-center justify-center z-30 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`,
+            gameState === 'intro' && missionVisible && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 z-30 flex items-center justify-center px-4 pt-20 pb-32 md:pt-0 md:pb-0",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-center max-w-2xl px-6 md:px-12 py-6 md:py-10 bg-black/80 rounded-3xl shadow-2xl mx-4",
+                    className: "jsx-aec33852ef9bce6a" + " " + `bg-black/70 backdrop-blur-md rounded-3xl p-5 md:p-8 max-w-sm md:max-w-md w-full border border-amber-500/30 text-center transition-opacity transition-transform duration-500 ${missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`,
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-medium mb-2 text-sm md:text-lg",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-purple-400 text-sm md:text-base font-medium mb-2",
                             children: [
                                 "Round ",
                                 round,
@@ -1677,1528 +1851,1660 @@ function ConvosetTest() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1161,
+                            lineNumber: 1324,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]",
+                            style: {
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 text-2xl md:text-3xl font-medium mb-4",
                             children: "M31 Coffee Outpost"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1162,
+                            lineNumber: 1325,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-medium mb-6 md:mb-8 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
-                            children: "Earn coins to build Andromeda's first café!"
-                        }, void 0, false, {
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-200 text-sm md:text-base mb-6 leading-relaxed",
+                            children: [
+                                "Learn to understand, and be understood.",
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {
+                                    className: "jsx-aec33852ef9bce6a"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1329,
+                                    columnNumber: 54
+                                }, this),
+                                "Earn rewards to build Andromeda's first café!"
+                            ]
+                        }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1165,
+                            lineNumber: 1328,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: startGame,
                             disabled: !introReady,
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-3 md:py-4 px-10 md:px-14 rounded-full text-lg md:text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed",
+                            style: {
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + `px-8 py-3 rounded-full text-lg font-semibold transition-all ${introReady ? 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer' : 'bg-amber-500/50 text-black/50 cursor-wait'}`,
                             children: "Begin Mission"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1168,
+                            lineNumber: 1332,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1160,
+                    lineNumber: 1319,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1159,
+                lineNumber: 1318,
                 columnNumber: 9
             }, this),
             gameState === 'walking' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 flex items-center justify-center z-10",
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 flex items-center justify-center z-10",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-2xl animate-pulse font-medium",
+                    className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 text-2xl animate-pulse font-medium",
                     children: "Starting mission..."
                 }, void 0, false, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1182,
+                    lineNumber: 1351,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1181,
+                lineNumber: 1350,
                 columnNumber: 9
             }, this),
             gameState === 'playing' && showDialogue && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 flex items-center justify-center z-20 p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 flex flex-col items-center justify-start md:justify-center z-20 pt-20 md:pt-0 pb-2",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full max-w-xl animate-fade-in",
-                    children: [
-                        (round === 1 || round === 2 || round === 3) && currentRoundConfig && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-4 mb-4",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                            src: "/kokorobot-closeup.png",
-                                            alt: "Kokorobot",
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1195,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 text-lg md:text-xl mb-1 font-mono font-semibold",
-                                                    children: "Kokorobot-1"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1201,
-                                                    columnNumber: 21
-                                                }, this),
-                                                showTranscript ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-base md:text-xl leading-relaxed text-white",
-                                                    children: currentRoundConfig.npcOrder
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1204,
-                                                    columnNumber: 23
-                                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/60 rounded-xl p-3 border border-amber-500/30",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-300 mb-1 text-sm md:text-base font-medium",
-                                                            children: "📋 Register Training"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1207,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-100 text-xs md:text-sm mb-3",
-                                                            children: "You're on register. Enter Kokorobot-1's exact order."
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1208,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3 justify-center",
-                                                            children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: replayVoice,
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "px-3 py-1.5 rounded transition font-medium flex items-center gap-2 bg-black/80 hover:bg-black text-amber-400 text-sm border border-amber-500/40",
-                                                                    children: [
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                            className: "jsx-1be5a3ae20e8fc70",
-                                                                            children: "🔊"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1216,
-                                                                            columnNumber: 29
-                                                                        }, this),
-                                                                        " ",
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                            className: "jsx-1be5a3ae20e8fc70",
-                                                                            children: "Replay (Free)"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1216,
-                                                                            columnNumber: 45
-                                                                        }, this)
-                                                                    ]
-                                                                }, void 0, true, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1212,
-                                                                    columnNumber: 27
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: buyTranscript,
-                                                                    disabled: coins < 10,
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `px-3 py-1.5 rounded transition font-medium flex items-center gap-2 text-sm border ${coins >= 10 ? 'bg-black/80 hover:bg-black text-amber-400 border-amber-500/40' : 'bg-black/40 text-slate-500 border-slate-600 cursor-not-allowed'}`,
-                                                                    children: [
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                            className: "jsx-1be5a3ae20e8fc70",
-                                                                            children: "💡"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1227,
-                                                                            columnNumber: 29
-                                                                        }, this),
-                                                                        " ",
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                            className: "jsx-1be5a3ae20e8fc70",
-                                                                            children: "Show Text"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1227,
-                                                                            columnNumber: 45
-                                                                        }, this),
-                                                                        " ",
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                                                            size: 14,
-                                                                            className: "jsx-1be5a3ae20e8fc70"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1227,
-                                                                            columnNumber: 68
-                                                                        }, this),
-                                                                        " ",
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                            className: "jsx-1be5a3ae20e8fc70",
-                                                                            children: "10"
-                                                                        }, void 0, false, {
-                                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 1227,
-                                                                            columnNumber: 93
-                                                                        }, this)
-                                                                    ]
-                                                                }, void 0, true, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1218,
-                                                                    columnNumber: 27
-                                                                }, this)
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1211,
-                                                            columnNumber: 25
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1206,
-                                                    columnNumber: 23
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1200,
-                                            columnNumber: 19
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1194,
-                                    columnNumber: 17
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400/60 text-xs text-center mb-3",
-                                    children: "Tap Type → Size → Milk → Syrup. Add item, then submit."
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1236,
-                                    columnNumber: 17
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "border-t border-amber-500/30 pt-4",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-wrap gap-2 mb-4 min-h-[40px]",
-                                            children: round1Selections.length > 0 ? round1Selections.map((item, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                    onClick: ()=>removeFromOrder(i),
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-500/30 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium",
-                                                    children: [
-                                                        item.size,
-                                                        " ",
-                                                        item.type,
-                                                        " ",
-                                                        item.milk && `(${item.milk})`,
-                                                        " ",
-                                                        item.syrup && `+ ${item.syrup}`,
-                                                        " ✕"
-                                                    ]
-                                                }, i, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1244,
-                                                    columnNumber: 25
-                                                }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400/50 text-sm",
-                                                children: "Your order will appear here"
+                    className: "jsx-aec33852ef9bce6a" + " " + "w-full max-w-xl overflow-y-auto px-2 md:px-4",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "jsx-aec33852ef9bce6a" + " " + "w-full max-w-xl mx-auto animate-fade-in",
+                        children: [
+                            (round === 1 || round === 2 || round === 3) && currentRoundConfig && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-4 md:p-6 shadow-2xl",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-3 md:gap-4 mb-3 md:mb-4",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                src: "/kokorobot-closeup.png",
+                                                alt: "Kokorobot",
+                                                className: "jsx-aec33852ef9bce6a" + " " + `w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1253,
-                                                columnNumber: 23
-                                            }, this)
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1241,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-center gap-2 mb-4",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : 'bg-amber-900'}`
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1260,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
-                                                            children: "Type"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1261,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1259,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : 'bg-amber-900'}`
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1264,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
-                                                            children: "Size"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1265,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1263,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : 'bg-amber-900'}`
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1268,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
-                                                            children: "Milk"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1269,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1267,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : 'bg-amber-900'}`
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1272,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60",
-                                                            children: "Syrup"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1273,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1271,
-                                                    columnNumber: 21
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1258,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
-                                                            children: "Type ☕"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1281,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
-                                                            children: [
-                                                                'Americano',
-                                                                'Latte',
-                                                                'Cappuccino',
-                                                                'Flat White',
-                                                                'Macchiato',
-                                                                'Mocha',
-                                                                'Espresso'
-                                                            ].map((type)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: ()=>setCurrentItem({
-                                                                            ...currentItem,
-                                                                            type
-                                                                        }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
-                                                                    children: type
-                                                                }, type, false, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1284,
-                                                                    columnNumber: 27
-                                                                }, this))
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1282,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1280,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
-                                                            children: "Size 📏"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1301,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
-                                                            children: [
-                                                                'Small',
-                                                                'Medium',
-                                                                'Large'
-                                                            ].map((size)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: ()=>setCurrentItem({
-                                                                            ...currentItem,
-                                                                            size
-                                                                        }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
-                                                                    children: size
-                                                                }, size, false, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1304,
-                                                                    columnNumber: 27
-                                                                }, this))
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1302,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1300,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
-                                                            children: "Milk 🥛"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1321,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
-                                                            children: [
-                                                                'None',
-                                                                'Whole',
-                                                                'Half & Half',
-                                                                'Oat',
-                                                                'Almond',
-                                                                'Nonfat'
-                                                            ].map((milk)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: ()=>setCurrentItem({
-                                                                            ...currentItem,
-                                                                            milk: milk === 'None' ? undefined : milk
-                                                                        }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.milk === milk || !currentItem.milk && milk === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
-                                                                    children: milk
-                                                                }, milk, false, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1324,
-                                                                    columnNumber: 27
-                                                                }, this))
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1322,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1320,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
-                                                            children: "Syrup 🍯"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1341,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-1",
-                                                            children: [
-                                                                'None',
-                                                                'Caramel',
-                                                                'Vanilla',
-                                                                'Hazelnut'
-                                                            ].map((syrup)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                    onClick: ()=>setCurrentItem({
-                                                                            ...currentItem,
-                                                                            syrup: syrup === 'None' ? undefined : syrup
-                                                                        }),
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.syrup === syrup || !currentItem.syrup && syrup === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
-                                                                    children: syrup
-                                                                }, syrup, false, {
-                                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 1344,
-                                                                    columnNumber: 27
-                                                                }, this))
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 1342,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1340,
-                                                    columnNumber: 21
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1278,
-                                            columnNumber: 19
-                                        }, this),
-                                        (currentItem.type || currentItem.size) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-900/30 rounded-lg p-2 mb-3 text-center",
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-200 text-sm",
+                                                lineNumber: 1365,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex-1",
                                                 children: [
-                                                    "Building: ",
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "font-semibold",
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 text-lg md:text-xl mb-1 font-sans font-medium",
+                                                        children: "M31 Coffee Outpost"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1371,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    showTranscript ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-base md:text-xl leading-relaxed text-white",
+                                                        children: currentRoundConfig.npcOrder
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1374,
+                                                        columnNumber: 23
+                                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-black/60 rounded-xl p-3 border border-amber-500/30",
                                                         children: [
-                                                            currentItem.size || '___',
-                                                            " ",
-                                                            currentItem.type || '___',
-                                                            currentItem.milk && ` (${currentItem.milk})`,
-                                                            currentItem.syrup && ` + ${currentItem.syrup}`
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-300 mb-1 text-sm md:text-base font-medium",
+                                                                children: "📋 Register Training"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1377,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-100 text-xs md:text-sm mb-3",
+                                                                children: "You're on register. Enter Kokoro's exact order."
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1378,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex gap-2 justify-center",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: replayVoice,
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + "px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center bg-transparent hover:bg-amber-900/50 text-amber-400 text-sm border border-amber-500/40 min-w-[100px]",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "jsx-aec33852ef9bce6a",
+                                                                                children: "🔊 Replay"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                lineNumber: 1386,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60",
+                                                                                children: "(Free)"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                lineNumber: 1387,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1382,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: buyTranscript,
+                                                                        disabled: coins < 10,
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + `px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center text-sm border min-w-[100px] ${coins >= 10 ? 'bg-transparent hover:bg-amber-900/50 text-amber-400 border-amber-500/40' : 'bg-transparent text-slate-500 border-slate-600 cursor-not-allowed'}`,
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "jsx-aec33852ef9bce6a",
+                                                                                children: "💡 Show Text"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                lineNumber: 1398,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1 text-xs",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                                                                        size: 12,
+                                                                                        className: "jsx-aec33852ef9bce6a"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                        lineNumber: 1400,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "jsx-aec33852ef9bce6a",
+                                                                                        children: "10"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                        lineNumber: 1401,
+                                                                                        columnNumber: 31
+                                                                                    }, this)
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                                lineNumber: 1399,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1389,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1381,
+                                                                columnNumber: 25
+                                                            }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1364,
-                                                        columnNumber: 35
+                                                        lineNumber: 1376,
+                                                        columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1363,
-                                                columnNumber: 23
-                                            }, this)
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1362,
-                                            columnNumber: 21
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                    onClick: addToOrder,
-                                                    disabled: !currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed",
-                                                    children: "+ Add Item"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1375,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                    onClick: checkRound1,
-                                                    disabled: round1Selections.length !== currentRoundConfig.itemCount,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed",
-                                                    children: "Submit ✓"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1382,
-                                                    columnNumber: 21
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1374,
-                                            columnNumber: 19
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1239,
-                                    columnNumber: 17
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1193,
-                            columnNumber: 15
-                        }, this),
-                        round === 4 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-4 mb-4",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                            src: "/kokorobot-closeup.png",
-                                            alt: "Kokorobot",
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "w-20 h-20 rounded-full object-cover border-2 border-amber-500/50"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1398,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono font-semibold text-xl",
-                                                    children: "Kokorobot-1"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1400,
-                                                    columnNumber: 21
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-lg text-purple-400",
-                                                    children: "Your turn! Order one drink by typing."
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1401,
-                                                    columnNumber: 21
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1399,
-                                            columnNumber: 19
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1397,
-                                    columnNumber: 17
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "h-64 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4",
-                                    children: round2Chat.map((msg, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + `flex ${msg.role === 'player' ? 'justify-end' : 'justify-start'}`,
-                                            children: [
-                                                msg.role === 'npc' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                    src: "/kokorobot-closeup.png",
-                                                    alt: "Kokorobot",
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-12 h-12 rounded-full mr-2 object-cover"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1409,
-                                                    columnNumber: 25
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + `inline-block rounded-xl px-5 py-3 max-w-[80%] text-lg ${msg.role === 'player' ? 'bg-purple-500 text-white' : 'bg-amber-900/60 text-amber-200'}`,
-                                                    children: msg.text
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1411,
-                                                    columnNumber: 23
-                                                }, this)
-                                            ]
-                                        }, i, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1407,
-                                            columnNumber: 21
-                                        }, this))
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1405,
-                                    columnNumber: 17
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3 mb-4",
-                                    children: [
-                                        {
-                                            key: 'type',
-                                            label: '☕ Type'
-                                        },
-                                        {
-                                            key: 'size',
-                                            label: '📏 Size'
-                                        },
-                                        {
-                                            key: 'temp',
-                                            label: '🧊 Temp'
-                                        },
-                                        {
-                                            key: 'milk',
-                                            label: '🥛 Milk'
-                                        }
-                                    ].map(({ key, label })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + `px-4 py-2 rounded-full text-base font-medium ${round2Order[key] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`,
-                                            children: [
-                                                label,
-                                                " ",
-                                                round2Order[key] && '✓'
-                                            ]
-                                        }, key, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1422,
-                                            columnNumber: 21
-                                        }, this))
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1420,
-                                    columnNumber: 17
-                                }, this),
-                                round2ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: ()=>{
-                                                setRound2ConfirmStep(false);
-                                                setRound2Order({
-                                                    type: false,
-                                                    size: false,
-                                                    milk: false,
-                                                    syrup: false,
-                                                    temp: false
-                                                });
-                                                setRound2OrderDetails({});
-                                                const response = "No problem! What would you like instead?";
-                                                setRound2Chat((prev)=>[
-                                                        ...prev,
-                                                        {
-                                                            role: 'npc',
-                                                            text: response
-                                                        }
-                                                    ]);
-                                                playAudio('/Audio/kokorobot-greeting.mp3');
-                                            },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40",
-                                            children: "✏️ Modify"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1431,
-                                            columnNumber: 21
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: ()=>{
-                                                const response = "Thank you, it will be at the pick up counter.";
-                                                setRound2Chat((prev)=>[
-                                                        ...prev,
-                                                        {
-                                                            role: 'npc',
-                                                            text: response
-                                                        }
-                                                    ]);
-                                                // Stop background music
-                                                if (audioRef) {
-                                                    audioRef.pause();
-                                                    setMusicPlaying(false);
-                                                }
-                                                playAudio('/Audio/goodresult.mp3', ()=>{
-                                                    setCoins((prev)=>prev + 80);
-                                                    triggerCoinAnimation(round);
-                                                    setInvestorMessage("Impressive!");
-                                                    setGameState('investor');
-                                                });
-                                            },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl",
-                                            children: "✓ Confirm Order"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1444,
-                                            columnNumber: 21
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1430,
-                                    columnNumber: 19
-                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                            type: "text",
-                                            value: round2Input,
-                                            onChange: (e)=>setRound2Input(e.target.value),
-                                            onKeyDown: (e)=>e.key === 'Enter' && processRound2Input(),
-                                            placeholder: "Type your order...",
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1467,
-                                            columnNumber: 21
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: processRound2Input,
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-purple-500 hover:bg-purple-400 text-white font-semibold px-10 rounded-xl text-xl",
-                                            children: "Send"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1475,
-                                            columnNumber: 21
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1466,
-                                    columnNumber: 19
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1396,
-                            columnNumber: 15
-                        }, this),
-                        round === 5 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                    src: "/kokorobot-closeup.png",
-                                    alt: "Kokorobot",
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1486,
-                                    columnNumber: 17
-                                }, this),
-                                !round3ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-xl text-green-400 mb-6 font-medium",
-                                            children: "Speak your order!"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1490,
-                                            columnNumber: 21
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: startListening,
-                                            disabled: round3Listening,
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + `w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'}`,
-                                            children: round3Listening ? '🎤' : '🎤 Speak'
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1492,
-                                            columnNumber: 21
-                                        }, this),
-                                        round3Transcript && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-base text-amber-400/80 mb-1",
-                                                    children: "You said:"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1504,
-                                                    columnNumber: 25
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl text-white",
-                                                    children: [
-                                                        '"',
-                                                        round3Transcript,
-                                                        '"'
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1505,
-                                                    columnNumber: 25
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1503,
-                                            columnNumber: 23
-                                        }, this),
-                                        round3CurrentQuestion && !round3ConfirmStep && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 text-xl mb-4",
-                                                    children: [
-                                                        "🎤 ",
-                                                        round3CurrentQuestion
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1511,
-                                                    columnNumber: 25
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400/60 text-base mb-4",
-                                                    children: "Tap the mic to answer"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1512,
-                                                    columnNumber: 25
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1510,
-                                            columnNumber: 23
-                                        }, this)
-                                    ]
-                                }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-center",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-green-900/30 rounded-xl p-6 mb-6 border border-green-500/50",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl text-white",
-                                                    children: round3CurrentQuestion
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1521,
-                                                    columnNumber: 25
-                                                }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1520,
-                                                columnNumber: 23
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                        onClick: ()=>{
-                                                            setRound3ConfirmStep(false);
-                                                            setRound3Order({
-                                                                type: false,
-                                                                size: false,
-                                                                milk: false,
-                                                                temp: false,
-                                                                syrup: false
-                                                            });
-                                                            setRound3OrderDetails({});
-                                                            setRound3Transcript('');
-                                                            setRound3CurrentQuestion('');
-                                                        },
-                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40",
-                                                        children: "✏️ Modify"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1525,
-                                                        columnNumber: 25
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                        onClick: acceptRound3Score,
-                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl",
-                                                        children: "✓ Confirm Order"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1537,
-                                                        columnNumber: 25
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1524,
-                                                columnNumber: 23
+                                                lineNumber: 1370,
+                                                columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1519,
-                                        columnNumber: 21
+                                        lineNumber: 1364,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400/60 text-xs text-center mb-3",
+                                        children: "Tap Type → Size → Milk → Syrup → Add Item → Submit."
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1411,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "border-t border-amber-500/30 pt-4",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex flex-wrap gap-2 mb-4 min-h-[40px]",
+                                                children: round1Selections.length > 0 ? round1Selections.map((item, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        onClick: ()=>removeFromOrder(i),
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-amber-500/30 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium",
+                                                        children: [
+                                                            item.size,
+                                                            " ",
+                                                            item.type,
+                                                            " ",
+                                                            item.milk && `(${item.milk})`,
+                                                            " ",
+                                                            item.syrup && `+ ${item.syrup}`,
+                                                            " ✕"
+                                                        ]
+                                                    }, i, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1419,
+                                                        columnNumber: 25
+                                                    }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400/50 text-sm",
+                                                    children: "Receipt preview"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1428,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1416,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-center gap-2 mb-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + `w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1435,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60",
+                                                                children: "Type"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1436,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1434,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + `w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1439,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60",
+                                                                children: "Size"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1440,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1438,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + `w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1443,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60",
+                                                                children: "Milk"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1444,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1442,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + `w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : 'bg-amber-900'}`
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1447,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60",
+                                                                children: "Syrup"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1448,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1446,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1433,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                                children: "Type ☕"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1456,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-1",
+                                                                children: [
+                                                                    'Americano',
+                                                                    'Latte',
+                                                                    'Cappuccino',
+                                                                    'Flat White',
+                                                                    'Macchiato',
+                                                                    'Mocha',
+                                                                    'Espresso'
+                                                                ].map((type)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: ()=>setCurrentItem({
+                                                                                ...currentItem,
+                                                                                type
+                                                                            }),
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.type === type ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                        children: type
+                                                                    }, type, false, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1459,
+                                                                        columnNumber: 27
+                                                                    }, this))
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1457,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1455,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                                children: "Size 📏"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1476,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-1",
+                                                                children: [
+                                                                    'Small',
+                                                                    'Medium',
+                                                                    'Large'
+                                                                ].map((size)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: ()=>setCurrentItem({
+                                                                                ...currentItem,
+                                                                                size
+                                                                            }),
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.size === size ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                        children: size
+                                                                    }, size, false, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1479,
+                                                                        columnNumber: 27
+                                                                    }, this))
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1477,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1475,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                                children: "Milk 🥛"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1496,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-1",
+                                                                children: [
+                                                                    'None',
+                                                                    'Whole',
+                                                                    'Half & Half',
+                                                                    'Oat',
+                                                                    'Almond',
+                                                                    'Nonfat'
+                                                                ].map((milk)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: ()=>setCurrentItem({
+                                                                                ...currentItem,
+                                                                                milk: milk === 'None' ? undefined : milk
+                                                                            }),
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.milk === milk || !currentItem.milk && milk === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                        children: milk
+                                                                    }, milk, false, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1499,
+                                                                        columnNumber: 27
+                                                                    }, this))
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1497,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1495,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "bg-black/30 rounded-xl p-2 md:p-3",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xs text-amber-400/60 mb-2 font-semibold uppercase tracking-wide",
+                                                                children: "Syrup 🍯"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1516,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-1",
+                                                                children: [
+                                                                    'None',
+                                                                    'Caramel',
+                                                                    'Vanilla',
+                                                                    'Hazelnut'
+                                                                ].map((syrup)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        onClick: ()=>setCurrentItem({
+                                                                                ...currentItem,
+                                                                                syrup: syrup === 'None' ? undefined : syrup
+                                                                            }),
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + `py-1.5 px-2 rounded-lg text-xs transition font-medium ${currentItem.syrup === syrup || !currentItem.syrup && syrup === 'None' ? 'bg-amber-500 text-black' : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'}`,
+                                                                        children: syrup
+                                                                    }, syrup, false, {
+                                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                                        lineNumber: 1519,
+                                                                        columnNumber: 27
+                                                                    }, this))
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                                lineNumber: 1517,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1515,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1453,
+                                                columnNumber: 19
+                                            }, this),
+                                            (currentItem.type || currentItem.size) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "bg-amber-900/30 rounded-lg p-2 mb-3 text-center",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-amber-200 text-sm",
+                                                    children: [
+                                                        "Building: ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "font-semibold",
+                                                            children: [
+                                                                currentItem.size || '___',
+                                                                " ",
+                                                                currentItem.type || '___',
+                                                                currentItem.milk && ` (${currentItem.milk})`,
+                                                                currentItem.syrup && ` + ${currentItem.syrup}`
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1539,
+                                                            columnNumber: 35
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1538,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1537,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "sticky bottom-0 bg-black/90 pt-3 -mx-4 md:-mx-6 px-4 md:px-6 pb-2 -mb-4 md:-mb-6 rounded-b-2xl",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: addToOrder,
+                                                            disabled: !currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount,
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                            children: "+ Add Item"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1551,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: checkRound1,
+                                                            disabled: round1Selections.length !== currentRoundConfig.itemCount,
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed",
+                                                            children: "Submit ✓"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1558,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1550,
+                                                    columnNumber: 21
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1549,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1414,
+                                        columnNumber: 17
                                     }, this)
-                                }, void 0, false)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1363,
+                                columnNumber: 15
+                            }, this),
+                            round === 4 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-4 mb-4",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                src: "/kokorobot-closeup.png",
+                                                alt: "Kokorobot",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "w-20 h-20 rounded-full object-cover border-2 border-amber-500/50"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1575,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 font-sans font-medium text-xl",
+                                                        children: "Kokoro"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1577,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-lg text-purple-400",
+                                                        children: "Your turn! Order one drink by typing."
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1578,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1576,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1574,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "h-64 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4",
+                                        children: round2Chat.map((msg, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + `flex ${msg.role === 'player' ? 'justify-end' : 'justify-start'}`,
+                                                children: [
+                                                    msg.role === 'npc' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                        src: "/kokorobot-closeup.png",
+                                                        alt: "Kokorobot",
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "w-12 h-12 rounded-full mr-2 object-cover"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1586,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + `inline-block rounded-xl px-5 py-3 max-w-[80%] text-lg ${msg.role === 'player' ? 'bg-purple-500 text-white' : 'bg-amber-900/60 text-amber-200'}`,
+                                                        children: msg.text
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1588,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, i, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1584,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1582,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3 mb-4",
+                                        children: [
+                                            {
+                                                key: 'type',
+                                                label: '☕ Type'
+                                            },
+                                            {
+                                                key: 'size',
+                                                label: '📏 Size'
+                                            },
+                                            {
+                                                key: 'temp',
+                                                label: '🧊 Temp'
+                                            },
+                                            {
+                                                key: 'milk',
+                                                label: '🥛 Milk'
+                                            }
+                                        ].map(({ key, label })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + `px-4 py-2 rounded-full text-base font-medium ${round2Order[key] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`,
+                                                children: [
+                                                    label,
+                                                    " ",
+                                                    round2Order[key] && '✓'
+                                                ]
+                                            }, key, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1599,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1597,
+                                        columnNumber: 17
+                                    }, this),
+                                    round2ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>{
+                                                    setRound2ConfirmStep(false);
+                                                    setRound2Order({
+                                                        type: false,
+                                                        size: false,
+                                                        milk: false,
+                                                        syrup: false,
+                                                        temp: false
+                                                    });
+                                                    setRound2OrderDetails({});
+                                                    const response = "No problem! What would you like instead?";
+                                                    setRound2Chat((prev)=>[
+                                                            ...prev,
+                                                            {
+                                                                role: 'npc',
+                                                                text: response
+                                                            }
+                                                        ]);
+                                                    playAudio('/Audio/kokorobot-greeting.mp3');
+                                                },
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40",
+                                                children: "✏️ Modify"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1608,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>{
+                                                    const response = "Thank you, it will be at the pick up counter.";
+                                                    setRound2Chat((prev)=>[
+                                                            ...prev,
+                                                            {
+                                                                role: 'npc',
+                                                                text: response
+                                                            }
+                                                        ]);
+                                                    // Stop background music
+                                                    if (audioRef) {
+                                                        audioRef.pause();
+                                                        setMusicPlaying(false);
+                                                    }
+                                                    playAudio('/Audio/goodresult.mp3', ()=>{
+                                                        setCoins((prev)=>prev + 80);
+                                                        triggerCoinAnimation(round);
+                                                        setInvestorMessage({
+                                                            title: "Impressive!"
+                                                        });
+                                                        setGameState('investor');
+                                                    });
+                                                },
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl",
+                                                children: "✓ Confirm Order"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1621,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1607,
+                                        columnNumber: 19
+                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                type: "text",
+                                                value: round2Input,
+                                                onChange: (e)=>setRound2Input(e.target.value),
+                                                onKeyDown: (e)=>e.key === 'Enter' && processRound2Input(),
+                                                placeholder: "Type your order...",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1644,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: processRound2Input,
+                                                className: "jsx-aec33852ef9bce6a" + " " + "bg-purple-500 hover:bg-purple-400 text-white font-semibold px-10 rounded-xl text-xl",
+                                                children: "Send"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1652,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1643,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "mt-4 pt-4 border-t border-amber-500/20 text-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400/60 text-xs mb-2",
+                                                children: "Round 4: Type your order · Earn +80 coins"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1660,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>{
+                                                    // Skip to next round without coins
+                                                    setRound(5);
+                                                    setGameState('playing');
+                                                    setShowDialogue(true);
+                                                    setRound3Transcript('');
+                                                    setRound3ConfirmStep(false);
+                                                    startBackgroundMusic(5);
+                                                },
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-500 hover:text-zinc-300 text-sm transition underline",
+                                                children: "Skip this round (no coins)"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1661,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1659,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1573,
+                                columnNumber: 15
+                            }, this),
+                            round === 5 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                        src: "/kokorobot-closeup.png",
+                                        alt: "Kokorobot",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1682,
+                                        columnNumber: 17
+                                    }, this),
+                                    !round3ConfirmStep ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-xl text-green-400 mb-6 font-medium",
+                                                children: "Speak your order!"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1686,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: startListening,
+                                                disabled: round3Listening,
+                                                className: "jsx-aec33852ef9bce6a" + " " + `w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'}`,
+                                                children: round3Listening ? '🎤' : '🎤 Speak'
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1688,
+                                                columnNumber: 21
+                                            }, this),
+                                            round3Transcript && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-base text-amber-400/80 mb-1",
+                                                        children: "You said:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1700,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-2xl text-white",
+                                                        children: [
+                                                            '"',
+                                                            round3Transcript,
+                                                            '"'
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1701,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1699,
+                                                columnNumber: 23
+                                            }, this),
+                                            round3CurrentQuestion && !round3ConfirmStep && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 text-xl mb-4",
+                                                        children: [
+                                                            "🎤 ",
+                                                            round3CurrentQuestion
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1707,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400/60 text-base mb-4",
+                                                        children: "Tap the mic to answer"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1708,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1706,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-center",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-green-900/30 rounded-xl p-6 mb-6 border border-green-500/50",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-2xl text-white",
+                                                        children: round3CurrentQuestion
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1717,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1716,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: ()=>{
+                                                                setRound3ConfirmStep(false);
+                                                                setRound3Order({
+                                                                    type: false,
+                                                                    size: false,
+                                                                    milk: false,
+                                                                    temp: false,
+                                                                    syrup: false
+                                                                });
+                                                                setRound3OrderDetails({});
+                                                                setRound3Transcript('');
+                                                                setRound3CurrentQuestion('');
+                                                            },
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40",
+                                                            children: "✏️ Modify"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1721,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: acceptRound3Score,
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 bg-green-500 hover:bg-green-400 text-black font-semibold py-4 rounded-xl text-xl",
+                                                            children: "✓ Confirm Order"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1733,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1720,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1715,
+                                            columnNumber: 21
+                                        }, this)
+                                    }, void 0, false),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "mt-4 pt-4 border-t border-amber-500/20",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400/60 text-xs mb-2",
+                                                children: "Round 5: Speak your order · Earn +100 coins"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1746,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>{
+                                                    // Skip to completion without coins
+                                                    stopBackgroundMusic();
+                                                    setInvestorMessage({
+                                                        title: "You're a natural!"
+                                                    });
+                                                    setGameState('investor');
+                                                },
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-500 hover:text-zinc-300 text-sm transition underline",
+                                                children: "Skip this round (no coins)"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1747,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1745,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 1681,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/test/convoset/page.tsx",
+                        lineNumber: 1359,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/app/test/convoset/page.tsx",
+                    lineNumber: 1358,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/test/convoset/page.tsx",
+                lineNumber: 1357,
+                columnNumber: 9
+            }, this),
+            gameState === 'investor' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 z-40 bg-black flex items-center justify-center",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "jsx-aec33852ef9bce6a" + " " + "relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                            src: round === 1 ? "/ib.png" : `/NY-investor${round}.png`,
+                            alt: "Earth Investor calling from spaceship",
+                            className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 w-full h-full object-cover"
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 1773,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 z-50 pointer-events-none",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute top-0 left-0 right-0 h-27 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1783,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute left-4 right-4 md:left-6 md:right-6 top-5 md:top-2 flex justify-between items-center pointer-events-auto",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 font-sans text-xs md:text-sm whitespace-nowrap",
+                                                children: [
+                                                    "M31 · Lv.3 · ",
+                                                    round,
+                                                    "/5"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1788,
+                                                columnNumber: 19
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1787,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-2 md:gap-3",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                                            size: 20,
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "md:w-5 md:h-5"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1793,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 font-sans text-xs md:text-sm",
+                                                            children: coins
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1794,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1792,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>alert('✅ Progress saved locally!'),
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 text-xs md:text-sm",
+                                                        children: "✅ "
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1801,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1797,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>{
+                                                        if (confirm('Exit game? Your progress is saved.')) window.location.href = '/';
+                                                    },
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-100 text-xs md:text-sm",
+                                                        children: "✕"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1808,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1804,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1790,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1786,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute left-5 md:left-6 top-[72px] md:top-12 flex items-center gap-2 pointer-events-none",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1815,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-green-400 text-xs md:text-base font-sans font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
+                                            children: round === 5 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "md:hidden",
+                                                        children: [
+                                                            "LIVE: LEVEL 3 CLEAR!!! ",
+                                                            totalCoinsEarned,
+                                                            " COINS EARNED!"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1819,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "hidden md:inline",
+                                                        children: [
+                                                            "LIVE: LEVEL 3 CLEAR!!! ",
+                                                            totalCoinsEarned,
+                                                            " COINS EARNED!"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1820,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, void 0, true) : `LIVE: +${round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100} COINS FROM EARTH!`
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1816,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1814,
+                                    columnNumber: 15
+                                }, this),
+                                showCoinAnimation && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 overflow-hidden flex items-center justify-center",
+                                    children: animatedCoins.map((coin)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            style: {
+                                                '--jx': `${coin.x}px`,
+                                                '--jy': `${coin.y}px`,
+                                                '--s': coin.scale,
+                                                animationDelay: `${coin.delay}s`
+                                            },
+                                            className: "jsx-aec33852ef9bce6a" + " " + "absolute animate-fountain-jet",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "relative",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                                        size: 32,
+                                                        className: "drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1842,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                                        lineNumber: 1843,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1841,
+                                                columnNumber: 23
+                                            }, this)
+                                        }, coin.id, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1831,
+                                            columnNumber: 21
+                                        }, this))
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1829,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute top-[55%] left-1/2 animate-fly-to-balance",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1 md:gap-2 bg-black/70 px-3 md:px-4 py-1 md:py-2 rounded-full",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                                size: 24,
+                                                className: "jsx-aec33852ef9bce6a" + " " + "md:w-8 md:h-8"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1853,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-semibold text-lg md:text-2xl",
+                                                children: [
+                                                    "+",
+                                                    round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 1854,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 1852,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1851,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + `absolute left-[55%] -translate-x-1/2 w-[min(92%,520px)] text-center pointer-events-none ${round === 5 ? 'top-[50%] -translate-y-1/2' : 'top-[50%] -translate-y-1/2'}`,
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                            style: {
+                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                            },
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-2xl md:text-4xl font-medium text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] leading-tight",
+                                            children: investorMessage.title
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1862,
+                                            columnNumber: 17
+                                        }, this),
+                                        round === 5 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            style: {
+                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                            },
+                                            className: "jsx-aec33852ef9bce6a" + " " + "mt-2 text-base md:text-xl text-white/90 leading-snug drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]",
+                                            children: "Ready for more levels in new outposts?"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1866,
+                                            columnNumber: 19
+                                        }, this) : investorMessage.subtitle && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            style: {
+                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                            },
+                                            className: "jsx-aec33852ef9bce6a" + " " + "mt-2 text-base md:text-xl text-white/90 leading-snug drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]",
+                                            children: investorMessage.subtitle
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1871,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1859,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + `absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${round === 5 ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end' : round === 3 || round === 4 ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 items-center w-[min(92%,360px)]' : 'bottom-30 md:bottom-[38%] right-12 md:left-1/2 md:-translate-x-1/2 md:right-auto items-end md:items-center'}`,
+                                    children: [
+                                        (round === 3 || round === 4) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>setShowCafeShop(true),
+                                                    style: {
+                                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                                    },
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold py-2.5 px-8 rounded-lg text-base transition border border-zinc-100/30",
+                                                    children: "Build Your Café"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1889,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: completeGame,
+                                                    style: {
+                                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                                    },
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold py-2.5 px-8 rounded-lg text-base transition shadow-lg border border-zinc-400/50",
+                                                    children: "Next Round →"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1896,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true),
+                                        round === 5 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>setShowEmailModal(true),
+                                                    style: {
+                                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                                    },
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold py-3 px-8 rounded-lg text-base transition shadow-lg border border-zinc-400/50",
+                                                    children: [
+                                                        "Save ",
+                                                        totalCoinsEarned,
+                                                        " Coins Earned"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1909,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col items-end",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: ()=>setShowCafeShop(true),
+                                                            style: {
+                                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                                            },
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold py-3 px-8 rounded-lg text-base transition border border-zinc-100/30",
+                                                            children: "Build Your Café"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1917,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: openFeedbackForm,
+                                                            style: {
+                                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                                            },
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "text-white hover:text-black text-sm font-semibold mt-1 transition underline underline-offset-4",
+                                                            children: "Send Feedback"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                                            lineNumber: 1924,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                                    lineNumber: 1916,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true),
+                                        round < 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            onClick: completeGame,
+                                            style: {
+                                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                                            },
+                                            className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-semibold py-2.5 px-8 rounded-lg text-base transition shadow-lg border border-zinc-100/30",
+                                            children: "Next Round →"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 1937,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 1879,
+                                    columnNumber: 15
+                                }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1485,
-                            columnNumber: 15
+                            lineNumber: 1780,
+                            columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1189,
+                    lineNumber: 1770,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1188,
-                columnNumber: 9
-            }, this),
-            gameState === 'investor' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 z-40",
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                        src: round === 1 ? "/ib.png" : `/NY-investor${round}.png`,
-                        alt: "Earth Investor calling from spaceship",
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-full h-full object-cover"
-                    }, void 0, false, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1557,
-                        columnNumber: 11
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-50",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/50",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 font-mono text-xs md:text-base",
-                                    children: "M31 Coffee Outpost"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1566,
-                                    columnNumber: 15
-                                }, this)
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1565,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-1 md:gap-3",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/50 flex items-center gap-1 md:gap-2",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                                size: 16,
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "md:w-6 md:h-6"
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1570,
-                                                columnNumber: 17
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-mono font-semibold text-sm md:text-lg",
-                                                children: coins
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 1571,
-                                                columnNumber: 17
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1569,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/50",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-purple-400 font-mono text-xs md:text-base",
-                                            children: [
-                                                "Round ",
-                                                round,
-                                                "/5"
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1574,
-                                            columnNumber: 17
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1573,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1568,
-                                columnNumber: 13
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1564,
-                        columnNumber: 11
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-20 left-6 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full z-50",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "w-3 h-3 bg-green-500 rounded-full animate-pulse"
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1581,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-green-400 text-xl font-mono font-semibold",
-                                children: "LIVE"
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1582,
-                                columnNumber: 13
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1580,
-                        columnNumber: 11
-                    }, this),
-                    showCoinAnimation && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center",
-                        children: animatedCoins.map((coin)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                style: {
-                                    '--jx': `${coin.x}px`,
-                                    '--jy': `${coin.y}px`,
-                                    '--s': coin.scale,
-                                    animationDelay: `${coin.delay}s`
-                                },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "absolute animate-fountain-jet",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "relative",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                            size: 32,
-                                            className: "drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1601,
-                                            columnNumber: 21
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1603,
-                                            columnNumber: 21
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1599,
-                                    columnNumber: 19
-                                }, this)
-                            }, coin.id, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1589,
-                                columnNumber: 17
-                            }, this))
-                    }, void 0, false, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1587,
-                        columnNumber: 13
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-1/2 left-1/2 z-50 animate-fly-to-balance",
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                    size: 32,
-                                    className: "jsx-1be5a3ae20e8fc70"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1613,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-semibold text-2xl",
-                                    children: [
-                                        "+",
-                                        round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1614,
-                                    columnNumber: 15
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1612,
-                            columnNumber: 13
-                        }, this)
-                    }, void 0, false, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1611,
-                        columnNumber: 11
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + `absolute z-50 text-center ${round === 5 ? 'top-[42%] left-1/2 -translate-x-1/2' /* Round 5: centered on the table */  : round === 4 ? 'top-[42%] left-1/2 -translate-x-1/2' /* Round 4: bring message down closer to CTAs */  : round === 3 ? 'top-[30%] left-1/2 -translate-x-1/2' : 'top-[45%] left-1/2 -translate-x-1/2'}`,
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2 mb-2 justify-center",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
-                                        size: 32,
-                                        className: "jsx-1be5a3ae20e8fc70"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1629,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
-                                        children: "from our Earth Investors"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1630,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1628,
-                                columnNumber: 13
-                            }, this),
-                            round === 3 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                style: {
-                                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                                },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-5xl font-bold mb-2",
-                                        children: "🎉 Excellent!"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1634,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-3xl font-semibold",
-                                        children: "Can she take your orders, too?"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1635,
-                                        columnNumber: 17
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1633,
-                                columnNumber: 15
-                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                style: {
-                                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                                },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]",
-                                children: [
-                                    "🎉 ",
-                                    investorMessage
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1638,
-                                columnNumber: 15
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1619,
-                        columnNumber: 11
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + `absolute z-50 flex gap-3 flex-col items-center left-1/2 -translate-x-1/2 ${round === 5 ? 'bottom-[18%]' : 'bottom-[25%]'}`,
-                        children: [
-                            (round === 3 || round === 4) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        onClick: ()=>{
-                                            setShowCafeShop(true);
-                                        },
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40",
-                                        children: "🏪 Build Your Café"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1651,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        onClick: completeGame,
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40",
-                                        children: "Next Round →"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1660,
-                                        columnNumber: 17
-                                    }, this)
-                                ]
-                            }, void 0, true),
-                            round === 5 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        onClick: ()=>{
-                                            setShowCafeShop(true);
-                                        },
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40",
-                                        children: "🏪 Build Your Café"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1672,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        onClick: ()=>{
-                                            alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
-                                        },
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40",
-                                        children: "🎯 Try a New Set"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1681,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                        onClick: ()=>{
-                                            // Save progress is automatic, just close/exit
-                                            alert('✅ Progress saved! Your coins and cafés are stored.');
-                                        },
-                                        style: {
-                                            fontFamily: 'system-ui, -apple-system, sans-serif'
-                                        },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-white/80 hover:text-white underline text-lg mt-2 transition",
-                                        children: "Save & Exit"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1690,
-                                        columnNumber: 17
-                                    }, this)
-                                ]
-                            }, void 0, true),
-                            round < 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: completeGame,
-                                style: {
-                                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                                },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40",
-                                children: "Next Round →"
-                            }, void 0, false, {
-                                fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1704,
-                                columnNumber: 15
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 1643,
-                        columnNumber: 11
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1555,
+                lineNumber: 1768,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                id: "1be5a3ae20e8fc70",
-                children: "@keyframes fountain-jet{0%{opacity:0;transform:translateX(var(--jx))translateY(0)scale(.3)}15%{opacity:1;transform:translateX(var(--jx))translateY(var(--jy))scale(var(--s))}35%{opacity:1;transform:translateX(var(--jx))translateY(calc(var(--jy)*.7))scale(var(--s))rotate(90deg)}55%{opacity:1;transform:translateX(var(--jx))translateY(calc(var(--jy)*.4))scale(var(--s))rotate(180deg)}75%{opacity:.8;transform:translateX(calc(var(--jx)*.5 + 35vw))translateY(calc(var(--jy)*.2 - 40vh))scale(calc(var(--s)*.6))rotate(270deg)}to{opacity:0;transform:translate(45vw)translateY(-45vh)scale(.15)}}.animate-fountain-jet.jsx-1be5a3ae20e8fc70{animation:2.8s ease-out forwards fountain-jet}@keyframes walk{0%{transform:translateY(0)rotate(0)}25%{transform:translateY(-6px)rotate(-2deg)}50%{transform:translateY(0)rotate(0)}75%{transform:translateY(-6px)rotate(2deg)}to{transform:translateY(0)rotate(0)}}.animate-walk.jsx-1be5a3ae20e8fc70{animation:.5s ease-in-out infinite walk}@keyframes fade-in{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.animate-fade-in.jsx-1be5a3ae20e8fc70{animation:.5s ease-out fade-in}@keyframes pop-in{0%{opacity:0;transform:scale(0)}70%{transform:scale(1.1)}to{opacity:1;transform:scale(1)}}.animate-pop-in.jsx-1be5a3ae20e8fc70{animation:.4s ease-out pop-in}@keyframes fly-to-balance{0%{opacity:1;transform:translate(-50%,-50%)scale(1)}70%{opacity:1;transform:translate(calc(50vw - 250px),calc(40px - 50vh))scale(.8)}to{opacity:0;transform:translate(calc(50vw - 250px),calc(40px - 50vh))scale(.5)}}.animate-fly-to-balance.jsx-1be5a3ae20e8fc70{animation:1.5s ease-in-out forwards fly-to-balance}"
+                id: "aec33852ef9bce6a",
+                children: "@keyframes fountain-jet{0%{opacity:0;transform:translateX(var(--jx))translateY(50px)scale(.3)}15%{opacity:1;transform:translateX(var(--jx))translateY(var(--jy))scale(var(--s))}35%{opacity:1;transform:translateX(var(--jx))translateY(calc(var(--jy)*.7))scale(var(--s))rotate(90deg)}55%{opacity:1;transform:translateX(var(--jx))translateY(calc(var(--jy)*.4))scale(var(--s))rotate(180deg)}75%{opacity:.8;transform:translateX(calc(var(--jx)*.3 + 40%))translateY(calc(var(--jy)*.1 - 45%))scale(calc(var(--s)*.6))rotate(270deg)}to{opacity:0;transform:translate(45%)translateY(-48%)scale(.15)}}.animate-fountain-jet.jsx-aec33852ef9bce6a{animation:2.8s ease-out forwards fountain-jet}@keyframes walk{0%{transform:translateY(0)rotate(0)}25%{transform:translateY(-6px)rotate(-2deg)}50%{transform:translateY(0)rotate(0)}75%{transform:translateY(-6px)rotate(2deg)}to{transform:translateY(0)rotate(0)}}.animate-walk.jsx-aec33852ef9bce6a{animation:.5s ease-in-out infinite walk}@keyframes fade-in{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.animate-fade-in.jsx-aec33852ef9bce6a{animation:.5s ease-out fade-in}@keyframes pop-in{0%{opacity:0;transform:scale(0)}70%{transform:scale(1.1)}to{opacity:1;transform:scale(1)}}.animate-pop-in.jsx-aec33852ef9bce6a{animation:.4s ease-out pop-in}@keyframes fly-to-balance{0%{opacity:1;transform:translate(-50%,-50%)scale(1)}70%{opacity:1;transform:translate(42%,-52%)scale(.8)}to{opacity:0;transform:translate(42%,-52%)scale(.5)}}.animate-fly-to-balance.jsx-aec33852ef9bce6a{animation:1.5s ease-in-out forwards fly-to-balance}"
             }, void 0, false, void 0, this),
             showMenu && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 onClick: ()=>setShowMenu(false),
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     onClick: (e)=>e.stopPropagation(),
                     style: {
                         backgroundImage: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
                         boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)'
                     },
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-zinc-900 rounded-xl p-8 max-w-2xl w-full border-4 border-zinc-700 shadow-2xl",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-zinc-900 rounded-xl p-8 max-w-2xl w-full border-4 border-zinc-700 shadow-2xl",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                             style: {
                                 fontFamily: 'Georgia, serif',
                                 textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
                             },
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-4xl font-bold text-center mb-8 text-white",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-4xl font-medium text-center mb-8 text-white",
                             children: "☕ Our Menu"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1802,
+                            lineNumber: 2038,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-1 gap-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "grid grid-cols-1 gap-4",
                             children: menuItems.map((item, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex justify-between items-center border-b border-zinc-700/50 pb-3",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex justify-between items-center border-b border-zinc-700/50 pb-3",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70",
+                                            className: "jsx-aec33852ef9bce6a",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     style: {
                                                         fontFamily: 'Georgia, serif'
                                                     },
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl text-white font-medium",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-2xl text-white font-medium",
                                                     children: item.name
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1809,
+                                                    lineNumber: 2045,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400 text-sm italic",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 text-sm italic",
                                                     children: item.desc
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1810,
+                                                    lineNumber: 2046,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1808,
+                                            lineNumber: 2044,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-500 text-xl",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-500 text-xl",
                                             children: "•••"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1812,
+                                            lineNumber: 2048,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1807,
+                                    lineNumber: 2043,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1805,
+                            lineNumber: 2041,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: ()=>setShowMenu(false),
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "mt-8 w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-lg",
+                            className: "jsx-aec33852ef9bce6a" + " " + "mt-8 w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-lg",
                             children: "Got it!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1816,
+                            lineNumber: 2052,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1794,
+                    lineNumber: 2030,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1793,
+                lineNumber: 2029,
                 columnNumber: 9
             }, this),
             showCafeShop && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex justify-between items-center mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex justify-between items-center mb-6",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                     style: {
                                         fontFamily: 'system-ui, -apple-system, sans-serif'
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-3xl font-bold text-amber-400",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-3xl font-medium text-amber-400",
                                     children: "🏪 Choose Your Café"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1831,
+                                    lineNumber: 2067,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                             size: 28,
-                                            className: "jsx-1be5a3ae20e8fc70"
+                                            className: "jsx-aec33852ef9bce6a"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1833,
+                                            lineNumber: 2069,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-bold text-xl",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-bold text-xl",
                                             children: coins
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1834,
+                                            lineNumber: 2070,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1832,
+                                    lineNumber: 2068,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1830,
+                            lineNumber: 2066,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6",
                             children: cafeOptions.map((cafe)=>{
                                 const owned = purchasedCafes.includes(cafe.id);
                                 const canAfford = coins >= cafe.price;
@@ -3216,56 +3522,56 @@ function ConvosetTest() {
                                             setShowCoinShop(true);
                                         }
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + `relative rounded-xl overflow-hidden border-2 transition-all ${owned ? 'border-green-500 cursor-pointer hover:scale-105' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'}`,
+                                    className: "jsx-aec33852ef9bce6a" + " " + `relative rounded-xl overflow-hidden border-2 transition-all ${owned ? 'border-green-500 cursor-pointer hover:scale-105' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'}`,
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "relative",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "relative",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                                     src: cafe.image,
                                                     alt: cafe.name,
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full h-32 object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full h-32 object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1863,
+                                                    lineNumber: 2099,
                                                     columnNumber: 23
                                                 }, this),
                                                 owned && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full",
                                                     children: "✓ OWNED"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1865,
+                                                    lineNumber: 2101,
                                                     columnNumber: 25
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1862,
+                                            lineNumber: 2098,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "p-3 bg-black/80",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "p-3 bg-black/80",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     style: {
                                                         fontFamily: 'system-ui, -apple-system, sans-serif'
                                                     },
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-white font-medium text-sm",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-white font-medium text-sm",
                                                     children: cafe.name
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1871,
+                                                    lineNumber: 2107,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-1 mt-1",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-1 mt-1",
                                                     children: owned ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-green-400 text-sm",
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-green-400 text-sm",
                                                         children: "Tap to view options"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 1874,
+                                                        lineNumber: 2110,
                                                         columnNumber: 27
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                                         children: [
@@ -3273,46 +3579,46 @@ function ConvosetTest() {
                                                                 size: 18
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 1877,
+                                                                lineNumber: 2113,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: "jsx-1be5a3ae20e8fc70" + " " + `font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`,
+                                                                className: "jsx-aec33852ef9bce6a" + " " + `font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`,
                                                                 children: cafe.price
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 1878,
+                                                                lineNumber: 2114,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, void 0, true)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 1872,
+                                                    lineNumber: 2108,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1870,
+                                            lineNumber: 2106,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, cafe.id, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1843,
+                                    lineNumber: 2079,
                                     columnNumber: 19
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1838,
+                            lineNumber: 2074,
                             columnNumber: 13
                         }, this),
                         round === 5 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3 mb-4",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3 mb-4",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             onClick: ()=>{
@@ -3321,11 +3627,11 @@ function ConvosetTest() {
                                             style: {
                                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                                             },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600",
                                             children: "🎯 Try a New Set"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1893,
+                                            lineNumber: 2129,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3335,17 +3641,17 @@ function ConvosetTest() {
                                             style: {
                                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                                             },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600",
                                             children: "🏬 Choose New Outpost"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1902,
+                                            lineNumber: 2138,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1892,
+                                    lineNumber: 2128,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3355,26 +3661,26 @@ function ConvosetTest() {
                                     style: {
                                         fontFamily: 'system-ui, -apple-system, sans-serif'
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600 mb-4",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-lg border border-zinc-600 mb-4",
                                     children: "🗺️ Go to M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1913,
+                                    lineNumber: 2149,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex justify-center gap-6 pt-2 border-t border-zinc-700",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex justify-center gap-6 pt-2 border-t border-zinc-700",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             onClick: ()=>setShowCoinShop(true),
                                             style: {
                                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                                             },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
                                             children: "💰 Buy Coins"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1925,
+                                            lineNumber: 2161,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3385,11 +3691,11 @@ function ConvosetTest() {
                                             style: {
                                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                                             },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
                                             children: "📦 Check Inventory"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1932,
+                                            lineNumber: 2168,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3399,34 +3705,34 @@ function ConvosetTest() {
                                             style: {
                                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                                             },
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 hover:text-amber-300 text-sm font-medium transition",
                                             children: "💾 Save & Exit"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 1942,
+                                            lineNumber: 2178,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1924,
+                                    lineNumber: 2160,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
+                                className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                         onClick: ()=>setShowCoinShop(true),
                                         style: {
                                             fontFamily: 'system-ui, -apple-system, sans-serif'
                                         },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-semibold rounded-lg border border-zinc-600",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-semibold rounded-lg border border-zinc-600",
                                         children: "💰 Buy Coins"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1957,
+                                        lineNumber: 2193,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3437,140 +3743,140 @@ function ConvosetTest() {
                                         style: {
                                             fontFamily: 'system-ui, -apple-system, sans-serif'
                                         },
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-lg",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-lg",
                                         children: "▶️ Keep Playing"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 1964,
+                                        lineNumber: 2200,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 1956,
+                                lineNumber: 2192,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1829,
+                    lineNumber: 2065,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1828,
+                lineNumber: 2064,
                 columnNumber: 9
             }, this),
             showPurchaseConfirm && selectedCafe && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/50 text-center",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/50 text-center",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl font-bold text-amber-400 mb-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-2xl font-medium text-amber-400 mb-4",
                             children: "🏪 Purchase Café?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1985,
+                            lineNumber: 2221,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                             src: selectedCafe.image,
                             alt: selectedCafe.name,
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-amber-500/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                            className: "jsx-aec33852ef9bce6a" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-amber-500/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1986,
+                            lineNumber: 2222,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-white text-xl font-semibold mb-2",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-white text-xl font-semibold mb-2",
                             children: selectedCafe.name
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1991,
+                            lineNumber: 2227,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-center gap-2 mb-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-center gap-2 mb-4",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400",
                                     children: "Price:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1993,
+                                    lineNumber: 2229,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                     size: 24,
-                                    className: "jsx-1be5a3ae20e8fc70"
+                                    className: "jsx-aec33852ef9bce6a"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1994,
+                                    lineNumber: 2230,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-bold text-xl",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-bold text-xl",
                                     children: selectedCafe.price
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1995,
+                                    lineNumber: 2231,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1992,
+                            lineNumber: 2228,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-center gap-2 mb-6 bg-black/50 py-2 px-4 rounded-full inline-flex",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-center gap-2 mb-6 bg-black/50 py-2 px-4 rounded-full inline-flex",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400",
                                     children: "Your balance:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1998,
+                                    lineNumber: 2234,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                     size: 20,
-                                    className: "jsx-1be5a3ae20e8fc70"
+                                    className: "jsx-aec33852ef9bce6a"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 1999,
+                                    lineNumber: 2235,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-semibold",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-semibold",
                                     children: coins
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2000,
+                                    lineNumber: 2236,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 1997,
+                            lineNumber: 2233,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-3",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex gap-3",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     onClick: ()=>{
                                         setShowPurchaseConfirm(false);
                                         setSelectedCafe(null);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg",
                                     children: "Cancel"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2003,
+                                    lineNumber: 2239,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3587,86 +3893,86 @@ function ConvosetTest() {
                                         setShowJustPurchased(true);
                                         setSelectedCafe(null);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-bold rounded-lg",
                                     children: "✓ Buy Now"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2012,
+                                    lineNumber: 2248,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2002,
+                            lineNumber: 2238,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 1984,
+                    lineNumber: 2220,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 1983,
+                lineNumber: 2219,
                 columnNumber: 9
             }, this),
             showJustPurchased && justPurchasedCafe && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-b from-green-900/80 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-green-900/80 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-6xl mb-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-6xl mb-4",
                             children: "🎉"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2036,
+                            lineNumber: 2272,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-3xl font-bold text-green-400 mb-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-3xl font-bold text-green-400 mb-4",
                             children: "Congratulations!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2037,
+                            lineNumber: 2273,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                             src: justPurchasedCafe.image,
                             alt: justPurchasedCafe.name,
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                            className: "jsx-aec33852ef9bce6a" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2038,
+                            lineNumber: 2274,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-white text-xl mb-2",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-white text-xl mb-2",
                             children: justPurchasedCafe.name
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2043,
+                            lineNumber: 2279,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-green-300 mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-green-300 mb-6",
                             children: "is now in your inventory!"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2044,
+                            lineNumber: 2280,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400 text-sm mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 text-sm mb-6",
                             children: "What would you like to do?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2045,
+                            lineNumber: 2281,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-3",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-3",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     onClick: ()=>{
@@ -3674,11 +3980,11 @@ function ConvosetTest() {
                                         setJustPurchasedCafe(null);
                                         alert('🗺️ M31 Map coming soon! Your café is saved in inventory.');
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg",
                                     children: "🗺️ Place on M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2047,
+                                    lineNumber: 2283,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3688,11 +3994,11 @@ function ConvosetTest() {
                                         setShowCafeShop(false);
                                         setShowInventory(true);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg",
                                     children: "📦 Check Inventory"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2057,
+                                    lineNumber: 2293,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3701,65 +4007,65 @@ function ConvosetTest() {
                                         setJustPurchasedCafe(null);
                                         alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg",
                                     children: "🎯 Try a New Set"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2068,
+                                    lineNumber: 2304,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2046,
+                            lineNumber: 2282,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2035,
+                    lineNumber: 2271,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2034,
+                lineNumber: 2270,
                 columnNumber: 9
             }, this),
             showOwnedPopup && ownedCafeToView && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center relative",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-green-500/50 text-center relative",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl font-bold text-green-400 mb-4",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-2xl font-bold text-green-400 mb-4",
                             children: [
                                 "🏪 ",
                                 ownedCafeToView.name
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2087,
+                            lineNumber: 2323,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                             src: ownedCafeToView.image,
                             alt: ownedCafeToView.name,
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-6 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                            className: "jsx-aec33852ef9bce6a" + " " + "w-48 h-48 object-cover rounded-xl mx-auto mb-6 border-2 border-green-500/50 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2088,
+                            lineNumber: 2324,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-300 mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-300 mb-6",
                             children: "This café is in your inventory. What would you like to do?"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2093,
+                            lineNumber: 2329,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex flex-col gap-3",
+                            className: "jsx-aec33852ef9bce6a" + " " + "flex flex-col gap-3",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     onClick: ()=>{
@@ -3767,11 +4073,11 @@ function ConvosetTest() {
                                         setOwnedCafeToView(null);
                                         alert('🗺️ M31 Map coming soon! Your café is saved in inventory.');
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-lg",
                                     children: "🗺️ Place on M31 Map"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2095,
+                                    lineNumber: 2331,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3781,11 +4087,11 @@ function ConvosetTest() {
                                         setShowCafeShop(false);
                                         setShowInventory(true);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-lg",
                                     children: "📦 Check Inventory"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2105,
+                                    lineNumber: 2341,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3794,11 +4100,11 @@ function ConvosetTest() {
                                         setOwnedCafeToView(null);
                                         alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-lg",
                                     children: "🎯 Try a New Set"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2116,
+                                    lineNumber: 2352,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3806,303 +4112,592 @@ function ConvosetTest() {
                                         setShowOwnedPopup(false);
                                         setOwnedCafeToView(null);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg",
+                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg",
                                     children: "Close"
                                 }, void 0, false, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2126,
+                                    lineNumber: 2362,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2094,
+                            lineNumber: 2330,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2086,
+                    lineNumber: 2322,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2085,
+                lineNumber: 2321,
+                columnNumber: 9
+            }, this),
+            showFeedbackModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-amber-50 to-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-amber-200",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            style: {
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-5xl mb-4 text-amber-900 relative inline-block",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a",
+                                    children: "(๑>◡<๑)"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2382,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute left-[15%] top-[45%] w-3 h-3 bg-pink-300 rounded-full opacity-70"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2384,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute right-[15%] top-[45%] w-3 h-3 bg-pink-300 rounded-full opacity-70"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2385,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2381,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                            style: {
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-2xl font-medium text-amber-800 mb-2",
+                            children: "Almost there!"
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2387,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-amber-700 mb-6 text-base leading-relaxed",
+                            children: "Let's try again! Tap 🔊 Replay to hear the order."
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2390,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                            onClick: ()=>{
+                                setShowFeedbackModal(false);
+                                replayVoice();
+                            },
+                            style: {
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                            },
+                            className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-900 font-bold rounded-full text-lg shadow-lg transition-all",
+                            children: "🔊 Replay Order"
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2393,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                            onClick: ()=>setShowFeedbackModal(false),
+                            className: "jsx-aec33852ef9bce6a" + " " + "mt-3 text-amber-600 hover:text-amber-800 font-medium transition-colors",
+                            children: "Got it, thanks!"
+                        }, void 0, false, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2403,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/app/test/convoset/page.tsx",
+                    lineNumber: 2379,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/test/convoset/page.tsx",
+                lineNumber: 2378,
+                columnNumber: 9
+            }, this),
+            showEmailModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/80 backdrop-blur-md z-[90] flex items-center justify-center p-4",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl border border-pink-500/30",
+                    children: !emailSubmitted ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-4xl mb-3",
+                                        children: "🎉"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 2421,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                        style: {
+                                            fontFamily: 'system-ui, -apple-system, sans-serif'
+                                        },
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-xl md:text-2xl font-medium text-white mb-2",
+                                        children: "Save Your Progress!"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 2422,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 text-sm md:text-base",
+                                        children: [
+                                            "Keep your ",
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-semibold",
+                                                children: [
+                                                    totalCoinsEarned,
+                                                    " coins"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/test/convoset/page.tsx",
+                                                lineNumber: 2426,
+                                                columnNumber: 31
+                                            }, this),
+                                            " for new levels"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 2425,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 2420,
+                                columnNumber: 17
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "mb-4",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                        type: "email",
+                                        value: emailInput,
+                                        onChange: (e)=>{
+                                            setEmailInput(e.target.value);
+                                            setEmailError('');
+                                        },
+                                        placeholder: "Enter your email",
+                                        style: {
+                                            fontFamily: 'system-ui, -apple-system, sans-serif'
+                                        },
+                                        className: "jsx-aec33852ef9bce6a" + " " + "w-full px-4 py-3 rounded-xl bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 text-base"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 2432,
+                                        columnNumber: 19
+                                    }, this),
+                                    emailError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-red-400 text-sm mt-2",
+                                        children: emailError
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/test/convoset/page.tsx",
+                                        lineNumber: 2444,
+                                        columnNumber: 21
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 2431,
+                                columnNumber: 17
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: handleEmailSubmit,
+                                style: {
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                },
+                                className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold rounded-full text-lg shadow-lg transition-all mb-3",
+                                children: "Get Notified at Launch 🚀"
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 2449,
+                                columnNumber: 17
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-500 text-xs mb-4",
+                                children: "We'll only email you about RPG for Humanity updates."
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 2458,
+                                columnNumber: 17
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>setShowEmailModal(false),
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 hover:text-white text-sm transition-colors",
+                                children: "Maybe later"
+                            }, void 0, false, {
+                                fileName: "[project]/app/test/convoset/page.tsx",
+                                lineNumber: 2463,
+                                columnNumber: 17
+                            }, this)
+                        ]
+                    }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "jsx-aec33852ef9bce6a" + " " + "py-4",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-5xl mb-4",
+                                    children: "✅"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2474,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    style: {
+                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                    },
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-xl md:text-2xl font-bold text-green-400 mb-2",
+                                    children: "You're on the list!"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2475,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-300 text-sm md:text-base",
+                                    children: "We'll notify you when new levels are ready."
+                                }, void 0, false, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2478,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-center gap-2 mt-4 text-yellow-400",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
+                                            size: 24,
+                                            className: "jsx-aec33852ef9bce6a"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 2482,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "jsx-aec33852ef9bce6a" + " " + "font-semibold",
+                                            children: [
+                                                totalCoinsEarned,
+                                                " coins saved"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/test/convoset/page.tsx",
+                                            lineNumber: 2483,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/test/convoset/page.tsx",
+                                    lineNumber: 2481,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/test/convoset/page.tsx",
+                            lineNumber: 2473,
+                            columnNumber: 17
+                        }, this)
+                    }, void 0, false)
+                }, void 0, false, {
+                    fileName: "[project]/app/test/convoset/page.tsx",
+                    lineNumber: 2416,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/test/convoset/page.tsx",
+                lineNumber: 2415,
                 columnNumber: 9
             }, this),
             showCoinShop && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 onClick: ()=>setShowCoinShop(false),
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-black/90 z-[80] flex items-center justify-center p-4",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-black/90 z-[80] flex items-center justify-center p-4",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     onClick: (e)=>e.stopPropagation(),
-                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50",
+                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-3xl font-bold text-center text-purple-300 mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "text-3xl font-medium text-center text-purple-300 mb-6",
                             children: "💰 Coin Shop"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2147,
+                            lineNumber: 2499,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "space-y-4 mb-6",
+                            className: "jsx-aec33852ef9bce6a" + " " + "space-y-4 mb-6",
                             children: coinBundles.map((bundle)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     onClick: ()=>{
                                         // Simulate purchase (in real app, this would go to payment)
                                         setCoins((prev)=>prev + bundle.coins);
                                         setShowCoinShop(false);
                                     },
-                                    className: "jsx-1be5a3ae20e8fc70" + " " + `relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'}`,
+                                    className: "jsx-aec33852ef9bce6a" + " " + `relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'}`,
                                     children: [
                                         bundle.best && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full",
                                             children: "⭐ BEST VALUE"
                                         }, void 0, false, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 2163,
+                                            lineNumber: 2515,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex justify-between items-center",
+                                            className: "jsx-aec33852ef9bce6a" + " " + "flex justify-between items-center",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70",
+                                                    className: "jsx-aec33852ef9bce6a",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "text-white font-bold text-lg",
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "text-white font-bold text-lg",
                                                             children: bundle.label
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2169,
+                                                            lineNumber: 2521,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2",
+                                                            className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-2",
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                                                     size: 28
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2171,
+                                                                    lineNumber: 2523,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-bold text-2xl",
+                                                                    className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-bold text-2xl",
                                                                     children: bundle.coins.toLocaleString()
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2172,
+                                                                    lineNumber: 2524,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2170,
+                                                            lineNumber: 2522,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2168,
+                                                    lineNumber: 2520,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl text-xl",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl text-xl",
                                                     children: bundle.price
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2175,
+                                                    lineNumber: 2527,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                            lineNumber: 2167,
+                                            lineNumber: 2519,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, bundle.id, true, {
                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                    lineNumber: 2151,
+                                    lineNumber: 2503,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2149,
+                            lineNumber: 2501,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: ()=>setShowCoinShop(false),
-                            className: "jsx-1be5a3ae20e8fc70" + " " + "w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg",
+                            className: "jsx-aec33852ef9bce6a" + " " + "w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg",
                             children: "Maybe Later"
                         }, void 0, false, {
                             fileName: "[project]/app/test/convoset/page.tsx",
-                            lineNumber: 2183,
+                            lineNumber: 2535,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/test/convoset/page.tsx",
-                    lineNumber: 2143,
+                    lineNumber: 2495,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2142,
+                lineNumber: 2494,
                 columnNumber: 9
             }, this),
             showInventory && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "jsx-1be5a3ae20e8fc70" + " " + "fixed inset-0 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 z-[60] flex flex-col",
+                className: "jsx-aec33852ef9bce6a" + " " + "fixed inset-0 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 z-[60] flex flex-col",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-between px-6 py-4 border-b border-zinc-700",
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-between px-6 py-4 border-b border-zinc-700",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 onClick: ()=>setShowInventory(false),
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2 text-amber-400 hover:text-amber-300 transition font-medium",
+                                className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-2 text-amber-400 hover:text-amber-300 transition font-medium",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-xl",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-xl",
                                         children: "←"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2202,
+                                        lineNumber: 2554,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70",
+                                        className: "jsx-aec33852ef9bce6a",
                                         children: "Back to Coffee Outpost"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2203,
+                                        lineNumber: 2555,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2198,
+                                lineNumber: 2550,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full",
+                                className: "jsx-aec33852ef9bce6a" + " " + "flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KokoroCoin, {
                                         size: 28,
-                                        className: "jsx-1be5a3ae20e8fc70"
+                                        className: "jsx-aec33852ef9bce6a"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2206,
+                                        lineNumber: 2558,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-yellow-400 font-bold text-xl",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-yellow-400 font-bold text-xl",
                                         children: coins
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2207,
+                                        lineNumber: 2559,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2205,
+                                lineNumber: 2557,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2197,
+                        lineNumber: 2549,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex gap-2 px-6 py-4 border-b border-zinc-700",
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex gap-2 px-6 py-4 border-b border-zinc-700",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 onClick: ()=>setInventoryTab('buildings'),
-                                className: "jsx-1be5a3ae20e8fc70" + " " + `px-6 py-3 rounded-xl font-semibold transition ${inventoryTab === 'buildings' ? 'bg-amber-500 text-black' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`,
+                                className: "jsx-aec33852ef9bce6a" + " " + `px-6 py-3 rounded-xl font-semibold transition ${inventoryTab === 'buildings' ? 'bg-amber-500 text-black' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`,
                                 children: "🏪 Buildings"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2213,
+                                lineNumber: 2565,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 onClick: ()=>setInventoryTab('kokorobots'),
                                 disabled: true,
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2",
+                                className: "jsx-aec33852ef9bce6a" + " " + "px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2",
                                 children: [
                                     "🤖 Kokorobots",
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs bg-zinc-700 px-2 py-0.5 rounded-full",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-xs bg-zinc-700 px-2 py-0.5 rounded-full",
                                         children: "Soon"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2229,
+                                        lineNumber: 2581,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2223,
+                                lineNumber: 2575,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 disabled: true,
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2",
+                                className: "jsx-aec33852ef9bce6a" + " " + "px-6 py-3 rounded-xl font-semibold bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center gap-2",
                                 children: [
                                     "🌳 Items",
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-xs bg-zinc-700 px-2 py-0.5 rounded-full",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-xs bg-zinc-700 px-2 py-0.5 rounded-full",
                                         children: "Soon"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2236,
+                                        lineNumber: 2588,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2231,
+                                lineNumber: 2583,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2212,
+                        lineNumber: 2564,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex-1 overflow-y-auto px-6 py-6",
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex-1 overflow-y-auto px-6 py-6",
                         children: [
                             inventoryTab === 'buildings' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70",
+                                className: "jsx-aec33852ef9bce6a",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl font-bold text-white mb-6",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-2xl font-medium text-white mb-6",
                                         children: "Your Buildings"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2244,
+                                        lineNumber: 2596,
                                         columnNumber: 17
                                     }, this),
                                     purchasedCafes.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-center py-16",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-center py-16",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-6xl mb-4",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-6xl mb-4",
                                                 children: "🏪"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2248,
+                                                lineNumber: 2600,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400 text-xl mb-6",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 text-xl mb-6",
                                                 children: "No buildings yet!"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2249,
+                                                lineNumber: 2601,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4110,23 +4705,23 @@ function ConvosetTest() {
                                                     setShowInventory(false);
                                                     setShowCafeShop(true);
                                                 },
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-3 px-8 rounded-full text-lg transition",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-3 px-8 rounded-full text-lg transition",
                                                 children: "🛒 Shop for Cafés"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2250,
+                                                lineNumber: 2602,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2247,
+                                        lineNumber: 2599,
                                         columnNumber: 19
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70",
+                                        className: "jsx-aec33852ef9bce6a",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8",
                                                 children: [
                                                     purchasedCafes.map((cafeId)=>{
                                                         const cafe = cafeOptions.find((c)=>c.id === cafeId);
@@ -4134,62 +4729,62 @@ function ConvosetTest() {
                                                         const isSelected = selectedInventoryItem === cafeId;
                                                         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             onClick: ()=>setSelectedInventoryItem(isSelected ? null : cafeId),
-                                                            className: "jsx-1be5a3ae20e8fc70" + " " + `relative rounded-xl overflow-hidden cursor-pointer transition-all transform hover:scale-105 ${isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-zinc-800' : 'border-2 border-zinc-600 hover:border-amber-500/50'}`,
+                                                            className: "jsx-aec33852ef9bce6a" + " " + `relative rounded-xl overflow-hidden cursor-pointer transition-all transform hover:scale-105 ${isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-zinc-800' : 'border-2 border-zinc-600 hover:border-amber-500/50'}`,
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                                                     src: cafe.image,
                                                                     alt: cafe.name,
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "w-full aspect-square object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+                                                                    className: "jsx-aec33852ef9bce6a" + " " + "w-full aspect-square object-cover bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2278,
+                                                                    lineNumber: 2630,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3",
+                                                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3",
                                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-white font-semibold text-sm",
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + "text-white font-semibold text-sm",
                                                                         children: cafe.name
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                                        lineNumber: 2284,
+                                                                        lineNumber: 2636,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2283,
+                                                                    lineNumber: 2635,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 isSelected && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "absolute top-2 right-2 bg-amber-400 text-black rounded-full p-1",
+                                                                    className: "jsx-aec33852ef9bce6a" + " " + "absolute top-2 right-2 bg-amber-400 text-black rounded-full p-1",
                                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
                                                                         fill: "currentColor",
                                                                         viewBox: "0 0 20 20",
-                                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "w-4 h-4",
+                                                                        className: "jsx-aec33852ef9bce6a" + " " + "w-4 h-4",
                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
                                                                             fillRule: "evenodd",
                                                                             d: "M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z",
                                                                             clipRule: "evenodd",
-                                                                            className: "jsx-1be5a3ae20e8fc70"
+                                                                            className: "jsx-aec33852ef9bce6a"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                                            lineNumber: 2289,
+                                                                            lineNumber: 2641,
                                                                             columnNumber: 35
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                                        lineNumber: 2288,
+                                                                        lineNumber: 2640,
                                                                         columnNumber: 33
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                                    lineNumber: 2287,
+                                                                    lineNumber: 2639,
                                                                     columnNumber: 31
                                                                 }, this)
                                                             ]
                                                         }, cafeId, true, {
                                                             fileName: "[project]/app/test/convoset/page.tsx",
-                                                            lineNumber: 2269,
+                                                            lineNumber: 2621,
                                                             columnNumber: 27
                                                         }, this);
                                                     }),
@@ -4198,117 +4793,117 @@ function ConvosetTest() {
                                                             setShowInventory(false);
                                                             setShowCafeShop(true);
                                                         },
-                                                        className: "jsx-1be5a3ae20e8fc70" + " " + "rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 cursor-pointer transition-all flex flex-col items-center justify-center aspect-square bg-zinc-800/50 hover:bg-zinc-800",
+                                                        className: "jsx-aec33852ef9bce6a" + " " + "rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 cursor-pointer transition-all flex flex-col items-center justify-center aspect-square bg-zinc-800/50 hover:bg-zinc-800",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-4xl mb-2",
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-4xl mb-2",
                                                                 children: "+"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 2305,
+                                                                lineNumber: 2657,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400 font-medium",
+                                                                className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 font-medium",
                                                                 children: "Buy More"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                                lineNumber: 2306,
+                                                                lineNumber: 2658,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                                        lineNumber: 2298,
+                                                        lineNumber: 2650,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2263,
+                                                lineNumber: 2615,
                                                 columnNumber: 21
                                             }, this),
                                             selectedInventoryItem && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "jsx-1be5a3ae20e8fc70" + " " + "flex justify-center mb-8",
+                                                className: "jsx-aec33852ef9bce6a" + " " + "flex justify-center mb-8",
                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                     onClick: ()=>{
                                                         alert('🗺️ M31 Map coming soon! Your café is saved and ready to place.');
                                                     },
-                                                    className: "jsx-1be5a3ae20e8fc70" + " " + "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-blue-500/30",
+                                                    className: "jsx-aec33852ef9bce6a" + " " + "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-blue-500/30",
                                                     children: "🗺️ Place on M31 Map"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/test/convoset/page.tsx",
-                                                    lineNumber: 2313,
+                                                    lineNumber: 2665,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                                lineNumber: 2312,
+                                                lineNumber: 2664,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2261,
+                                        lineNumber: 2613,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2243,
+                                lineNumber: 2595,
                                 columnNumber: 15
                             }, this),
                             inventoryTab === 'kokorobots' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-center py-16",
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-center py-16",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-6xl mb-4",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-6xl mb-4",
                                         children: "🤖"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2330,
+                                        lineNumber: 2682,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-2xl font-bold text-white mb-4",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-2xl font-medium text-white mb-4",
                                         children: "Kokorobots Coming Soon!"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2331,
+                                        lineNumber: 2683,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "jsx-1be5a3ae20e8fc70" + " " + "text-zinc-400 max-w-md mx-auto",
+                                        className: "jsx-aec33852ef9bce6a" + " " + "text-zinc-400 max-w-md mx-auto",
                                         children: "Customize your Kokorobot's appearance — change hairstyles, suits, colors, and more!"
                                     }, void 0, false, {
                                         fileName: "[project]/app/test/convoset/page.tsx",
-                                        lineNumber: 2332,
+                                        lineNumber: 2684,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2329,
+                                lineNumber: 2681,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2241,
+                        lineNumber: 2593,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "jsx-1be5a3ae20e8fc70" + " " + "flex items-center justify-between px-6 py-5 border-t border-zinc-700 bg-zinc-900/80",
+                        className: "jsx-aec33852ef9bce6a" + " " + "flex items-center justify-between px-6 py-5 border-t border-zinc-700 bg-zinc-900/80",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 onClick: ()=>{
                                     alert('🏬 All Outposts hub coming soon! Practice at different locations.');
                                 },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 hover:text-amber-300 font-semibold text-lg transition flex items-center gap-2",
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 hover:text-amber-300 font-semibold text-lg transition flex items-center gap-2",
                                 children: "🏬 All Outposts"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2342,
+                                lineNumber: 2694,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4316,33 +4911,33 @@ function ConvosetTest() {
                                     setShowInventory(false);
                                     alert('✅ Progress saved! Your coins and items are stored.');
                                 },
-                                className: "jsx-1be5a3ae20e8fc70" + " " + "text-amber-400 hover:text-amber-300 font-semibold text-lg transition",
+                                className: "jsx-aec33852ef9bce6a" + " " + "text-amber-400 hover:text-amber-300 font-semibold text-lg transition",
                                 children: "Save & Exit"
                             }, void 0, false, {
                                 fileName: "[project]/app/test/convoset/page.tsx",
-                                lineNumber: 2350,
+                                lineNumber: 2702,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/test/convoset/page.tsx",
-                        lineNumber: 2341,
+                        lineNumber: 2693,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/test/convoset/page.tsx",
-                lineNumber: 2195,
+                lineNumber: 2547,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/test/convoset/page.tsx",
-        lineNumber: 1061,
+        lineNumber: 1202,
         columnNumber: 5
     }, this);
 }
-_s(ConvosetTest, "6lP7C1ysXBYudo57qOVitgKU4RU=");
+_s(ConvosetTest, "IGYVyip6EUmJ+6wEOqDhZ5p3s8M=");
 _c = ConvosetTest;
 var _c;
 __turbopack_context__.k.register(_c, "ConvosetTest");

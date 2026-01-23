@@ -12,6 +12,11 @@ type OrderItem = {
   syrup?: string;
 };
 
+type InvestorMessage = {
+  title: string;
+  subtitle?: string;
+};
+
 type Coin = {
   id: number;
   x: number;           // horizontal position of the jet
@@ -27,7 +32,9 @@ export default function ConvosetTest() {
   const [gameState, setGameState] = useState<GameState>('intro');
   const [round, setRound] = useState<Round>(1);
   const [coins, setCoins] = useState(50);
-  const [investorMessage, setInvestorMessage] = useState('');
+  const [investorMessage, setInvestorMessage] = useState<InvestorMessage>({
+    title: "Great job!",
+  });
   const [showDialogue, setShowDialogue] = useState(false);
   const [isNpcSpeaking, setIsNpcSpeaking] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
@@ -52,6 +59,65 @@ export default function ConvosetTest() {
   const [justPurchasedCafe, setJustPurchasedCafe] = useState<{id: string, name: string, price: number, image: string} | null>(null);
   const [showOwnedPopup, setShowOwnedPopup] = useState(false);
   const [ownedCafeToView, setOwnedCafeToView] = useState<{id: string, name: string, image: string} | null>(null);
+  
+  // Friendly feedback modal state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  // Reward summary state (shown after Round 5 completion)
+  const [showRewardSummary, setShowRewardSummary] = useState(false);
+  const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
+  
+  // Email capture modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  
+  // Calculate coins earned per round
+  const getCoinsForRound = (r: number) => {
+    const coinRewards: Record<number, number> = { 1: 20, 2: 30, 3: 50, 4: 80, 5: 100 };
+    return coinRewards[r] ?? 0;
+  };
+
+  // Feedback form
+  const FEEDBACK_FORM_URL = "https://forms.gle/H42F4Vz4uZXtqHaB8";
+  
+  const openFeedbackForm = () => {
+    window.open(FEEDBACK_FORM_URL, "_blank", "noopener,noreferrer");
+  };
+  
+  // Handle email submission
+  const handleEmailSubmit = async () => {
+    if (!emailInput || !emailInput.includes('@')) {
+      setEmailError('Please enter a valid email');
+      return;
+    }
+    
+    try {
+      // For now, just save to localStorage (later: send to Supabase)
+      const waitlistData = {
+        email: emailInput,
+        coinsEarned: totalCoinsEarned,
+        timestamp: new Date().toISOString(),
+        source: 'coffee_outpost_demo'
+      };
+      
+      // Store locally
+      const existing = JSON.parse(localStorage.getItem('rpg4h-waitlist') || '[]');
+      existing.push(waitlistData);
+      localStorage.setItem('rpg4h-waitlist', JSON.stringify(existing));
+      
+      setEmailSubmitted(true);
+      setEmailError('');
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowEmailModal(false);
+      }, 2000);
+    } catch (err) {
+      setEmailError('Something went wrong. Please try again.');
+    }
+  };
 
   // Auto-load saved progress on mount
   useEffect(() => {
@@ -138,7 +204,6 @@ export default function ConvosetTest() {
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(true);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
-  const [voiceAudio, setVoiceAudio] = useState<HTMLAudioElement | null>(null);
 
   // Round-specific orders and audio
   const roundConfigs = {
@@ -178,8 +243,10 @@ export default function ConvosetTest() {
       
       const walkIn = setInterval(() => {
         setKokoroX(prev => {
-          // Walk to about 25% from left
-          const target = window.innerWidth * 0.25;
+          // Walk more toward center - responsive target
+          // Mobile: ~30% from left, Desktop: ~40% from left (closer to center)
+          const isMobile = window.innerWidth < 768;
+          const target = isMobile ? window.innerWidth * 0.30 : window.innerWidth * 0.40;
           if (prev >= target) {
             clearInterval(walkIn);
             setIsWalking(false);
@@ -333,106 +400,147 @@ export default function ConvosetTest() {
   };
 
   const playRoundOrder = (forceRound?: number) => {
+    // Only for rounds 1-3 (listen & select)
     const targetRound = forceRound || round;
     const config = roundConfigs[targetRound as 1 | 2 | 3];
     if (!config) return;
     
-    console.log(`🎤 Playing order audio: ${config.audio}`);
+    console.log(`Playing round ${targetRound} order audio: ${config.audio}`);
     
-    // STOP any existing voice audio
-    if (voiceAudio) {
-      voiceAudio.pause();
-      voiceAudio.currentTime = 0;
-      setVoiceAudio(null);
-    }
-    
-    // STOP music while voice plays
+    // Pause background music while voice plays
     if (audioRef) {
       audioRef.pause();
     }
     
-    const audio = new Audio(config.audio);
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = config.audio;
     audio.volume = 0.8;
-    setVoiceAudio(audio);
     setIsNpcSpeaking(true);
     
-    // Simple: just play it
-    audio.play().then(() => {
-      console.log('🎤 Voice playing');
-    }).catch(err => {
-      console.error('Voice play failed:', err);
-      speakTTS(config.npcOrder);
-    });
+    audio.oncanplay = () => {
+      console.log('Audio can play');
+      audio.play().then(() => {
+        console.log('Audio playing successfully');
+      }).catch(err => {
+        console.error('Play failed:', err);
+        speakTTS(config.npcOrder);
+      });
+    };
     
     audio.onended = () => {
-      console.log('🎤 Voice ended');
+      console.log('Audio ended');
       setIsNpcSpeaking(false);
-      setVoiceAudio(null);
-      // NOW start music (after voice ends)
-      if (musicPlaying && audioRef) {
+      // DON'T start music here - it's already started in completeGame
+      // Just resume if it was paused
+      if (audioRef && musicPlaying) {
         audioRef.play().catch(() => {});
-      } else if (!musicStarted) {
-        // First time - start music
-        startBackgroundMusic(targetRound);
       }
+    };
+    
+    audio.onerror = (e) => {
+      console.error('Audio load error - trying fetch:', e);
+      fetch(config.audio)
+        .then(res => {
+          console.log('Fetch status:', res.status, res.statusText);
+          if (!res.ok) {
+            speakTTS(config.npcOrder);
+          }
+        })
+        .catch(fetchErr => {
+          console.error('Fetch also failed:', fetchErr);
+          speakTTS(config.npcOrder);
+        });
     };
   };
 
   const getMusicForRound = (r: number) => {
+    // music-round1.mp3 for Round 1-2, music-round2.mp3 for round 3, music-round3.mp3 for round 4,5
     if (r <= 2) return '/Audio/music-round1.mp3';
     if (r === 3) return '/Audio/music-round2.mp3';
-    return '/Audio/music-round3.mp3';
+    return '/Audio/music-round3.mp3'; // rounds 4 and 5
   };
 
-  // Simple and bulletproof audio control
-  const stopAllAudio = () => {
-    console.log('🔇 Stopping all audio');
-    // Stop music
-    if (audioRef) {
-      audioRef.pause();
-      audioRef.currentTime = 0;
-    }
-    // Stop voice
-    if (voiceAudio) {
-      voiceAudio.pause();
-      voiceAudio.currentTime = 0;
-    }
-  };
-
+  // Use a module-level variable to ensure only ONE audio instance exists
   const startBackgroundMusic = (forceRound?: number | boolean) => {
-    // Don't start if user muted
-    if (musicStarted && !musicPlaying) {
-      console.log('🎵 Music muted, skipping');
+    // DON'T start music if user has turned it off
+    if (!musicPlaying && musicStarted) {
+      console.log('🎵 Music is muted, not starting');
       return;
     }
     
-    // Stop existing music first
+    // CRITICAL: First, stop and destroy ANY existing audio
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
+      audioRef.src = '';
+    }
+    
+    // Also find and kill any orphaned audio elements playing music
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && audioEl.src.includes('music-round')) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          audioEl.src = '';
+        }
+      });
     }
     
     const targetRound = typeof forceRound === 'number' ? forceRound : round;
     const musicFile = getMusicForRound(targetRound);
     
-    console.log(`🎵 Starting music: ${musicFile}`);
+    console.log(`🎵 Starting music for round ${targetRound}: ${musicFile}`);
     
-    const newAudio = new Audio(musicFile);
-    newAudio.loop = true;
-    newAudio.volume = 0.05;
-    newAudio.play().catch((e) => console.log('Music play failed:', e));
-    setAudioRef(newAudio);
+    // Stop existing before creating new
+    stopBackgroundMusic();
+    
+    const audio = new Audio(musicFile);
+    audio.loop = true;
+    audio.volume = 0.05;
+    audio.play().catch(() => {});
+    setAudioRef(audio);
     setMusicStarted(true);
     setMusicPlaying(true);
   };
   
+  // Stop all music completely
   const stopBackgroundMusic = () => {
-    console.log('🔇 Stopping music');
+    console.log('🔇 Stopping all music');
     if (audioRef) {
       audioRef.pause();
       audioRef.currentTime = 0;
+      try { audioRef.src = ''; } catch(e) {}
     }
-    setMusicPlaying(false);
+    // Kill ALL audio elements playing music (aggressive cleanup)
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        if (audioEl.src && (audioEl.src.includes('music-round') || audioEl.src.includes('Audio'))) {
+          audioEl.pause();
+          audioEl.currentTime = 0;
+          try { audioEl.src = ''; } catch(e) {}
+        }
+      });
+    }
+    // Don't set musicPlaying to false here - that's only for user muting
+  };
+  
+  // Pause music temporarily (for sound effects) - will auto-resume
+  const pauseBackgroundMusic = () => {
+    console.log('⏸️ Pausing music temporarily');
+    if (audioRef) {
+      audioRef.pause();
+    }
+  };
+  
+  // Resume music after sound effect
+  const resumeBackgroundMusic = () => {
+    console.log('▶️ Resuming music');
+    if (audioRef && musicPlaying) {
+      audioRef.play().catch(() => {});
+    }
   };
 
   const speakTTS = (text: string) => {
@@ -466,16 +574,40 @@ export default function ConvosetTest() {
 
   const toggleMusic = () => {
     if (musicPlaying) {
-      console.log('🔇 User toggled music OFF');
+      // Stop ALL music
       if (audioRef) {
         audioRef.pause();
-        audioRef.currentTime = 0;
+      }
+      // Also stop any orphaned audio
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('audio').forEach((el) => {
+          const audioEl = el as HTMLAudioElement;
+          if (audioEl.src && audioEl.src.includes('music-round')) {
+            audioEl.pause();
+          }
+        });
       }
       setMusicPlaying(false);
     } else {
-      console.log('🔊 User toggled music ON');
-      if (audioRef) {
-        audioRef.play().catch(() => {});
+      // Try to resume existing audioRef first
+      if (audioRef && audioRef.src) {
+        audioRef.play().catch(() => {
+          // If resume fails, create new audio
+          const musicFile = getMusicForRound(round);
+          const audio = new Audio(musicFile);
+          audio.loop = true;
+          audio.volume = 0.05;
+          audio.play().catch(() => {});
+          setAudioRef(audio);
+        });
+      } else {
+        // No audioRef exists, create new one
+        const musicFile = getMusicForRound(round);
+        const audio = new Audio(musicFile);
+        audio.loop = true;
+        audio.volume = 0.05;
+        audio.play().catch(() => {});
+        setAudioRef(audio);
       }
       setMusicPlaying(true);
     }
@@ -517,7 +649,8 @@ export default function ConvosetTest() {
         setShowFullBody(false);
         setGameState('playing');
         setShowDialogue(true);
-        playRoundOrder(); // Music will start AFTER this voice ends
+        playRoundOrder();
+        startBackgroundMusic(1); // Start music for Round 1
       }
     }, 25);
   };
@@ -547,28 +680,32 @@ export default function ConvosetTest() {
     const isCorrect = normalize(round1Selections) === normalize(currentRoundConfig.correctOrder);
     
     if (isCorrect) {
-      // Stop background music completely
-      stopBackgroundMusic();
+      // Pause background music for celebration sound
+      pauseBackgroundMusic();
       // Coin rewards: Round 1 = 20, Round 2 = 30, Round 3 = 50
       const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
+      // Track total coins earned
+      setTotalCoinsEarned(prev => prev + coinReward);
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
         triggerCoinAnimation(round);
-        const messages: Record<number, string> = {
-          1: "Well done!",
-          2: "Great job!",
-          3: "Excellent!\nCan she take your orders, too?",
-          4: "Impressive!",
-          5: "🎉 You're a natural!"
+        const messages: Record<number, InvestorMessage> = {
+          1: { title: "Well done!" },
+          2: { title: "Great job!" },
+          3: { title: "Excellent!", subtitle: "Can she take your orders too?" },
+          4: { title: "Impressive!" },
+          5: { title: "You're a natural!" }
         };
-        setInvestorMessage(messages[round] || "Great job!");
-        setGameState('investor');
+
+        setInvestorMessage(messages[round] ?? { title: "Great job!" });
+        setGameState("investor");
       });
+
     } else {
-      // Wrong answer - play error sound and show clear feedback
+      // Wrong answer - play error sound and show friendly feedback
       playAudio('/Audio/kokorobot-wrong.mp3');
-      alert("❌ Not quite right!\n\nPress 🔊 to hear the order again.");
+      setShowFeedbackModal(true);
       setRound1Selections([]);
       setCurrentItem({});
     }
@@ -638,12 +775,14 @@ export default function ConvosetTest() {
       if (input.includes('yes') || input.includes('confirm') || input.includes('correct') || input.includes('that\'s right') || input.includes('looks good') || input.includes('perfect') || input.includes('that\'s it') || input.includes('thats it') || input.includes('thank you') || input.includes('thanks') || input.includes('good') || input.includes('yep') || input.includes('yup') || input.includes('sure') || input.includes('okay') || input.includes('ok')) {
         const response = "Thank you, it will be at the pick up counter.";
         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
-        // Stop background music completely
-        stopBackgroundMusic();
+        // Pause background music for celebration
+        pauseBackgroundMusic();
+        // Track total coins earned
+        setTotalCoinsEarned(prev => prev + 80);
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
           triggerCoinAnimation(round);
-          setInvestorMessage("Impressive!");
+          setInvestorMessage({ title: "Impressive!" });
           setGameState('investor');
         });
         return;
@@ -963,13 +1102,15 @@ export default function ConvosetTest() {
   };
 
   const acceptRound3Score = () => {
-    // Stop background music completely
-    stopBackgroundMusic();
+    // Pause background music for celebration
+    pauseBackgroundMusic();
+    // Track total coins earned (Round 5 = 100 coins)
+    setTotalCoinsEarned(prev => prev + 100);
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
-      setCoins(prev => prev + 500);
+      setCoins(prev => prev + 100);
       triggerCoinAnimation(round);
-      setInvestorMessage("🎉 You're a natural!");
+      setInvestorMessage({ title: "You're a natural!" });
       setGameState('investor');
     });
   };
@@ -1098,77 +1239,105 @@ export default function ConvosetTest() {
       )}
 
       {/* HUD - Responsive for mobile */}
-      <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30">
+      <div className="absolute top-6 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30">
         <div className="flex items-center gap-1 md:gap-3">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/30">
-            <span className="text-amber-400 font-mono text-xs md:text-base">M31 Coffee Outpost</span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
+            <span className="text-zinc-100 font-sans text-xs md:text-sm">M31 · Lv.3 · {round}/5</span>
           </div>
           {musicStarted && (
             <button 
               onClick={toggleMusic}
-              className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-amber-500/30 hover:bg-black/80 transition"
+              className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
             >
-              <span className="text-amber-400 text-sm md:text-lg">{musicPlaying ? '🔊' : '🔇'}</span>
+              <span className="text-zinc-100 text-xs md:text-sm">{musicPlaying ? '🔊' : '🔇'}</span>
             </button>
           )}
           {/* Language Pill */}
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-2 border border-cyan-500/30 flex items-center gap-1 md:gap-2">
-            <span className="text-sm md:text-base">{languageInfo[selectedLanguage].flag}</span>
-            <span className="text-cyan-400 font-mono text-xs md:text-sm">{languageInfo[selectedLanguage].shortCode}</span>
-        </div>
-        </div>
-        <div className="flex gap-1 md:gap-3">
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/30 flex items-center gap-1 md:gap-2">
-            <KokoroCoin size={16} className="md:w-6 md:h-6" />
-            <span className="text-yellow-400 font-mono font-semibold text-sm md:text-lg">{coins}</span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2">
+            <span className="text-xs md:text-sm">{languageInfo[selectedLanguage].flag}</span>
+            <span className="text-zinc-100 font-sans text-xs md:text-sm">{languageInfo[selectedLanguage].shortCode}</span>
           </div>
-          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/30">
-            <span className="text-purple-400 font-mono text-xs md:text-base">Round {round}/5</span>
+        </div>
+        <div className="flex items-center gap-1 md:gap-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2">
+            <KokoroCoin size={20} />
+            <span className="text-zinc-100 font-sans text-xs md:text-sm">{coins}</span>
           </div>
+          {/* Save button */}
+          <button 
+            onClick={() => alert('✅ Progress saved locally!')}
+            className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+          >
+            <span className="text-zinc-100 text-xs md:text-sm">✅</span>
+          </button>
+          {/* Exit button */}
+          <button 
+            onClick={() => { if(confirm('Exit game? Your progress is saved.')) window.location.href = '/'; }}
+            className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+          >
+            <span className="text-zinc-100 text-xs md:text-sm">✕</span>
+          </button>
         </div>
       </div>
 
-      {/* Full Body Kokorobot - Side view when walking - Smaller on mobile */}
+      {/* Full Body Kokorobot */}
       {showFullBody && (gameState === 'intro' || gameState === 'walking') && (
-        <div 
-          className="absolute bottom-4 md:bottom-16 z-5"
-          style={{ 
+        <div
+          className={`absolute bottom-24 md:bottom-28 z-[60] pointer-events-none ${
+            isWalking ? '' : 'transition-opacity duration-300'
+          }`}
+          style={{
             left: `${kokoroX}px`,
-            transform: `scale(${kokoroScale * 0.6})`,
-            opacity: kokoroOpacity
+            transform: 'translateX(-50%)',
+            opacity: kokoroOpacity,
           }}
         >
-          <img 
-            src={isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png"}
-            alt="Kokorobot" 
-            className={`h-48 md:h-72 w-auto drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}`}
-            style={{
-              filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5))'
-            }}
-          />
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-            <span className="text-xs text-amber-400 font-mono bg-black/70 px-2 md:px-3 py-1 rounded-full border border-amber-500/30">
-              Kokorobot-1
-            </span>
+          <div className="relative w-fit">
+            <img
+              src={isWalking ? "/kokorobot-sideview.png" : "/kokorobot-cb.png"}
+              alt="Kokorobot"
+              className={[
+                "block w-auto drop-shadow-2xl",
+                isWalking ? "animate-walk" : "",
+              ].join(" ")}
+              style={{ height: 'clamp(160px, 26vh, 260px)' }}
+            />
+
+            {/* Name badge */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+              <span className="text-xs text-amber-400 font-sans font-medium bg-black/70 px-2 py-1 rounded-full border border-amber-500/30 whitespace-nowrap">
+                Kokoro
+              </span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* INTRO - Mission text CENTERED with dark box */}
-      {gameState === 'intro' && (
-        <div className={`absolute inset-0 flex items-center justify-center z-30 transition-all duration-700 ${missionVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="text-center max-w-2xl px-6 md:px-12 py-6 md:py-10 bg-black/80 rounded-3xl shadow-2xl mx-4">
-            <p className="text-purple-400 font-medium mb-2 text-sm md:text-lg">Round {round} of 5</p>
-            <h1 className="text-2xl md:text-5xl lg:text-6xl font-semibold mb-4 md:mb-6 text-yellow-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+      {/* INTRO MISSION CARD */}
+      {gameState === 'intro' && missionVisible && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center px-4 pt-20 pb-32 md:pt-0 md:pb-0">
+          <div 
+            className={`bg-black/70 backdrop-blur-md rounded-3xl p-5 md:p-8 max-w-sm md:max-w-md w-full border border-amber-500/30 text-center transition-opacity transition-transform duration-500 ${
+              missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
+            <p className="text-purple-400 text-sm md:text-base font-medium mb-2">Round {round} of 5</p>
+            <h1 className="text-amber-400 text-2xl md:text-3xl font-medium mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               M31 Coffee Outpost
             </h1>
-            <p className="text-yellow-400 font-medium mb-6 md:mb-8 text-base md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-              Earn coins to build Andromeda's first café!
+            <p className="text-amber-200 text-sm md:text-base mb-6 leading-relaxed">
+              Learn to understand, and be understood.<br />
+              Earn rewards to build Andromeda's first café!
             </p>
             <button
               onClick={startGame}
               disabled={!introReady}
-              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold py-3 md:py-4 px-10 md:px-14 rounded-full text-lg md:text-xl transition transform hover:scale-105 shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-8 py-3 rounded-full text-lg font-semibold transition-all ${
+                introReady 
+                  ? 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer' 
+                  : 'bg-amber-500/50 text-black/50 cursor-wait'
+              }`}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Begin Mission
             </button>
@@ -1183,48 +1352,54 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* DIALOGUE BOX - Centered */}
+      {/* DIALOGUE BOX - Mobile-friendly layout */}
       {gameState === 'playing' && showDialogue && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
-          <div className="w-full max-w-xl animate-fade-in">
+        <div className="absolute inset-0 flex flex-col items-center justify-start md:justify-center z-20 pt-20 md:pt-0 pb-2">
+          <div className="w-full max-w-xl overflow-y-auto px-2 md:px-4">
+            <div className="w-full max-w-xl mx-auto animate-fade-in">
             
             {/* Listen & Select UI - Rounds 1-3 */}
             {(round === 1 || round === 2 || round === 3) && currentRoundConfig && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-6 shadow-2xl">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-4 md:p-6 shadow-2xl">
+                <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
                     className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
-                    <p className="text-amber-400 text-lg md:text-xl mb-1 font-mono font-semibold">Kokorobot-1</p>
+                    <p className="text-amber-400 text-lg md:text-xl mb-1 font-sans font-medium">M31 Coffee Outpost</p>
                     
                     {showTranscript ? (
                       <p className="text-base md:text-xl leading-relaxed text-white">{currentRoundConfig.npcOrder}</p>
                     ) : (
                       <div className="bg-black/60 rounded-xl p-3 border border-amber-500/30">
                         <p className="text-amber-300 mb-1 text-sm md:text-base font-medium">📋 Register Training</p>
-                        <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokorobot-1's exact order.</p>
+                        <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokoro's exact order.</p>
                         
-                        {/* Slim modern buttons - black bg, amber text */}
-                        <div className="flex gap-3 justify-center">
+                        {/* Matching rounded buttons */}
+                        <div className="flex gap-2 justify-center">
                           <button 
                             onClick={replayVoice}
-                            className="px-3 py-1.5 rounded transition font-medium flex items-center gap-2 bg-black/80 hover:bg-black text-amber-400 text-sm border border-amber-500/40"
+                            className="px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center bg-transparent hover:bg-amber-900/50 text-amber-400 text-sm border border-amber-500/40 min-w-[100px]"
                           >
-                            <span>🔊</span> <span>Replay (Free)</span>
+                            <span>🔊 Replay</span>
+                            <span className="text-xs text-amber-400/60">(Free)</span>
                           </button>
                           <button 
                             onClick={buyTranscript}
                             disabled={coins < 10}
-                            className={`px-3 py-1.5 rounded transition font-medium flex items-center gap-2 text-sm border ${
+                            className={`px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center text-sm border min-w-[100px] ${
                               coins >= 10 
-                                ? 'bg-black/80 hover:bg-black text-amber-400 border-amber-500/40' 
-                                : 'bg-black/40 text-slate-500 border-slate-600 cursor-not-allowed'
+                                ? 'bg-transparent hover:bg-amber-900/50 text-amber-400 border-amber-500/40' 
+                                : 'bg-transparent text-slate-500 border-slate-600 cursor-not-allowed'
                             }`}
                           >
-                            <span>💡</span> <span>Show Text</span> <KokoroCoin size={14} /> <span>10</span>
+                            <span>💡 Show Text</span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <KokoroCoin size={12} />
+                              <span>10</span>
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -1233,7 +1408,7 @@ export default function ConvosetTest() {
                 </div>
                 
                 {/* Instruction hint */}
-                <p className="text-amber-400/60 text-xs text-center mb-3">Tap Type → Size → Milk → Syrup. Add item, then submit.</p>
+                <p className="text-amber-400/60 text-xs text-center mb-3">Tap Type → Size → Milk → Syrup → Add Item → Submit.</p>
                 
                 {/* Order Builder - Mobile Responsive */}
                 <div className="border-t border-amber-500/30 pt-4">
@@ -1250,7 +1425,7 @@ export default function ConvosetTest() {
                         </button>
                       ))
                     ) : (
-                      <p className="text-amber-400/50 text-sm">Your order will appear here</p>
+                      <p className="text-amber-400/50 text-sm">Receipt preview</p>
                     )}
                   </div>
 
@@ -1370,22 +1545,24 @@ export default function ConvosetTest() {
                     </div>
                   )}
 
-                  {/* Action Buttons - Always Visible */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={addToOrder}
-                      disabled={!currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount}
-                      className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      + Add Item
-                    </button>
-                    <button
-                      onClick={checkRound1}
-                      disabled={round1Selections.length !== currentRoundConfig.itemCount}
-                      className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      Submit ✓
-                    </button>
+                  {/* Action Buttons - Sticky at bottom */}
+                  <div className="sticky bottom-0 bg-black/90 pt-3 -mx-4 md:-mx-6 px-4 md:px-6 pb-2 -mb-4 md:-mb-6 rounded-b-2xl">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={addToOrder}
+                        disabled={!currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount}
+                        className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        + Add Item
+                      </button>
+                      <button
+                        onClick={checkRound1}
+                        disabled={round1Selections.length !== currentRoundConfig.itemCount}
+                        className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-500 hover:bg-amber-400 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Submit ✓
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1397,7 +1574,7 @@ export default function ConvosetTest() {
                 <div className="flex items-center gap-4 mb-4">
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
                   <div>
-                    <p className="text-amber-400 font-mono font-semibold text-xl">Kokorobot-1</p>
+                    <p className="text-amber-400 font-sans font-medium text-xl">Kokoro</p>
                     <p className="text-lg text-purple-400">Your turn! Order one drink by typing.</p>
                   </div>
                 </div>
@@ -1453,7 +1630,7 @@ export default function ConvosetTest() {
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
                           triggerCoinAnimation(round);
-                          setInvestorMessage("Impressive!");
+                          setInvestorMessage({ title: "Impressive!" });
                           setGameState('investor');
                         });
                       }}
@@ -1477,6 +1654,25 @@ export default function ConvosetTest() {
                     </button>
                   </div>
                 )}
+                
+                {/* Skip option with coin info */}
+                <div className="mt-4 pt-4 border-t border-amber-500/20 text-center">
+                  <p className="text-amber-400/60 text-xs mb-2">Round 4: Type your order · Earn +80 coins</p>
+                  <button
+                    onClick={() => {
+                      // Skip to next round without coins
+                      setRound(5);
+                      setGameState('playing');
+                      setShowDialogue(true);
+                      setRound3Transcript('');
+                      setRound3ConfirmStep(false);
+                      startBackgroundMusic(5);
+                    }}
+                    className="text-zinc-500 hover:text-zinc-300 text-sm transition underline"
+                  >
+                    Skip this round (no coins)
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1544,171 +1740,211 @@ export default function ConvosetTest() {
                     </div>
                   </>
                 )}
+                
+                {/* Skip option with coin info */}
+                <div className="mt-4 pt-4 border-t border-amber-500/20">
+                  <p className="text-amber-400/60 text-xs mb-2">Round 5: Speak your order · Earn +100 coins</p>
+                  <button
+                    onClick={() => {
+                      // Skip to completion without coins
+                      stopBackgroundMusic();
+                      setInvestorMessage({ title: "You're a natural!" });
+                      setGameState('investor');
+                    }}
+                    className="text-zinc-500 hover:text-zinc-300 text-sm transition underline"
+                  >
+                    Skip this round (no coins)
+                  </button>
+                </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Earth Investor Video Call - Full screen image with overlay */}
+      {/* Earth Investor Video Call - Frame-based layout */}
       {gameState === 'investor' && (
-        <div className="fixed inset-0 z-40">
-          {/* Full screen background image - different investor per round */}
-          <img 
-            src={round === 1 ? "/ib.png" : `/NY-investor${round}.png`}
-            alt="Earth Investor calling from spaceship" 
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          
-          {/* HUD - with solid black background - Responsive */}
-          <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-50">
-            <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-amber-500/50">
-              <span className="text-amber-400 font-mono text-xs md:text-base">M31 Coffee Outpost</span>
-            </div>
-            <div className="flex gap-1 md:gap-3">
-              <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-yellow-500/50 flex items-center gap-1 md:gap-2">
-                <KokoroCoin size={16} className="md:w-6 md:h-6" />
-                <span className="text-yellow-400 font-mono font-semibold text-sm md:text-lg">{coins}</span>
-              </div>
-              <div className="bg-black rounded-full px-2 md:px-5 py-1 md:py-2 border border-purple-500/50">
-                <span className="text-purple-400 font-mono text-xs md:text-base">Round {round}/5</span>
-              </div>
-            </div>
-          </div>
-
-          {/* LIVE indicator - inside image */}
-          <div className="absolute top-20 left-6 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full z-50">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-green-400 text-xl font-mono font-semibold">LIVE</span>
-          </div>
-
-          {/* Bellagio-style fountain jets - starts from center, shoots up, then to balance */}
-          {showCoinAnimation && (
-            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center">
-              {animatedCoins.map((coin) => (
-                <div
-                  key={coin.id}
-                  className="absolute animate-fountain-jet"
-                  style={{
-                    '--jx': `${coin.x}px`,
-                    '--jy': `${coin.y}px`,
-                    '--s': coin.scale,
-                    animationDelay: `${coin.delay}s`
-                  } as React.CSSProperties}
-                >
-                  <div className="relative">
-                    {/* Glowing star coin */}
-                    <KokoroCoin size={32} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
-                    {/* Extra glow effect */}
-                    <div className="absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10" />
-                  </div>
+        <div className="fixed inset-0 z-40 bg-black flex items-center justify-center">
+          {/* FRAME: everything pins to this box, not the viewport */}
+          <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
+            
+            {/* Background image - fills the frame */}
+            <img 
+              src={round === 1 ? "/ib.png" : `/NY-investor${round}.png`}
+              alt="Earth Investor calling from spaceship" 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            
+            {/* All overlays inside the same frame */}
+            <div className="absolute inset-0 z-50 pointer-events-none">
+              
+              {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
+              <div className="absolute top-0 left-0 right-0 h-27 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
+              
+              {/* HUD - top bar - with margin from top on mobile */}
+              <div className="absolute left-4 right-4 md:left-6 md:right-6 top-5 md:top-2 flex justify-between items-center pointer-events-auto">
+                <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
+                  <span className="text-zinc-100 font-sans text-xs md:text-sm whitespace-nowrap">M31 · Lv.3 · {round}/5</span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Coin flying animation */}
-          <div className="absolute top-1/2 left-1/2 z-50 animate-fly-to-balance">
-            <div className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
-              <KokoroCoin size={32} />
-              <span className="text-yellow-400 font-semibold text-2xl">+{round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100}</span>
-            </div>
-          </div>
-
-          {/* Text overlay - positioned per round */}
-          <div className={`absolute z-50 text-center ${
-            round === 5 
-              ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 5: centered on the table */
-              : round === 4 
-                ? 'top-[42%] left-1/2 -translate-x-1/2'  /* Round 4: bring message down closer to CTAs */
-                : round === 3 
-                  ? 'top-[30%] left-1/2 -translate-x-1/2' 
-                  : 'top-[45%] left-1/2 -translate-x-1/2'
-          }`}>
-            <div className="flex items-center gap-2 mb-2 justify-center">
-              <KokoroCoin size={32} />
-              <span className="text-yellow-400 text-2xl font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>from our Earth Investors</span>
-            </div>
-            {round === 3 ? (
-              <div className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                <p className="text-5xl font-bold mb-2">🎉 Excellent!</p>
-                <p className="text-3xl font-semibold">Can she take your orders, too?</p>
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Balance - coins fly here */}
+                  <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center gap-1 md:gap-2">
+                    <KokoroCoin size={20} className="md:w-5 md:h-5" />
+                    <span className="text-zinc-100 font-sans text-xs md:text-sm">{coins}</span>
+                  </div>
+                  {/* Save button */}
+                  <button 
+                    onClick={() => alert('✅ Progress saved locally!')}
+                    className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                  >
+                    <span className="text-zinc-100 text-xs md:text-sm">✅ </span>
+                  </button>
+                  {/* Exit button */}
+                  <button 
+                    onClick={() => { if(confirm('Exit game? Your progress is saved.')) window.location.href = '/'; }}
+                    className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                  >
+                    <span className="text-zinc-100 text-xs md:text-sm">✕</span>
+                  </button>
+                </div>
               </div>
-            ) : (
-              <p className="text-white text-4xl font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🎉 {investorMessage}</p>
-            )}
-          </div>
 
-          {/* CTAs - positioned per round */}
-          <div className={`absolute z-50 flex gap-3 flex-col items-center left-1/2 -translate-x-1/2 ${
-            round === 5 
-              ? 'bottom-[18%]'
-              : 'bottom-[25%]'
-          }`}>
-            {/* Rounds 3 and 4: Build Your Café + Next Round */}
-            {(round === 3 || round === 4) && (
-              <>
-                <button
-                  onClick={() => {
-                    setShowCafeShop(true);
-                  }}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                >
-                  🏪 Build Your Café
-                </button>
-                <button
-                  onClick={completeGame}
-                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                >
-                  Next Round →
-                </button>
-              </>
-            )}
-            {/* Round 5: Build Your Café, Try a New Set, Save & Exit */}
-            {round === 5 && (
-              <>
-                <button
-                  onClick={() => {
-                    setShowCafeShop(true);
-                  }}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-purple-500/40"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                >
-                  🏪 Build Your Café
-                </button>
-                <button
-                  onClick={() => {
-                    alert('🎯 New conversation sets coming soon! Stay tuned for more scenarios to practice.');
-                  }}
-                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-10 rounded-full text-xl transition shadow-lg shadow-yellow-500/40"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                >
-                  🎯 Try a New Set
-                </button>
-                <button
-                  onClick={() => {
-                    // Save progress is automatic, just close/exit
-                    alert('✅ Progress saved! Your coins and cafés are stored.');
-                  }}
-                  className="text-white/80 hover:text-white underline text-lg mt-2 transition"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                >
-                  Save & Exit
-                </button>
-              </>
-            )}
-            {/* Rounds 1-2: Just Next Round */}
-            {round < 3 && (
-              <button
-                onClick={completeGame}
-                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-semibold py-4 px-14 rounded-full text-2xl transition shadow-lg shadow-yellow-500/40"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-              >
-                Next Round →
-              </button>
-            )}
+              {/* LIVE indicator - just below HUD */}
+              <div className="absolute left-5 md:left-6 top-[72px] md:top-12 flex items-center gap-2 pointer-events-none">
+                <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-green-400 text-xs md:text-base font-sans font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                  {round === 5 
+                    ? <>
+                        <span className="md:hidden">LIVE: LEVEL 3 CLEAR!!! {totalCoinsEarned} COINS EARNED!</span>
+                        <span className="hidden md:inline">LIVE: LEVEL 3 CLEAR!!! {totalCoinsEarned} COINS EARNED!</span>
+                      </>
+                    : `LIVE: +${round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100} COINS FROM EARTH!`
+                  }
+                </span>
+              </div>
+
+              {/* Bellagio-style fountain jets */}
+              {showCoinAnimation && (
+                <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                  {animatedCoins.map((coin) => (
+                    <div
+                      key={coin.id}
+                      className="absolute animate-fountain-jet"
+                      style={{
+                        '--jx': `${coin.x}px`,
+                        '--jy': `${coin.y}px`,
+                        '--s': coin.scale,
+                        animationDelay: `${coin.delay}s`
+                      } as React.CSSProperties}
+                    >
+                      <div className="relative">
+                        <KokoroCoin size={32} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
+                        <div className="absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Coin flying animation */}
+              <div className="absolute top-[55%] left-1/2 animate-fly-to-balance">
+                <div className="flex items-center gap-1 md:gap-2 bg-black/70 px-3 md:px-4 py-1 md:py-2 rounded-full">
+                  <KokoroCoin size={24} className="md:w-8 md:h-8" />
+                  <span className="text-yellow-400 font-semibold text-lg md:text-2xl">+{round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100}</span>
+                </div>
+              </div>
+
+              {/* Title/Subtitle - centered */}
+              <div className={`absolute left-[55%] -translate-x-1/2 w-[min(92%,520px)] text-center pointer-events-none ${
+                round === 5 ? 'top-[50%] -translate-y-1/2' : 'top-[50%] -translate-y-1/2'
+              }`}>
+                <h2 className="text-2xl md:text-4xl font-medium text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] leading-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {investorMessage.title}
+                </h2>
+                {round === 5 ? (
+                  <p className="mt-2 text-base md:text-xl text-white/90 leading-snug drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Ready for more levels in new outposts?
+                  </p>
+                ) : (
+                  investorMessage.subtitle && (
+                    <p className="mt-2 text-base md:text-xl text-white/90 leading-snug drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      {investorMessage.subtitle}
+                    </p>
+                  )
+                )}
+              </div>
+
+              {/* CTAs - positioned based on round */}
+              <div className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
+                round === 5
+                  ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
+                  : round === 3 || round === 4
+                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 items-center w-[min(92%,360px)]'
+                  : 'bottom-30 md:bottom-[38%] right-12 md:left-1/2 md:-translate-x-1/2 md:right-auto items-end md:items-center'
+              }`}>
+                {/* Rounds 3 and 4: Build Your Café + Next Round */}
+                {(round === 3 || round === 4) && (
+                  <>
+                    <button
+                      onClick={() => setShowCafeShop(true)}
+                      className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold py-2.5 px-8 rounded-lg text-base transition border border-zinc-100/30"
+                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    >
+                      Build Your Café
+                    </button>
+                    <button
+                      onClick={completeGame}
+                      className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold py-2.5 px-8 rounded-lg text-base transition shadow-lg border border-zinc-400/50"
+                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    >
+                      Next Round →
+                    </button>
+                  </>
+                )}
+                
+                {/* Round 5: Completion CTAs */}
+                {round === 5 && (
+                  <>
+                    <button
+                      onClick={() => setShowEmailModal(true)}
+                      className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold py-3 px-8 rounded-lg text-base transition shadow-lg border border-zinc-400/50"
+                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    >
+                      Save {totalCoinsEarned} Coins Earned
+                    </button>
+                    <div className="flex flex-col items-end">
+                      <button
+                        onClick={() => setShowCafeShop(true)}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold py-3 px-8 rounded-lg text-base transition border border-zinc-100/30"
+                        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        Build Your Café
+                      </button>
+                      <button
+                        onClick={openFeedbackForm}
+                        className="text-white hover:text-black text-sm font-semibold mt-1 transition underline underline-offset-4"
+                        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        Send Feedback
+                      </button>
+                    </div>
+                  </>
+                )}
+                
+                {/* Rounds 1-2: Just Next Round */}
+                {round < 3 && (
+                  <button
+                    onClick={completeGame}
+                    className="bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-semibold py-2.5 px-8 rounded-lg text-base transition shadow-lg border border-zinc-100/30"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    Next Round →
+                  </button>
+                )}
+              </div>
+              
+            </div>
           </div>
         </div>
       )}
@@ -1718,7 +1954,7 @@ export default function ConvosetTest() {
         @keyframes fountain-jet {
           0% {
             opacity: 0;
-            transform: translateX(var(--jx)) translateY(0) scale(0.3);
+            transform: translateX(var(--jx)) translateY(50px) scale(0.3);
           }
           15% {
             opacity: 1;
@@ -1734,11 +1970,11 @@ export default function ConvosetTest() {
           }
           75% {
             opacity: 0.8;
-            transform: translateX(calc(var(--jx) * 0.5 + 35vw)) translateY(calc(var(--jy) * 0.2 - 40vh)) scale(calc(var(--s) * 0.6)) rotate(270deg);
+            transform: translateX(calc(var(--jx) * 0.3 + 40%)) translateY(calc(var(--jy) * 0.1 - 45%)) scale(calc(var(--s) * 0.6)) rotate(270deg);
           }
           100% {
             opacity: 0;
-            transform: translateX(45vw) translateY(-45vh) scale(0.15);
+            transform: translateX(45%) translateY(-48%) scale(0.15);
           }
         }
         .animate-fountain-jet {
@@ -1776,11 +2012,11 @@ export default function ConvosetTest() {
           }
           70% {
             opacity: 1;
-            transform: translate(calc(50vw - 250px), calc(-50vh + 40px)) scale(0.8);
+            transform: translate(42%, -52%) scale(0.8);
           }
           100% {
             opacity: 0;
-            transform: translate(calc(50vw - 250px), calc(-50vh + 40px)) scale(0.5);
+            transform: translate(42%, -52%) scale(0.5);
           }
         }
         .animate-fly-to-balance {
@@ -1799,7 +2035,7 @@ export default function ConvosetTest() {
               boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)'
             }}
           >
-            <h2 className="text-4xl font-bold text-center mb-8 text-white" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            <h2 className="text-4xl font-medium text-center mb-8 text-white" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
               ☕ Our Menu
             </h2>
             <div className="grid grid-cols-1 gap-4">
@@ -1828,7 +2064,7 @@ export default function ConvosetTest() {
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold text-amber-400" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🏪 Choose Your Café</h2>
+              <h2 className="text-3xl font-medium text-amber-400" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🏪 Choose Your Café</h2>
               <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
                 <KokoroCoin size={28} />
                 <span className="text-yellow-400 font-bold text-xl">{coins}</span>
@@ -1982,7 +2218,7 @@ export default function ConvosetTest() {
       {showPurchaseConfirm && selectedCafe && (
         <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
           <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/50 text-center">
-            <h3 className="text-2xl font-bold text-amber-400 mb-4">🏪 Purchase Café?</h3>
+            <h3 className="text-2xl font-medium text-amber-400 mb-4">🏪 Purchase Café?</h3>
             <img 
               src={selectedCafe.image} 
               alt={selectedCafe.name} 
@@ -2137,6 +2373,122 @@ export default function ConvosetTest() {
         </div>
       )}
 
+      {/* Friendly Feedback Modal - Wrong Answer */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-amber-50 to-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-amber-200">
+            {/* Kokoro kaomoji face */}
+            <div className="text-5xl mb-4 text-amber-900 relative inline-block" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <span>{"(๑>◡<๑)"}</span>
+              {/* Pink cheeks */}
+              <span className="absolute left-[15%] top-[45%] w-3 h-3 bg-pink-300 rounded-full opacity-70"></span>
+              <span className="absolute right-[15%] top-[45%] w-3 h-3 bg-pink-300 rounded-full opacity-70"></span>
+            </div>
+            <h3 className="text-2xl font-medium text-amber-800 mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Almost there!
+            </h3>
+            <p className="text-amber-700 mb-6 text-base leading-relaxed">
+              Let's try again! Tap 🔊 Replay to hear the order.
+            </p>
+            <button
+              onClick={() => {
+                setShowFeedbackModal(false);
+                replayVoice();
+              }}
+              className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-900 font-bold rounded-full text-lg shadow-lg transition-all"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              🔊 Replay Order
+            </button>
+            <button
+              onClick={() => setShowFeedbackModal(false)}
+              className="mt-3 text-amber-600 hover:text-amber-800 font-medium transition-colors"
+            >
+              Got it, thanks!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Email Capture Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl border border-pink-500/30">
+            {!emailSubmitted ? (
+              <>
+                {/* Header */}
+                <div className="mb-6">
+                  <div className="text-4xl mb-3">🎉</div>
+                  <h3 className="text-xl md:text-2xl font-medium text-white mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Save Your Progress!
+                  </h3>
+                  <p className="text-zinc-400 text-sm md:text-base">
+                    Keep your <span className="text-yellow-400 font-semibold">{totalCoinsEarned} coins</span> for new levels
+                  </p>
+                </div>
+                
+                {/* Email Input */}
+                <div className="mb-4">
+                  <input
+                    type="email"
+                    value={emailInput}
+                    onChange={(e) => {
+                      setEmailInput(e.target.value);
+                      setEmailError('');
+                    }}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 rounded-xl bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 text-base"
+                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  />
+                  {emailError && (
+                    <p className="text-red-400 text-sm mt-2">{emailError}</p>
+                  )}
+                </div>
+                
+                {/* Submit Button */}
+                <button
+                  onClick={handleEmailSubmit}
+                  className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold rounded-full text-lg shadow-lg transition-all mb-3"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                >
+                  Get Notified at Launch 🚀
+                </button>
+                
+                {/* Privacy note */}
+                <p className="text-zinc-500 text-xs mb-4">
+                  We'll only email you about RPG for Humanity updates.
+                </p>
+                
+                {/* Close button */}
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  className="text-zinc-400 hover:text-white text-sm transition-colors"
+                >
+                  Maybe later
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Success State */}
+                <div className="py-4">
+                  <div className="text-5xl mb-4">✅</div>
+                  <h3 className="text-xl md:text-2xl font-bold text-green-400 mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    You're on the list!
+                  </h3>
+                  <p className="text-zinc-300 text-sm md:text-base">
+                    We'll notify you when new levels are ready.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-4 text-yellow-400">
+                    <KokoroCoin size={24} />
+                    <span className="font-semibold">{totalCoinsEarned} coins saved</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Coin Shop */}
       {showCoinShop && (
         <div className="fixed inset-0 bg-black/90 z-[80] flex items-center justify-center p-4" onClick={() => setShowCoinShop(false)}>
@@ -2144,7 +2496,7 @@ export default function ConvosetTest() {
             className="bg-gradient-to-b from-purple-900 to-zinc-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/50"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-3xl font-bold text-center text-purple-300 mb-6">💰 Coin Shop</h2>
+            <h2 className="text-3xl font-medium text-center text-purple-300 mb-6">💰 Coin Shop</h2>
             
             <div className="space-y-4 mb-6">
               {coinBundles.map((bundle) => (
@@ -2241,7 +2593,7 @@ export default function ConvosetTest() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             {inventoryTab === 'buildings' && (
               <div>
-                <h2 className="text-2xl font-bold text-white mb-6">Your Buildings</h2>
+                <h2 className="text-2xl font-medium text-white mb-6">Your Buildings</h2>
                 
                 {purchasedCafes.length === 0 ? (
                   <div className="text-center py-16">
@@ -2328,7 +2680,7 @@ export default function ConvosetTest() {
             {inventoryTab === 'kokorobots' && (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🤖</div>
-                <h2 className="text-2xl font-bold text-white mb-4">Kokorobots Coming Soon!</h2>
+                <h2 className="text-2xl font-medium text-white mb-4">Kokorobots Coming Soon!</h2>
                 <p className="text-zinc-400 max-w-md mx-auto">
                   Customize your Kokorobot's appearance — change hairstyles, suits, colors, and more!
                 </p>

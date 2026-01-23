@@ -130,7 +130,9 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/contexts/LanguageContext.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/posthog-js/dist/module.js [app-ssr] (ecmascript)");
 'use client';
+;
 ;
 ;
 ;
@@ -159,17 +161,34 @@ function HubPage() {
         setIsFirstTime(false);
         setShowLanguageModal(false);
         setShowLanguageDropdown(false);
+        // Track language selection event
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('language_selected', {
+            language_code: lang,
+            language_name: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageOptions"].find((l)=>l.code === lang)?.label || 'Unknown'
+        });
     };
     const handlePlayWithLanguage = (lang)=>{
         // Set language and navigate to game
         localStorage.setItem('m31-language', lang);
         localStorage.setItem('m31-language-chosen', 'true');
+        // Track outpost started event
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('outpost_started', {
+            outpost_name: 'Coffee Outpost',
+            language_code: lang,
+            language_name: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageOptions"].find((l)=>l.code === lang)?.label || 'Unknown'
+        });
         router.push('/test/convoset');
     };
     const handleTileClick = ()=>{
         if (isFirstTime) {
             setShowLanguageModal(true);
         } else {
+            // Track outpost started event
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('outpost_started', {
+                outpost_name: 'Coffee Outpost',
+                language_code: selectedLanguage,
+                language_name: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageOptions"].find((l)=>l.code === selectedLanguage)?.label || 'Unknown'
+            });
             router.push('/test/convoset');
         }
     };
@@ -178,6 +197,13 @@ function HubPage() {
         localStorage.setItem('m31-language-chosen', 'true');
         setIsFirstTime(false);
         setShowLanguageModal(false);
+        // Track outpost started event
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('outpost_started', {
+            outpost_name: 'Coffee Outpost',
+            language_code: selectedLanguage,
+            language_name: __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageOptions"].find((l)=>l.code === selectedLanguage)?.label || 'Unknown',
+            is_first_time: true
+        });
         router.push('/test/convoset');
     };
     if (!isLoaded) {
@@ -188,12 +214,12 @@ function HubPage() {
                 children: "Loading..."
             }, void 0, false, {
                 fileName: "[project]/app/hub/page.tsx",
-                lineNumber: 84,
+                lineNumber: 115,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/hub/page.tsx",
-            lineNumber: 83,
+            lineNumber: 114,
             columnNumber: 7
         }, this);
     }
@@ -213,7 +239,7 @@ function HubPage() {
                                     children: "M31"
                                 }, void 0, false, {
                                     fileName: "[project]/app/hub/page.tsx",
-                                    lineNumber: 96,
+                                    lineNumber: 127,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -229,26 +255,26 @@ function HubPage() {
                                                     children: "✦"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 103,
+                                                    lineNumber: 134,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 101,
+                                            lineNumber: 132,
                                             columnNumber: 15
                                         }, this),
                                         "ty"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/hub/page.tsx",
-                                    lineNumber: 99,
+                                    lineNumber: 130,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 95,
+                            lineNumber: 126,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -265,14 +291,14 @@ function HubPage() {
                                                     children: getCurrentLangOption().flag
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 117,
+                                                    lineNumber: 148,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: getCurrentLangOption().shortCode
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 118,
+                                                    lineNumber: 149,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -280,13 +306,13 @@ function HubPage() {
                                                     children: "▾"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 119,
+                                                    lineNumber: 150,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 113,
+                                            lineNumber: 144,
                                             columnNumber: 15
                                         }, this),
                                         showLanguageDropdown && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -300,7 +326,7 @@ function HubPage() {
                                                             children: lang.flag
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 132,
+                                                            lineNumber: 163,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -308,7 +334,7 @@ function HubPage() {
                                                             children: lang.label
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 133,
+                                                            lineNumber: 164,
                                                             columnNumber: 23
                                                         }, this),
                                                         selectedLanguage === lang.code && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -316,24 +342,24 @@ function HubPage() {
                                                             children: "✓"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 135,
+                                                            lineNumber: 166,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, lang.code, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 125,
+                                                    lineNumber: 156,
                                                     columnNumber: 21
                                                 }, this))
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 123,
+                                            lineNumber: 154,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/hub/page.tsx",
-                                    lineNumber: 112,
+                                    lineNumber: 143,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -346,12 +372,12 @@ function HubPage() {
                                                 children: "K"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 146,
+                                                lineNumber: 177,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 145,
+                                            lineNumber: 176,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -359,30 +385,30 @@ function HubPage() {
                                             children: coins
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 148,
+                                            lineNumber: 179,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/hub/page.tsx",
-                                    lineNumber: 144,
+                                    lineNumber: 175,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 110,
+                            lineNumber: 141,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/hub/page.tsx",
-                    lineNumber: 93,
+                    lineNumber: 124,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/hub/page.tsx",
-                lineNumber: 92,
+                lineNumber: 123,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -392,27 +418,37 @@ function HubPage() {
                         className: "flex gap-2 mb-8",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>setActiveTrack('player'),
+                                onClick: ()=>{
+                                    setActiveTrack('player');
+                                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('track_switched', {
+                                        track: 'player'
+                                    });
+                                },
                                 className: `px-6 py-3 rounded-full font-semibold text-lg transition-all ${activeTrack === 'player' ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`,
                                 children: "🎮 Player"
                             }, void 0, false, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 157,
+                                lineNumber: 188,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>setActiveTrack('creator'),
+                                onClick: ()=>{
+                                    setActiveTrack('creator');
+                                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$posthog$2d$js$2f$dist$2f$module$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].capture('track_switched', {
+                                        track: 'creator'
+                                    });
+                                },
                                 className: `px-6 py-3 rounded-full font-semibold text-lg transition-all ${activeTrack === 'creator' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`,
                                 children: "✏️ Creator"
                             }, void 0, false, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 167,
+                                lineNumber: 201,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/hub/page.tsx",
-                        lineNumber: 156,
+                        lineNumber: 187,
                         columnNumber: 9
                     }, this),
                     activeTrack === 'player' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -428,14 +464,14 @@ function HubPage() {
                                                 children: "🏪"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 185,
+                                                lineNumber: 222,
                                                 columnNumber: 17
                                             }, this),
                                             "Outposts"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 184,
+                                        lineNumber: 221,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -453,14 +489,14 @@ function HubPage() {
                                                                 className: "absolute inset-0 w-full h-full object-cover opacity-90"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 196,
+                                                                lineNumber: 233,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                 className: "absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 201,
+                                                                lineNumber: 238,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -468,7 +504,7 @@ function HubPage() {
                                                                 children: "BEGINNER"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 204,
+                                                                lineNumber: 241,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -479,7 +515,7 @@ function HubPage() {
                                                                         children: "☕ Coffee Outpost"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 210,
+                                                                        lineNumber: 247,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -487,7 +523,7 @@ function HubPage() {
                                                                         children: "Take coffee orders from customers"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 211,
+                                                                        lineNumber: 248,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -498,7 +534,7 @@ function HubPage() {
                                                                                 children: "Play in:"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                                lineNumber: 215,
+                                                                                lineNumber: 252,
                                                                                 columnNumber: 25
                                                                             }, this),
                                                                             __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$contexts$2f$LanguageContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["languageOptions"].map((lang)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -510,25 +546,25 @@ function HubPage() {
                                                                                     children: lang.shortCode
                                                                                 }, lang.code, false, {
                                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                                    lineNumber: 217,
+                                                                                    lineNumber: 254,
                                                                                     columnNumber: 27
                                                                                 }, this))
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 214,
+                                                                        lineNumber: 251,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 209,
+                                                                lineNumber: 246,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 195,
+                                                        lineNumber: 232,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -541,23 +577,23 @@ function HubPage() {
                                                                 children: "▶"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 242,
+                                                                lineNumber: 279,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 241,
+                                                            lineNumber: 278,
                                                             columnNumber: 21
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 237,
+                                                        lineNumber: 274,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 191,
+                                                lineNumber: 228,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -569,7 +605,7 @@ function HubPage() {
                                                             className: "absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 250,
+                                                            lineNumber: 287,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -577,7 +613,7 @@ function HubPage() {
                                                             children: "COMING SOON"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 252,
+                                                            lineNumber: 289,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -588,7 +624,7 @@ function HubPage() {
                                                                     children: "✈️ Airport Check-In"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 257,
+                                                                    lineNumber: 294,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -596,13 +632,13 @@ function HubPage() {
                                                                     children: "Navigate international travel"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 258,
+                                                                    lineNumber: 295,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 256,
+                                                            lineNumber: 293,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -612,23 +648,23 @@ function HubPage() {
                                                                 children: "🔒"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 263,
+                                                                lineNumber: 300,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 262,
+                                                            lineNumber: 299,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 249,
+                                                    lineNumber: 286,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 248,
+                                                lineNumber: 285,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -640,7 +676,7 @@ function HubPage() {
                                                             className: "absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 271,
+                                                            lineNumber: 308,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -648,7 +684,7 @@ function HubPage() {
                                                             children: "COMING SOON"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 273,
+                                                            lineNumber: 310,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -659,7 +695,7 @@ function HubPage() {
                                                                     children: "🍽️ Restaurant"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 278,
+                                                                    lineNumber: 315,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -667,13 +703,13 @@ function HubPage() {
                                                                     children: "Take orders & handle reservations"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 279,
+                                                                    lineNumber: 316,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 277,
+                                                            lineNumber: 314,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -683,23 +719,23 @@ function HubPage() {
                                                                 children: "🔒"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 283,
+                                                                lineNumber: 320,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 282,
+                                                            lineNumber: 319,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 270,
+                                                    lineNumber: 307,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 269,
+                                                lineNumber: 306,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -711,7 +747,7 @@ function HubPage() {
                                                             className: "absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 291,
+                                                            lineNumber: 328,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -719,7 +755,7 @@ function HubPage() {
                                                             children: "COMING SOON"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 293,
+                                                            lineNumber: 330,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -730,7 +766,7 @@ function HubPage() {
                                                                     children: "🏥 Medical Office"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 298,
+                                                                    lineNumber: 335,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -738,13 +774,13 @@ function HubPage() {
                                                                     children: "Describe symptoms & understand instructions"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 299,
+                                                                    lineNumber: 336,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 297,
+                                                            lineNumber: 334,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -754,35 +790,35 @@ function HubPage() {
                                                                 children: "🔒"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 303,
+                                                                lineNumber: 340,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 302,
+                                                            lineNumber: 339,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 290,
+                                                    lineNumber: 327,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 289,
+                                                lineNumber: 326,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 189,
+                                        lineNumber: 226,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 183,
+                                lineNumber: 220,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -795,14 +831,14 @@ function HubPage() {
                                                 children: "🌌"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 313,
+                                                lineNumber: 350,
                                                 columnNumber: 17
                                             }, this),
                                             "Your M31 World"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 312,
+                                        lineNumber: 349,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -820,7 +856,7 @@ function HubPage() {
                                                                 children: "🏪"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 324,
+                                                                lineNumber: 361,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -830,7 +866,7 @@ function HubPage() {
                                                                         children: "Inventory"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 326,
+                                                                        lineNumber: 363,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -838,19 +874,19 @@ function HubPage() {
                                                                         children: "View your buildings & items"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 327,
+                                                                        lineNumber: 364,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 325,
+                                                                lineNumber: 362,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 323,
+                                                        lineNumber: 360,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -860,26 +896,26 @@ function HubPage() {
                                                                 children: "Open Inventory"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 331,
+                                                                lineNumber: 368,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                 children: "→"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 332,
+                                                                lineNumber: 369,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 330,
+                                                        lineNumber: 367,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 319,
+                                                lineNumber: 356,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -893,7 +929,7 @@ function HubPage() {
                                                                 children: "🤖"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 339,
+                                                                lineNumber: 376,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -903,7 +939,7 @@ function HubPage() {
                                                                         children: "Customize Kokorobot"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 341,
+                                                                        lineNumber: 378,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -911,19 +947,19 @@ function HubPage() {
                                                                         children: "Change hairstyles, suits & colors"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/hub/page.tsx",
-                                                                        lineNumber: 342,
+                                                                        lineNumber: 379,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 340,
+                                                                lineNumber: 377,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 338,
+                                                        lineNumber: 375,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -933,44 +969,44 @@ function HubPage() {
                                                                 children: "🔒"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 346,
+                                                                lineNumber: 383,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                 children: "Coming Soon"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/hub/page.tsx",
-                                                                lineNumber: 347,
+                                                                lineNumber: 384,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 345,
+                                                        lineNumber: 382,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 337,
+                                                lineNumber: 374,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 317,
+                                        lineNumber: 354,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 311,
+                                lineNumber: 348,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/hub/page.tsx",
-                        lineNumber: 181,
+                        lineNumber: 218,
                         columnNumber: 11
                     }, this),
                     activeTrack === 'creator' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -986,14 +1022,14 @@ function HubPage() {
                                                 children: "✏️"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 360,
+                                                lineNumber: 397,
                                                 columnNumber: 17
                                             }, this),
                                             "Creator Studio"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 359,
+                                        lineNumber: 396,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1009,7 +1045,7 @@ function HubPage() {
                                                             children: "➕"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 368,
+                                                            lineNumber: 405,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1017,7 +1053,7 @@ function HubPage() {
                                                             children: "Create New Dialogue Set"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 369,
+                                                            lineNumber: 406,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1025,7 +1061,7 @@ function HubPage() {
                                                             children: "Build conversations for any outpost"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 370,
+                                                            lineNumber: 407,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1035,31 +1071,31 @@ function HubPage() {
                                                                     children: "🔒"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 372,
+                                                                    lineNumber: 409,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: "Coming Soon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 373,
+                                                                    lineNumber: 410,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 371,
+                                                            lineNumber: 408,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 367,
+                                                    lineNumber: 404,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 366,
+                                                lineNumber: 403,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1072,7 +1108,7 @@ function HubPage() {
                                                             children: "📁"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 381,
+                                                            lineNumber: 418,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1080,7 +1116,7 @@ function HubPage() {
                                                             children: "My Dialogue Sets"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 382,
+                                                            lineNumber: 419,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1088,7 +1124,7 @@ function HubPage() {
                                                             children: "Edit & manage your creations"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 383,
+                                                            lineNumber: 420,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1098,31 +1134,31 @@ function HubPage() {
                                                                     children: "🔒"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 385,
+                                                                    lineNumber: 422,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: "Coming Soon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 386,
+                                                                    lineNumber: 423,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 384,
+                                                            lineNumber: 421,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 380,
+                                                    lineNumber: 417,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 379,
+                                                lineNumber: 416,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1135,7 +1171,7 @@ function HubPage() {
                                                             children: "🍴"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 394,
+                                                            lineNumber: 431,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1143,7 +1179,7 @@ function HubPage() {
                                                             children: "Fork & Remix"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 395,
+                                                            lineNumber: 432,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1151,7 +1187,7 @@ function HubPage() {
                                                             children: "Build on existing dialogue sets"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 396,
+                                                            lineNumber: 433,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1161,43 +1197,43 @@ function HubPage() {
                                                                     children: "🔒"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 398,
+                                                                    lineNumber: 435,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: "Coming Soon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/hub/page.tsx",
-                                                                    lineNumber: 399,
+                                                                    lineNumber: 436,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/hub/page.tsx",
-                                                            lineNumber: 397,
+                                                            lineNumber: 434,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/hub/page.tsx",
-                                                    lineNumber: 393,
+                                                    lineNumber: 430,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 392,
+                                                lineNumber: 429,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 364,
+                                        lineNumber: 401,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 358,
+                                lineNumber: 395,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1210,14 +1246,14 @@ function HubPage() {
                                                 children: "📊"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 409,
+                                                lineNumber: 446,
                                                 columnNumber: 17
                                             }, this),
                                             "Creator Dashboard"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 408,
+                                        lineNumber: 445,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1228,7 +1264,7 @@ function HubPage() {
                                                 children: "💰"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 414,
+                                                lineNumber: 451,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1236,7 +1272,7 @@ function HubPage() {
                                                 children: "Earn from your content"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 415,
+                                                lineNumber: 452,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1244,7 +1280,7 @@ function HubPage() {
                                                 children: "Create dialogue sets, publish them to the marketplace, and earn Kokoro coins when players use your content."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 416,
+                                                lineNumber: 453,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1254,44 +1290,44 @@ function HubPage() {
                                                         children: "✨"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 420,
+                                                        lineNumber: 457,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         children: "Revenue sharing coming in 2025"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/hub/page.tsx",
-                                                        lineNumber: 421,
+                                                        lineNumber: 458,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/hub/page.tsx",
-                                                lineNumber: 419,
+                                                lineNumber: 456,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/hub/page.tsx",
-                                        lineNumber: 413,
+                                        lineNumber: 450,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/hub/page.tsx",
-                                lineNumber: 407,
+                                lineNumber: 444,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/hub/page.tsx",
-                        lineNumber: 357,
+                        lineNumber: 394,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/hub/page.tsx",
-                lineNumber: 155,
+                lineNumber: 186,
                 columnNumber: 7
             }, this),
             showLanguageModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1304,7 +1340,7 @@ function HubPage() {
                             children: "Choose your language"
                         }, void 0, false, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 433,
+                            lineNumber: 470,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1312,7 +1348,7 @@ function HubPage() {
                             children: "What language do you want to practice?"
                         }, void 0, false, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 434,
+                            lineNumber: 471,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1326,7 +1362,7 @@ function HubPage() {
                                             children: lang.flag
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 447,
+                                            lineNumber: 484,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1334,7 +1370,7 @@ function HubPage() {
                                             children: lang.label
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 448,
+                                            lineNumber: 485,
                                             columnNumber: 19
                                         }, this),
                                         selectedLanguage === lang.code && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1342,18 +1378,18 @@ function HubPage() {
                                             children: "✓"
                                         }, void 0, false, {
                                             fileName: "[project]/app/hub/page.tsx",
-                                            lineNumber: 450,
+                                            lineNumber: 487,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, lang.code, true, {
                                     fileName: "[project]/app/hub/page.tsx",
-                                    lineNumber: 438,
+                                    lineNumber: 475,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 436,
+                            lineNumber: 473,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1362,7 +1398,7 @@ function HubPage() {
                             children: "Start Playing"
                         }, void 0, false, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 456,
+                            lineNumber: 493,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1370,18 +1406,18 @@ function HubPage() {
                             children: "You can change this anytime in Settings"
                         }, void 0, false, {
                             fileName: "[project]/app/hub/page.tsx",
-                            lineNumber: 463,
+                            lineNumber: 500,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/hub/page.tsx",
-                    lineNumber: 432,
+                    lineNumber: 469,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/hub/page.tsx",
-                lineNumber: 431,
+                lineNumber: 468,
                 columnNumber: 9
             }, this),
             showLanguageDropdown && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1389,13 +1425,13 @@ function HubPage() {
                 onClick: ()=>setShowLanguageDropdown(false)
             }, void 0, false, {
                 fileName: "[project]/app/hub/page.tsx",
-                lineNumber: 472,
+                lineNumber: 509,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/hub/page.tsx",
-        lineNumber: 90,
+        lineNumber: 121,
         columnNumber: 5
     }, this);
 }
