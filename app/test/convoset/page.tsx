@@ -1,7 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SupportedLanguage, getVoiceForLang, getStoredLanguage, languageInfo } from '../../utils/tts';
+import posthog from 'posthog-js';
+
+// PostHog tracking helper
+const track = (event: string, properties?: Record<string, any>) => {
+  try {
+    posthog.capture(event, properties);
+  } catch (e) {
+    console.log('PostHog tracking:', event, properties);
+  }
+};
 type Round = 1 | 2 | 3 | 4 | 5;
 type GameState = 'intro' | 'walking' | 'playing' | 'investor';
 type OrderItem = {
@@ -106,6 +116,12 @@ export default function ConvosetTest() {
       const existing = JSON.parse(localStorage.getItem('rpg4h-waitlist') || '[]');
       existing.push(waitlistData);
       localStorage.setItem('rpg4h-waitlist', JSON.stringify(existing));
+      
+      // Track signup completed
+      track('signup_completed', { 
+        coins_earned: totalCoinsEarned,
+        source: 'coffee_outpost_demo'
+      });
       
       setEmailSubmitted(true);
       setEmailError('');
@@ -569,6 +585,9 @@ export default function ConvosetTest() {
     if (coins >= 10) {
       setCoins(prev => prev - 10);
       setShowTranscript(true);
+      
+      // Track hint used
+      track('hint_used', { round, level: 3, cost: 10 });
     }
   };
 
@@ -614,6 +633,13 @@ export default function ConvosetTest() {
   };
 
   const startGame = () => {
+    // Track mission started
+    track('mission_started', { 
+      level: 3, 
+      starting_coins: coins,
+      timestamp: new Date().toISOString()
+    });
+    
     setGameState('walking');
     setShowTranscript(false);
     setIsWalking(true);
@@ -651,6 +677,9 @@ export default function ConvosetTest() {
         setShowDialogue(true);
         playRoundOrder();
         startBackgroundMusic(1); // Start music for Round 1
+        
+        // Track round started
+        track('round_started', { round: 1, level: 3 });
       }
     }, 25);
   };
@@ -679,6 +708,14 @@ export default function ConvosetTest() {
     
     const isCorrect = normalize(round1Selections) === normalize(currentRoundConfig.correctOrder);
     
+    // Track attempt submitted
+    track('attempt_submitted', { 
+      round, 
+      level: 3, 
+      correct: isCorrect,
+      selections: round1Selections.length
+    });
+    
     if (isCorrect) {
       // Pause background music for celebration sound
       pauseBackgroundMusic();
@@ -686,6 +723,15 @@ export default function ConvosetTest() {
       const coinReward = round === 1 ? 20 : round === 2 ? 30 : 50;
       // Track total coins earned
       setTotalCoinsEarned(prev => prev + coinReward);
+      
+      // Track round completed
+      track('round_completed', { 
+        round, 
+        level: 3, 
+        coins_earned: coinReward,
+        passed: true
+      });
+      
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
@@ -700,6 +746,9 @@ export default function ConvosetTest() {
 
         setInvestorMessage(messages[round] ?? { title: "Great job!" });
         setGameState("investor");
+        
+        // Track reward screen viewed
+        track('reward_screen_viewed', { round, level: 3, coins_earned: coinReward });
       });
 
     } else {
@@ -779,11 +828,23 @@ export default function ConvosetTest() {
         pauseBackgroundMusic();
         // Track total coins earned
         setTotalCoinsEarned(prev => prev + 80);
+        
+        // Track round completed
+        track('round_completed', { 
+          round: 4, 
+          level: 3, 
+          coins_earned: 80,
+          passed: true
+        });
+        
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
           triggerCoinAnimation(round);
           setInvestorMessage({ title: "Impressive!" });
           setGameState('investor');
+          
+          // Track reward screen viewed
+          track('reward_screen_viewed', { round: 4, level: 3, coins_earned: 80 });
         });
         return;
       } else if (input.includes('no') || input.includes('change') || input.includes('actually') || input.includes('wait') || input.includes('wrong')) {
@@ -1106,12 +1167,31 @@ export default function ConvosetTest() {
     pauseBackgroundMusic();
     // Track total coins earned (Round 5 = 100 coins)
     setTotalCoinsEarned(prev => prev + 100);
+    
+    // Track round completed
+    track('round_completed', { 
+      round: 5, 
+      level: 3, 
+      coins_earned: 100,
+      passed: true
+    });
+    
+    // Track mission completed
+    track('mission_completed', { 
+      level: 3, 
+      total_coins_earned: totalCoinsEarned + 100,
+      timestamp: new Date().toISOString()
+    });
+    
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 100);
       triggerCoinAnimation(round);
       setInvestorMessage({ title: "You're a natural!" });
       setGameState('investor');
+      
+      // Track reward screen viewed
+      track('reward_screen_viewed', { round: 5, level: 3, coins_earned: 100 });
     });
   };
 
@@ -1120,6 +1200,9 @@ export default function ConvosetTest() {
       // Move to next round
       const nextRound = (round + 1) as Round;
       setRound(nextRound);
+      
+      // Track round started
+      track('round_started', { round: nextRound, level: 3 });
       
       // ALL rounds after round 1 go DIRECTLY to playing - NO intro/walking
       if (nextRound === 2 || nextRound === 3) {
@@ -1272,7 +1355,12 @@ export default function ConvosetTest() {
           </button>
           {/* Exit button */}
           <button 
-            onClick={() => { if(confirm('Exit game? Your progress is saved.')) window.location.href = '/'; }}
+            onClick={() => { 
+              if(confirm('Exit game? Your progress is saved.')) {
+                track('mission_abandoned', { round, level: 3, coins_at_exit: coins, state: 'playing' });
+                window.location.href = '/'; 
+              }
+            }}
             className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
           >
             <span className="text-zinc-100 text-xs md:text-sm">✕</span>
@@ -1570,14 +1658,25 @@ export default function ConvosetTest() {
 
             {/* Round 4 - Typing Order */}
             {round === 4 && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
-                <div className="flex items-center gap-4 mb-4">
-                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
-                  <div>
-                    <p className="text-amber-400 font-sans font-medium text-xl">Kokoro</p>
-                    <p className="text-lg text-purple-400">Your turn! Order one drink by typing.</p>
+              <>
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
+                    <div>
+                      <p className="text-amber-400 font-sans font-medium text-xl">☕ Customer Training</p>
+                      <p className="text-lg text-white">Your turn to order! What would you like? She can only handle one order for now.</p>
+                    </div>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={() => setShowMenu(true)}
+                      className="text-amber-400 hover:text-amber-300 text-sm transition flex items-center gap-1"
+                    >
+                      📋 View Menu
+                    </button>
+                  </div>
                 
                 <div className="h-64 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4">
                   {round2Chat.map((msg, i) => (
@@ -1674,25 +1773,37 @@ export default function ConvosetTest() {
                   </button>
                 </div>
               </div>
+            </>
             )}
 
             {/* Round 5 - Speaking Order */}
             {round === 5 && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
-                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
-                
-                {!round3ConfirmStep ? (
-                  <>
-                    <p className="text-xl text-green-400 mb-6 font-medium">Speak your order!</p>
-                    
+              <>
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
+                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
+                  <p className="text-amber-400 font-sans font-medium text-xl mb-1">☕ Customer Training</p>
+                  <p className="text-white text-lg mb-4">Now train her to take your order by voice!</p>
+                  
+                  <div className="flex justify-center mb-4">
                     <button
-                      onClick={startListening}
-                      disabled={round3Listening}
-                      className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
-                        round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
-                      }`}
+                      onClick={() => setShowMenu(true)}
+                      className="text-amber-400 hover:text-amber-300 text-sm transition flex items-center gap-1"
                     >
-                      {round3Listening ? '🎤' : '🎤 Speak'}
+                      📋 View Menu
+                    </button>
+                  </div>
+                  
+                  {!round3ConfirmStep ? (
+                    <>
+                      <button
+                        onClick={startListening}
+                        disabled={round3Listening}
+                        className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
+                          round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
+                        }`}
+                      >
+                        {round3Listening ? '🎤' : '🎤 Speak'}
                     </button>
 
                     {round3Transcript && (
@@ -1757,6 +1868,7 @@ export default function ConvosetTest() {
                   </button>
                 </div>
               </div>
+            </>
             )}
             </div>
           </div>
@@ -1802,7 +1914,12 @@ export default function ConvosetTest() {
                   </button>
                   {/* Exit button */}
                   <button 
-                    onClick={() => { if(confirm('Exit game? Your progress is saved.')) window.location.href = '/'; }}
+                    onClick={() => { 
+                      if(confirm('Exit game? Your progress is saved.')) {
+                        track('mission_abandoned', { round, level: 3, coins_at_exit: coins, state: 'investor' });
+                        window.location.href = '/'; 
+                      }
+                    }}
                     className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
                   >
                     <span className="text-zinc-100 text-xs md:text-sm">✕</span>
@@ -1880,8 +1997,8 @@ export default function ConvosetTest() {
                 round === 5
                   ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
                   : round === 3 || round === 4
-                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 items-center w-[min(92%,360px)]'
-                  : 'bottom-30 md:bottom-[38%] right-12 md:left-1/2 md:-translate-x-1/2 md:right-auto items-end md:items-center'
+                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
+                  : 'bottom-30 md:bottom-[32%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end'
               }`}>
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
@@ -1907,7 +2024,10 @@ export default function ConvosetTest() {
                 {round === 5 && (
                   <>
                     <button
-                      onClick={() => setShowEmailModal(true)}
+                      onClick={() => {
+                        track('cta_signup_clicked', { round: 5, level: 3, coins_earned: totalCoinsEarned });
+                        setShowEmailModal(true);
+                      }}
                       className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold py-3 px-8 rounded-lg text-base transition shadow-lg border border-zinc-400/50"
                       style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                     >
