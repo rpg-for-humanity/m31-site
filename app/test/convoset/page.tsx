@@ -1973,7 +1973,7 @@ export default function ConvosetTest() {
                 round === 5
                   ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
                   : round === 3 || round === 4
-                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 items-center w-[min(92%,360px)]'
+                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
                   : 'bottom-30 md:bottom-[32%] right-12 md:left-[55%] md:-translate-x-1/2 md:right-auto items-end md:items-center'
               }`}>
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
