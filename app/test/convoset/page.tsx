@@ -1659,11 +1659,12 @@ export default function ConvosetTest() {
             {/* Round 4 - Typing Order */}
             {round === 4 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
                 <div className="flex items-center gap-4 mb-4">
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
                   <div>
-                    <p className="text-amber-400 font-sans font-medium text-xl">Kokoro</p>
-                    <p className="text-lg text-purple-400">Your turn! Order one drink by typing.</p>
+                    <p className="text-amber-400 font-sans font-medium text-xl">🛒 Customer Training</p>
+                    <p className="text-lg text-white">Your turn to order! Pick any drink — she can only handle one order for now.</p>
                   </div>
                 </div>
                 
@@ -1767,12 +1768,13 @@ export default function ConvosetTest() {
             {/* Round 5 - Speaking Order */}
             {round === 5 && (
               <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
-                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-4" />
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl mb-4">M31 Coffee Outpost</h2>
+                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
+                <p className="text-amber-400 font-sans font-medium text-xl mb-1">🎤 Voice Training</p>
+                <p className="text-white text-lg mb-4">Now train her to take your order by voice!</p>
                 
                 {!round3ConfirmStep ? (
                   <>
-                    <p className="text-xl text-green-400 mb-6 font-medium">Speak your order!</p>
-                    
                     <button
                       onClick={startListening}
                       disabled={round3Listening}
@@ -1974,7 +1976,7 @@ export default function ConvosetTest() {
                   ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
                   : round === 3 || round === 4
                   ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
-                  : 'bottom-30 md:bottom-[32%] right-12 md:left-[55%] md:-translate-x-1/2 md:right-auto items-end md:items-center'
+                  : 'bottom-30 md:bottom-[32%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end'
               }`}>
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
