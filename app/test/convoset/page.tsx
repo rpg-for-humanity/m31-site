@@ -1658,15 +1658,25 @@ export default function ConvosetTest() {
 
             {/* Round 4 - Typing Order */}
             {round === 4 && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+              <>
                 <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
-                <div className="flex items-center gap-4 mb-4">
-                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
-                  <div>
-                    <p className="text-amber-400 font-sans font-medium text-xl">🛒 Customer Training</p>
-                    <p className="text-lg text-white">Your turn to order! Pick any drink — she can only handle one order for now.</p>
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
+                    <div>
+                      <p className="text-amber-400 font-sans font-medium text-xl">☕ Customer Training</p>
+                      <p className="text-lg text-white">Your turn to order! What would you like? She can only handle one order for now.</p>
+                    </div>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={() => setShowMenu(true)}
+                      className="text-amber-400 hover:text-amber-300 text-sm transition flex items-center gap-1"
+                    >
+                      📋 View Menu
+                    </button>
+                  </div>
                 
                 <div className="h-64 overflow-y-auto mb-4 space-y-3 bg-black/30 rounded-xl p-4">
                   {round2Chat.map((msg, i) => (
@@ -1763,26 +1773,38 @@ export default function ConvosetTest() {
                   </button>
                 </div>
               </div>
+              </div>
+            </>
             )}
 
             {/* Round 5 - Speaking Order */}
             {round === 5 && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
-                <h2 className="text-amber-400 font-sans font-semibold text-2xl mb-4">M31 Coffee Outpost</h2>
-                <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
-                <p className="text-amber-400 font-sans font-medium text-xl mb-1">🎤 Voice Training</p>
-                <p className="text-white text-lg mb-4">Now train her to take your order by voice!</p>
-                
-                {!round3ConfirmStep ? (
-                  <>
+              <>
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
+                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
+                  <p className="text-amber-400 font-sans font-medium text-xl mb-1">☕ Customer Training</p>
+                  <p className="text-white text-lg mb-4">Now train her to take your order by voice!</p>
+                  
+                  <div className="flex justify-center mb-4">
                     <button
-                      onClick={startListening}
-                      disabled={round3Listening}
-                      className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
-                        round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
-                      }`}
+                      onClick={() => setShowMenu(true)}
+                      className="text-amber-400 hover:text-amber-300 text-sm transition flex items-center gap-1"
                     >
-                      {round3Listening ? '🎤' : '🎤 Speak'}
+                      📋 View Menu
+                    </button>
+                  </div>
+                  
+                  {!round3ConfirmStep ? (
+                    <>
+                      <button
+                        onClick={startListening}
+                        disabled={round3Listening}
+                        className={`w-40 h-40 rounded-full font-semibold text-4xl transition mx-auto mb-6 shadow-lg ${
+                          round3Listening ? 'bg-red-500 animate-pulse shadow-red-500/50' : 'bg-gradient-to-r from-green-500 to-amber-500 hover:from-green-400 hover:to-amber-400 shadow-green-500/30'
+                        }`}
+                      >
+                        {round3Listening ? '🎤' : '🎤 Speak'}
                     </button>
 
                     {round3Transcript && (
@@ -1847,6 +1869,7 @@ export default function ConvosetTest() {
                   </button>
                 </div>
               </div>
+            </>
             )}
             </div>
           </div>
