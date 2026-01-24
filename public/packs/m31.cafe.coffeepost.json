@@ -1,0 +1,275 @@
+{
+  "schema": "rpg4h.missionPack.v1",
+  "id": "pack.m31.cafe.coffeepost",
+  "version": "0.1.0",
+  "title": "M31 Coffee Outpost",
+  "stationId": "zone.m31.cafe",
+  "tags": ["a42", "coffee", "ordering", "beginner", "english"],
+  "summary": "Kokorobot-1 dreams of becoming a barista on planet M31 in the Andromeda galaxy. Help take orders across 5 rounds to earn coins and build Andromeda's first café!",
+  "difficulty": "beginner",
+  "estimatedMinutes": 15,
+  "targetLanguage": "en-US",
+
+  "economy": {
+    "currency": "coin",
+    "startingBalance": 50,
+    "rewards": {
+      "round1": 20,
+      "round2": 20,
+      "round3": 60,
+      "round4": 80,
+      "round5": 500
+    },
+    "transcriptCost": 10
+  },
+
+  "assets": {
+    "background": "/m31.jpg",
+    "npc": {
+      "id": "npc.kokorobot1",
+      "name": "Kokorobot-1",
+      "portrait": "/kokorobot-closeup.png",
+      "fullBody": "/kokorobot-cb.png",
+      "sideWalk": "/kokorobot-sideview.png",
+      "idle": "/kokorobot.png"
+    },
+    "investors": [
+      "/NY-investor2.png",
+      "/NY-investor3.png",
+      "/NY-investor4.png",
+      "/NY-investor5.png",
+      "/NY-investor6.png"
+    ],
+    "audio": {
+      "round1Order": "/Audio/round1-order.mp3",
+      "round2Order": "/Audio/round2-order.mp3",
+      "round3Order": "/Audio/order.mp3",
+      "bgmRound1": "/Audio/music-round1.mp3",
+      "bgmRound2": "/Audio/music-round2.mp3",
+      "bgmRound3": "/Audio/music-round3.mp3",
+      "bgmVictory": "/Audio/music-victory.mp3",
+      "sfxSuccess": "/Audio/goodresult.mp3",
+      "sfxWrong": "/Audio/kokorobot-wrong.mp3",
+      "npcGreeting": "/Audio/kokorobot-greeting.mp3",
+      "npcReady": "/Audio/kokorobot-ready.mp3",
+      "npcSuccess": "/Audio/kokorobot-success.mp3",
+      "askType": "/Audio/ask-type.mp3",
+      "askSize": "/Audio/ask-size.mp3",
+      "askTemp": "/Audio/coffee-temperature.mp3",
+      "askMilk": "/Audio/milk-preference.mp3",
+      "milkLists": "/Audio/milk-lists.mp3",
+      "askSyrup": "/Audio/coffee-syrup.mp3",
+      "confirmOrder": "/Audio/confirm-order.mp3",
+      "coffeeConfirm": "/Audio/coffee-confirm.mp3",
+      "notAvailable": "/Audio/notavailable.mp3"
+    }
+  },
+
+  "menu": {
+    "drinks": [
+      { "id": "americano", "label": "Americano", "desc": "Espresso + water", "requiresMilk": false },
+      { "id": "latte", "label": "Latte", "desc": "Espresso + steamed milk", "requiresMilk": true },
+      { "id": "cappuccino", "label": "Cappuccino", "desc": "Espresso + foam", "requiresMilk": true },
+      { "id": "flat_white", "label": "Flat White", "desc": "Double shot + microfoam", "requiresMilk": true },
+      { "id": "macchiato", "label": "Macchiato", "desc": "Espresso + milk foam", "requiresMilk": true },
+      { "id": "mocha", "label": "Mocha", "desc": "Espresso + chocolate + milk", "requiresMilk": true },
+      { "id": "espresso", "label": "Espresso", "desc": "Pure coffee shot", "requiresMilk": false }
+    ],
+    "sizes": [
+      { "id": "small", "label": "Small" },
+      { "id": "medium", "label": "Medium" },
+      { "id": "large", "label": "Large" }
+    ],
+    "temperatures": [
+      { "id": "hot", "label": "Hot" },
+      { "id": "iced", "label": "Iced" }
+    ],
+    "milks": [
+      { "id": "whole", "label": "Whole" },
+      { "id": "oat", "label": "Oat" },
+      { "id": "almond", "label": "Almond" },
+      { "id": "nonfat", "label": "Nonfat" },
+      { "id": "soy", "label": "Soy" }
+    ],
+    "syrups": [
+      { "id": "caramel", "label": "Caramel" },
+      { "id": "vanilla", "label": "Vanilla" },
+      { "id": "hazelnut", "label": "Hazelnut" },
+      { "id": "none", "label": "None" }
+    ]
+  },
+
+  "rounds": [
+    {
+      "id": "r1",
+      "roundNumber": 1,
+      "title": "Listen & Build",
+      "subtitle": "Single Item Order",
+      "mode": "listen_select",
+      "description": "Listen to the customer's order and select the correct items.",
+      "npcOrderText": "Hi, a caramel macchiato, medium please.",
+      "npcOrderAudio": "/Audio/round1-order.mp3",
+      "bgm": "/Audio/music-round1.mp3",
+      "constraints": {
+        "itemCount": 1,
+        "requireTemp": false,
+        "requireMilk": false,
+        "requireSyrup": true
+      },
+      "correctOrder": [
+        { "type": "Macchiato", "size": "Medium", "syrup": "Caramel" }
+      ],
+      "rewardCoins": 20,
+      "investorMessage": "Good start!"
+    },
+    {
+      "id": "r2",
+      "roundNumber": 2,
+      "title": "Listen & Build",
+      "subtitle": "Syrup Variation",
+      "mode": "listen_select",
+      "description": "Listen carefully for the drink type and syrup preference.",
+      "npcOrderText": "Hi, I'd like a large flat white, with hazelnut syrup please.",
+      "npcOrderAudio": "/Audio/round2-order.mp3",
+      "bgm": "/Audio/music-round2.mp3",
+      "constraints": {
+        "itemCount": 1,
+        "requireTemp": false,
+        "requireMilk": false,
+        "requireSyrup": true
+      },
+      "correctOrder": [
+        { "type": "Flat White", "size": "Large", "syrup": "Hazelnut" }
+      ],
+      "rewardCoins": 20,
+      "investorMessage": "Nice work!"
+    },
+    {
+      "id": "r3",
+      "roundNumber": 3,
+      "title": "Listen & Build",
+      "subtitle": "Multi-Item Order",
+      "mode": "listen_select",
+      "description": "A more complex order with multiple drinks and milk preferences.",
+      "npcOrderText": "Can I get a large Americano, and two small lattes — one with oat milk and one with whole milk?",
+      "npcOrderAudio": "/Audio/order.mp3",
+      "bgm": "/Audio/music-round3.mp3",
+      "constraints": {
+        "itemCount": 3,
+        "requireTemp": false,
+        "requireMilk": true,
+        "requireSyrup": false
+      },
+      "correctOrder": [
+        { "type": "Americano", "size": "Large" },
+        { "type": "Latte", "size": "Small", "milk": "Oat" },
+        { "type": "Latte", "size": "Small", "milk": "Whole" }
+      ],
+      "rewardCoins": 60,
+      "investorMessage": "Excellent memory!",
+      "unlocks": [
+        { "type": "feature", "id": "feature.cafeShop" }
+      ]
+    },
+    {
+      "id": "r4",
+      "roundNumber": 4,
+      "title": "Type Your Order",
+      "subtitle": "Chat Mode",
+      "mode": "chat_fill",
+      "description": "Now YOU are the customer! Type your order in natural language.",
+      "npcOpening": "Hi there! What can I get started for you today?",
+      "bgm": "/Audio/music-round2.mp3",
+      "requirements": ["type", "size", "temp", "milk"],
+      "rules": {
+        "noMilkDrinks": ["Americano", "Espresso"],
+        "unknownDrinkTriggersMenu": true,
+        "followUpQuestions": {
+          "missingType": { "text": "What kind of coffee would you like?", "audio": "/Audio/ask-type.mp3" },
+          "missingSize": { "text": "What size?", "audio": "/Audio/ask-size.mp3" },
+          "missingTemp": { "text": "Would you like that hot or iced?", "audio": "/Audio/coffee-temperature.mp3" },
+          "missingMilk": { "text": "Any milk preference?", "audio": "/Audio/milk-preference.mp3" }
+        }
+      },
+      "rewardCoins": 80,
+      "investorMessage": "Impressive!"
+    },
+    {
+      "id": "r5",
+      "roundNumber": 5,
+      "title": "Speak Your Order",
+      "subtitle": "Voice Mode",
+      "mode": "speech_fill",
+      "description": "The ultimate test! Speak your complete order out loud.",
+      "npcOpening": "Welcome! What can I get for you today?",
+      "bgm": "/Audio/music-round3.mp3",
+      "speech": {
+        "lang": "en-US",
+        "timeoutMs": 8000,
+        "silenceStopMs": 1500
+      },
+      "requirements": ["type", "size", "temp", "milk", "syrup"],
+      "rules": {
+        "milkRequiredDrinks": ["Latte", "Cappuccino", "Macchiato", "Mocha", "Flat White"],
+        "autoPassSyrupIfMissing": true,
+        "followUpQuestions": {
+          "missingType": { "text": "What kind of drink would you like?", "audio": "/Audio/ask-type.mp3" },
+          "missingSize": { "text": "What size?", "audio": "/Audio/ask-size.mp3" },
+          "missingTemp": { "text": "Hot or iced?", "audio": "/Audio/coffee-temperature.mp3" },
+          "missingMilk": { "text": "What milk would you like?", "audio": "/Audio/milk-preference.mp3" },
+          "missingSyrup": { "text": "Any syrup?", "audio": "/Audio/coffee-syrup.mp3" }
+        }
+      },
+      "rewardCoins": 500,
+      "investorMessage": "Outstanding! You're a natural!"
+    }
+  ],
+
+  "shops": {
+    "cafeShop": {
+      "id": "shop.cafes.v1",
+      "title": "Choose Your Café",
+      "description": "Purchase café designs to build in your M31 world!",
+      "unlockCondition": { "type": "roundComplete", "roundId": "r3" },
+      "items": [
+        { "id": "cafe.coffeepost", "name": "Coffee Post", "priceCoins": 300, "image": "/coffeepost.png", "description": "A rustic desert outpost café" },
+        { "id": "cafe.retrocafe", "name": "Retro Café", "priceCoins": 500, "image": "/retrocafe.png", "description": "Classic European charm" },
+        { "id": "cafe.flowercafe", "name": "Flower Café", "priceCoins": 700, "image": "/flowercafe.png", "description": "Surrounded by blooming gardens" },
+        { "id": "cafe.moderncafe", "name": "Modern Café", "priceCoins": 900, "image": "/moderncafe.png", "description": "Sleek contemporary design" },
+        { "id": "cafe.rocococafe", "name": "Rococo Café", "priceCoins": 1100, "image": "/rocococafe.png", "description": "Ornate and luxurious" }
+      ]
+    },
+    "coinShop": {
+      "id": "shop.coins.v1",
+      "title": "Coin Shop",
+      "description": "Need more coins? Get bundles here!",
+      "bundles": [
+        { "id": "starter", "label": "Starter", "coins": 500, "priceUSD": "0.99", "best": false },
+        { "id": "popular", "label": "Popular", "coins": 1500, "priceUSD": "2.99", "best": true },
+        { "id": "pro", "label": "Pro Pack", "coins": 5000, "priceUSD": "7.99", "best": false }
+      ]
+    }
+  },
+
+  "ui": {
+    "colors": {
+      "primary": "#f59e0b",
+      "secondary": "#8b5cf6",
+      "success": "#22c55e",
+      "error": "#ef4444",
+      "background": "#000000"
+    },
+    "strings": {
+      "missionTitle": "Mission: Build Andromeda's first café",
+      "roundPrefix": "Round",
+      "coinsLabel": "Coins",
+      "transcriptButton": "Show Text",
+      "submitButton": "Submit",
+      "nextRoundButton": "Next Round",
+      "playAgainButton": "Play Again",
+      "buildCafeButton": "Build Your Café",
+      "buyCoinsButton": "Buy Coins",
+      "keepPlayingButton": "Keep Playing"
+    }
+  }
+}

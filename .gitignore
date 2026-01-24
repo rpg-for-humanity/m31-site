@@ -1,2 +1,9 @@
 node_modules/
+# Private architecture docs
+docs/
+public/templates/
+public/dialogues/
+docs/INTEGRATION-GUIDE.md
+app.zip
+.vercel
 .next
