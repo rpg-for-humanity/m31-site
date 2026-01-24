@@ -675,8 +675,12 @@ export default function ConvosetTest() {
         setShowFullBody(false);
         setGameState('playing');
         setShowDialogue(true);
+        
+        // Play voice FIRST (important for mobile autoplay), then music after delay
         playRoundOrder();
-        startBackgroundMusic(1); // Start music for Round 1
+        setTimeout(() => {
+          startBackgroundMusic(1);
+        }, 500);
         
         // Track round started
         track('round_started', { round: 1, level: 3 });
