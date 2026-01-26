@@ -702,11 +702,12 @@ export default function ConvosetTest() {
         setGameState('playing');
         setShowDialogue(true);
         
-        // Play voice FIRST (important for mobile autoplay), then music after delay
+        // Play voice FIRST (important for mobile autoplay), then music after longer delay
         playRoundOrder();
+        // Increased delay to 2000ms to ensure voice starts first on mobile
         setTimeout(() => {
           startBackgroundMusic(1);
-        }, 500);
+        }, 2000);
         
         // Track round started
         track('round_started', { round: 1, level: 3 });
@@ -1929,9 +1930,9 @@ export default function ConvosetTest() {
               />
             </picture>
             
-            {/* Loading placeholder - shows while image loads */}
+            {/* Loading placeholder - shows while image loads - MUST be above all other content */}
             {!investorBgReady && (
-              <div className="absolute inset-0 bg-black/90 flex items-center justify-center">
+              <div className="absolute inset-0 z-[100] bg-black flex items-center justify-center">
                 <div className="text-amber-400 text-lg animate-pulse">Loading...</div>
               </div>
             )}
