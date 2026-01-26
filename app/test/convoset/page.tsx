@@ -77,6 +77,9 @@ export default function ConvosetTest() {
   const [showRewardSummary, setShowRewardSummary] = useState(false);
   const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
   
+  // Investor background loading state (prevents race condition)
+  const [investorBgReady, setInvestorBgReady] = useState(false);
+  
   // Email capture modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -283,6 +286,8 @@ export default function ConvosetTest() {
 
   // Bellagio-style fountain - vertical jets spread from left to right, shoot up, then go to balance
   const triggerCoinAnimation = (currentRound: number) => {
+    // Only trigger if investor background is ready (prevents race condition)
+    // Animation will be triggered by useEffect when investorBgReady becomes true
     const newCoins: Coin[] = [];
     
     // Number of vertical jets increases with round
@@ -333,6 +338,27 @@ export default function ConvosetTest() {
     setShowCoinAnimation(true);
     setTimeout(() => setShowCoinAnimation(false), 3500);
   };
+
+  // Reset investor background ready state when entering investor screen
+  useEffect(() => {
+    if (gameState === 'investor') {
+      setInvestorBgReady(false);
+    }
+  }, [gameState, round]);
+
+  // Preload next investor image when round starts
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const nextRound = round + 1;
+      if (nextRound <= 5) {
+        const img = new Image();
+        img.src = `/NY-investor${nextRound}.webp`;
+        // Also preload mobile version
+        const imgMobile = new Image();
+        imgMobile.src = `/NY-investor${nextRound}-mobile.webp`;
+      }
+    }
+  }, [gameState, round]);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -739,7 +765,7 @@ export default function ConvosetTest() {
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
-        triggerCoinAnimation(round);
+        // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
         const messages: Record<number, InvestorMessage> = {
           1: { title: "Well done!" },
           2: { title: "Great job!" },
@@ -843,7 +869,7 @@ export default function ConvosetTest() {
         
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
-          triggerCoinAnimation(round);
+          // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
           setInvestorMessage({ title: "Impressive!" });
           setGameState('investor');
           
@@ -1190,7 +1216,7 @@ export default function ConvosetTest() {
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 100);
-      triggerCoinAnimation(round);
+      // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
       setInvestorMessage({ title: "You're a natural!" });
       setGameState('investor');
       
@@ -1457,7 +1483,7 @@ export default function ConvosetTest() {
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-[3px] border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
                     <p className="text-amber-400 text-lg md:text-xl mb-1 font-sans font-medium">M31 Coffee Outpost</p>
@@ -1732,7 +1758,7 @@ export default function ConvosetTest() {
                         }
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
-                          triggerCoinAnimation(round);
+                          // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
                           setInvestorMessage({ title: "Impressive!" });
                           setGameState('investor');
                         });
@@ -1885,18 +1911,36 @@ export default function ConvosetTest() {
           {/* FRAME: everything pins to this box, not the viewport */}
           <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
             
-            {/* Background image - fills the frame */}
-            <img 
-              src={round === 1 ? "/ib.png" : `/NY-investor${round}.png`}
-              alt="Earth Investor calling from spaceship" 
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+            {/* Background image - fills the frame, triggers coin animation on load */}
+            <picture>
+              <source 
+                media="(max-width: 768px)" 
+                srcSet={round === 1 ? "/ib-mobile.webp" : `/NY-investor${round}-mobile.webp`} 
+              />
+              <img 
+                src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
+                alt="Earth Investor calling from spaceship" 
+                className="absolute inset-0 w-full h-full object-cover"
+                onLoad={() => {
+                  setInvestorBgReady(true);
+                  // Now trigger the coin animation after image is loaded
+                  triggerCoinAnimation(round);
+                }}
+              />
+            </picture>
+            
+            {/* Loading placeholder - shows while image loads */}
+            {!investorBgReady && (
+              <div className="absolute inset-0 bg-black/90 flex items-center justify-center">
+                <div className="text-amber-400 text-lg animate-pulse">Loading...</div>
+              </div>
+            )}
             
             {/* All overlays inside the same frame */}
             <div className="absolute inset-0 z-50 pointer-events-none">
               
               {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
-              <div className="absolute top-0 left-0 right-0 h-27 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
               
               {/* HUD - top bar - with margin from top on mobile */}
               <div className="absolute left-4 right-4 md:left-6 md:right-6 top-5 md:top-2 flex justify-between items-center pointer-events-auto">
@@ -2002,7 +2046,7 @@ export default function ConvosetTest() {
                   ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
                   : round === 3 || round === 4
                   ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
-                  : 'bottom-30 md:bottom-[32%] right-12 md:right-24 items-center md:items-end'
+                  : 'bottom-28 md:bottom-[32%] right-12 md:right-24 items-center md:items-end'
               }`}>
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
@@ -2626,7 +2670,7 @@ export default function ConvosetTest() {
               {coinBundles.map((bundle) => (
                 <div 
                   key={bundle.id}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
                     bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'
                   }`}
                   onClick={() => {
