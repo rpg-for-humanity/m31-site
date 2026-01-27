@@ -393,9 +393,19 @@ export default function ConvosetTest() {
   };
 
   // Reset investor background ready state when entering investor screen
+  // Also add timeout fallback in case image fails to load
   useEffect(() => {
     if (gameState === 'investor') {
       setInvestorBgReady(false);
+      
+      // Fallback: if image doesn't load in 3 seconds, proceed anyway
+      const timeout = setTimeout(() => {
+        setInvestorBgReady(true);
+        triggerCoinAnimation(round);
+        console.warn('Investor image load timeout - proceeding anyway');
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
     }
   }, [gameState, round]);
 
@@ -1413,12 +1423,7 @@ export default function ConvosetTest() {
 
       {/* HUD - Responsive for mobile, uses safe-area for iPhone notch/Android status bar */}
       <div 
-        className="absolute flex justify-between items-center z-30" 
-        style={{ 
-          top: 'var(--hud-top, 44px)', 
-          left: 'calc(var(--sal, 0px) + 8px)', 
-          right: 'calc(var(--sar, 0px) + 8px)' 
-        }}
+        className="absolute top-6 md:top-4 left-3 right-3 md:left-4 md:right-4 flex justify-between items-center z-30"
       >
         <div className="flex items-center gap-1 md:gap-3">
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
@@ -2039,15 +2044,8 @@ export default function ConvosetTest() {
               {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
               <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
               
-              {/* HUD - top bar - uses safe-area for iPhone notch/Android status bar */}
-              <div 
-                className="absolute flex justify-between items-center pointer-events-auto" 
-                style={{ 
-                  top: 'var(--hud-top, 44px)', 
-                  left: 'calc(var(--sal, 0px) + 16px)', 
-                  right: 'calc(var(--sar, 0px) + 16px)' 
-                }}
-              >
+              {/* HUD - top bar */}
+              <div className="absolute top-5 md:top-4 left-4 right-4 md:left-6 md:right-6 flex justify-between items-center pointer-events-auto">
                 <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
                   <span className="text-zinc-100 font-sans text-xs md:text-sm whitespace-nowrap">M31 · Lv.3 · {round}/5</span>
                 </div>
@@ -2083,14 +2081,8 @@ export default function ConvosetTest() {
                 </div>
               </div>
 
-              {/* LIVE indicator - just below HUD, respects safe area */}
-              <div 
-                className="absolute flex items-center gap-2 pointer-events-none" 
-                style={{ 
-                  top: 'calc(var(--hud-top, 44px) + 44px)', 
-                  left: 'calc(var(--sal, 0px) + 20px)' 
-                }}
-              >
+              {/* LIVE indicator - just below HUD */}
+              <div className="absolute top-16 md:top-12 left-5 md:left-6 flex items-center gap-2 pointer-events-none">
                 <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
                 <span className="text-green-400 text-xs md:text-base font-sans font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                   {round === 5 
@@ -2154,19 +2146,15 @@ export default function ConvosetTest() {
                 )}
               </div>
 
-              {/* CTAs - positioned based on round, uses safe-area for bottom */}
+              {/* CTAs - positioned based on round */}
               <div 
                 className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
-                  round === 3 || round === 4
-                    ? 'left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 items-center md:items-end w-[min(92%,360px)] md:w-auto'
-                    : 'items-end'
+                  round === 5
+                    ? 'bottom-20 md:bottom-[20%] right-8 md:right-24 items-end'
+                    : round === 3 || round === 4
+                    ? 'bottom-20 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
+                    : 'bottom-24 md:bottom-[30%] right-8 md:right-24 items-end'
                 }`}
-                style={{ 
-                  bottom: round === 3 || round === 4 || round === 5
-                    ? 'calc(var(--hud-bottom, 18px) + clamp(120px, 14vh, 220px))'
-                    : 'calc(var(--hud-bottom, 18px) + clamp(140px, 16vh, 240px))',
-                  right: round === 3 || round === 4 ? undefined : 'calc(var(--sar, 0px) + 24px)'
-                } as React.CSSProperties}
               >
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
