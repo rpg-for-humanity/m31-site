@@ -393,17 +393,37 @@ export default function ConvosetTest() {
   };
 
   // Reset investor background ready state when entering investor screen
-  // Also add timeout fallback in case image fails to load
+  // Preload the image in JS to ensure onLoad fires reliably
   useEffect(() => {
     if (gameState === 'investor') {
       setInvestorBgReady(false);
       
-      // Fallback: if image doesn't load in 3 seconds, proceed anyway
-      const timeout = setTimeout(() => {
+      // Preload image in JavaScript (more reliable than relying on <img> onLoad)
+      const isMobile = window.innerWidth <= 768;
+      const imgSrc = round === 1 
+        ? (isMobile ? "/ib-mobile.webp" : "/ib.webp")
+        : (isMobile ? `/NY-investor${round}-mobile.webp` : `/NY-investor${round}.webp`);
+      
+      const img = new Image();
+      img.onload = () => {
         setInvestorBgReady(true);
         triggerCoinAnimation(round);
-        console.warn('Investor image load timeout - proceeding anyway');
-      }, 3000);
+      };
+      img.onerror = () => {
+        console.warn('Investor image failed to load');
+        setInvestorBgReady(true);
+        triggerCoinAnimation(round);
+      };
+      img.src = imgSrc;
+      
+      // Fallback timeout (10 seconds) in case something goes very wrong
+      const timeout = setTimeout(() => {
+        if (!img.complete) {
+          console.warn('Investor image load timeout - proceeding anyway');
+          setInvestorBgReady(true);
+          triggerCoinAnimation(round);
+        }
+      }, 10000);
       
       return () => clearTimeout(timeout);
     }
@@ -731,7 +751,6 @@ export default function ConvosetTest() {
 
   const startGame = async () => {
     // 🔑 PLAY REAL AUDIO IMMEDIATELY IN THE TAP - this is required for mobile
-    // The audio MUST start during the direct user gesture, not after animations
     await playRoundOrder(1, true);
     
     // Track mission started
@@ -741,7 +760,7 @@ export default function ConvosetTest() {
       timestamp: new Date().toISOString()
     });
     
-    // Skip walking animation - go directly to playing
+    // Skip walking - go directly to playing
     setShowTranscript(false);
     setShowFullBody(false);
     setGameState('playing');
@@ -749,29 +768,13 @@ export default function ConvosetTest() {
     track('round_started', { round: 1, level: 3 });
   };
 
+  // Keep shrinkAndTransition for reference but not used
   const shrinkAndTransition = () => {
     setIsWalking(false);
-    
-    let scale = 1;
-    let opacity = 1;
-    
-    const shrinkInterval = setInterval(() => {
-      scale -= 0.08;
-      opacity -= 0.08;
-      setKokoroScale(scale);
-      setKokoroOpacity(opacity);
-      
-      if (scale <= 0) {
-        clearInterval(shrinkInterval);
-        setShowFullBody(false);
-        setGameState('playing');
-        setShowDialogue(true);
-        
-        // Audio already played in startGame (within the tap gesture)
-        // Just track round started
-        track('round_started', { round: 1, level: 3 });
-      }
-    }, 25);
+    setShowFullBody(false);
+    setGameState('playing');
+    setShowDialogue(true);
+    track('round_started', { round: 1, level: 3 });
   };
 
   const replayVoice = () => {
@@ -1995,31 +1998,19 @@ export default function ConvosetTest() {
           {/* FRAME: everything pins to this box, not the viewport */}
           <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
             
-            {/* Background image - fills the frame, triggers coin animation on load */}
-            <picture>
-              <source 
-                media="(max-width: 768px)" 
-                srcSet={round === 1 ? "/ib-mobile.webp" : `/NY-investor${round}-mobile.webp`} 
-              />
-              <img 
-                src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
-                alt="Earth Investor calling from spaceship" 
-                className="absolute inset-0 w-full h-full object-cover"
-                fetchPriority="high"
-                decoding="async"
-                onLoad={() => {
-                  setInvestorBgReady(true);
-                  // Now trigger the coin animation after image is loaded
-                  triggerCoinAnimation(round);
-                }}
-                onError={() => {
-                  // Fallback: don't hang forever if image fails to load
-                  console.warn('Investor image failed to load');
-                  setInvestorBgReady(true);
-                  triggerCoinAnimation(round);
-                }}
-              />
-            </picture>
+            {/* Background image - fills the frame */}
+            <img 
+              src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
+              srcSet={round === 1 
+                ? "/ib-mobile.webp 768w, /ib.webp 1920w"
+                : `/NY-investor${round}-mobile.webp 768w, /NY-investor${round}.webp 1920w`
+              }
+              sizes="(max-width: 768px) 768px, 1920px"
+              alt="Earth Investor calling from spaceship" 
+              className="absolute inset-0 w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="async"
+            />
             
             {/* Loading placeholder - shows while image loads - MUST be above all other content */}
             {!investorBgReady && (
@@ -2031,8 +2022,8 @@ export default function ConvosetTest() {
             {/* All overlays inside the same frame */}
             <div className="absolute inset-0 z-50 pointer-events-none">
               
-              {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
-              <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
+              {/* Lighter gradient overlay for HUD readability */}
+              <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/70 via-black/40 to-transparent pointer-events-none" />
               
               {/* HUD - top bar */}
               <div className="absolute top-5 md:top-4 left-4 right-4 md:left-6 md:right-6 flex justify-between items-center pointer-events-auto">
