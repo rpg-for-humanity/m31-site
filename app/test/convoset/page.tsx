@@ -393,10 +393,19 @@ export default function ConvosetTest() {
   };
 
   // Reset investor background ready state when entering investor screen
+  // Also add timeout fallback in case image fails to load
   useEffect(() => {
     if (gameState === 'investor') {
-      // Just trigger coins immediately - image will load in parallel
-      triggerCoinAnimation(round);
+      setInvestorBgReady(false);
+      
+      // Fallback: if image doesn't load in 3 seconds, proceed anyway
+      const timeout = setTimeout(() => {
+        setInvestorBgReady(true);
+        triggerCoinAnimation(round);
+        console.warn('Investor image load timeout - proceeding anyway');
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
     }
   }, [gameState, round]);
 
@@ -722,6 +731,7 @@ export default function ConvosetTest() {
 
   const startGame = async () => {
     // 🔑 PLAY REAL AUDIO IMMEDIATELY IN THE TAP - this is required for mobile
+    // The audio MUST start during the direct user gesture, not after animations
     await playRoundOrder(1, true);
     
     // Track mission started
@@ -731,22 +741,37 @@ export default function ConvosetTest() {
       timestamp: new Date().toISOString()
     });
     
-    // Skip walking - go directly to playing
+    // Skip walking animation - go directly to playing
+    setShowTranscript(false);
     setShowFullBody(false);
     setGameState('playing');
     setShowDialogue(true);
-    setShowTranscript(false);
-    
     track('round_started', { round: 1, level: 3 });
   };
 
-  // Keep shrinkAndTransition for potential future use but it's not called now
   const shrinkAndTransition = () => {
     setIsWalking(false);
-    setShowFullBody(false);
-    setGameState('playing');
-    setShowDialogue(true);
-    track('round_started', { round: 1, level: 3 });
+    
+    let scale = 1;
+    let opacity = 1;
+    
+    const shrinkInterval = setInterval(() => {
+      scale -= 0.08;
+      opacity -= 0.08;
+      setKokoroScale(scale);
+      setKokoroOpacity(opacity);
+      
+      if (scale <= 0) {
+        clearInterval(shrinkInterval);
+        setShowFullBody(false);
+        setGameState('playing');
+        setShowDialogue(true);
+        
+        // Audio already played in startGame (within the tap gesture)
+        // Just track round started
+        track('round_started', { round: 1, level: 3 });
+      }
+    }, 25);
   };
 
   const replayVoice = () => {
@@ -1970,7 +1995,7 @@ export default function ConvosetTest() {
           {/* FRAME: everything pins to this box, not the viewport */}
           <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
             
-            {/* Background image - fills the frame */}
+            {/* Background image - fills the frame, triggers coin animation on load */}
             <picture>
               <source 
                 media="(max-width: 768px)" 
@@ -1982,15 +2007,32 @@ export default function ConvosetTest() {
                 className="absolute inset-0 w-full h-full object-cover"
                 fetchPriority="high"
                 decoding="async"
+                onLoad={() => {
+                  setInvestorBgReady(true);
+                  // Now trigger the coin animation after image is loaded
+                  triggerCoinAnimation(round);
+                }}
+                onError={() => {
+                  // Fallback: don't hang forever if image fails to load
+                  console.warn('Investor image failed to load');
+                  setInvestorBgReady(true);
+                  triggerCoinAnimation(round);
+                }}
               />
             </picture>
-            />
+            
+            {/* Loading placeholder - shows while image loads - MUST be above all other content */}
+            {!investorBgReady && (
+              <div className="absolute inset-0 z-[100] bg-black flex items-center justify-center">
+                <div className="text-amber-400 text-lg animate-pulse">Loading...</div>
+              </div>
+            )}
             
             {/* All overlays inside the same frame */}
             <div className="absolute inset-0 z-50 pointer-events-none">
               
-              {/* Lighter gradient overlay for HUD readability */}
-              <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/70 via-black/40 to-transparent pointer-events-none" />
+              {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
+              <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
               
               {/* HUD - top bar */}
               <div className="absolute top-5 md:top-4 left-4 right-4 md:left-6 md:right-6 flex justify-between items-center pointer-events-auto">
