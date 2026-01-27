@@ -393,17 +393,37 @@ export default function ConvosetTest() {
   };
 
   // Reset investor background ready state when entering investor screen
-  // Also add timeout fallback in case image fails to load
+  // Preload the image in JS to ensure onLoad fires reliably
   useEffect(() => {
     if (gameState === 'investor') {
       setInvestorBgReady(false);
       
-      // Fallback: if image doesn't load in 3 seconds, proceed anyway
-      const timeout = setTimeout(() => {
+      // Preload image in JavaScript (more reliable than relying on <img> onLoad)
+      const isMobile = window.innerWidth <= 768;
+      const imgSrc = round === 1 
+        ? (isMobile ? "/ib-mobile.webp" : "/ib.webp")
+        : (isMobile ? `/NY-investor${round}-mobile.webp` : `/NY-investor${round}.webp`);
+      
+      const img = new Image();
+      img.onload = () => {
         setInvestorBgReady(true);
         triggerCoinAnimation(round);
-        console.warn('Investor image load timeout - proceeding anyway');
-      }, 3000);
+      };
+      img.onerror = () => {
+        console.warn('Investor image failed to load');
+        setInvestorBgReady(true);
+        triggerCoinAnimation(round);
+      };
+      img.src = imgSrc;
+      
+      // Fallback timeout (10 seconds) in case something goes very wrong
+      const timeout = setTimeout(() => {
+        if (!img.complete) {
+          console.warn('Investor image load timeout - proceeding anyway');
+          setInvestorBgReady(true);
+          triggerCoinAnimation(round);
+        }
+      }, 10000);
       
       return () => clearTimeout(timeout);
     }
@@ -2005,7 +2025,7 @@ export default function ConvosetTest() {
           {/* FRAME: everything pins to this box, not the viewport */}
           <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
             
-            {/* Background image - fills the frame, triggers coin animation on load */}
+            {/* Background image - fills the frame */}
             <img 
               src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
               srcSet={round === 1 
@@ -2017,17 +2037,6 @@ export default function ConvosetTest() {
               className="absolute inset-0 w-full h-full object-cover"
               fetchPriority="high"
               decoding="async"
-              onLoad={() => {
-                setInvestorBgReady(true);
-                // Now trigger the coin animation after image is loaded
-                triggerCoinAnimation(round);
-              }}
-              onError={() => {
-                // Fallback: don't hang forever if image fails to load
-                console.warn('Investor image failed to load');
-                setInvestorBgReady(true);
-                triggerCoinAnimation(round);
-              }}
             />
             
             {/* Loading placeholder - shows while image loads - MUST be above all other content */}
