@@ -77,6 +77,16 @@ export default function ConvosetTest() {
   const [showRewardSummary, setShowRewardSummary] = useState(false);
   const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
   
+  // Investor background loading state (prevents race condition)
+  const [investorBgReady, setInvestorBgReady] = useState(false);
+  
+  // Mobile audio unlock refs (fixes autoplay restrictions)
+  const orderAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+  
+  // Fallback for mobile audio if autoplay blocked
+  const [needsOrderTap, setNeedsOrderTap] = useState(false);
+  
   // Email capture modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -249,6 +259,52 @@ export default function ConvosetTest() {
 
   const currentRoundConfig = round <= 3 ? roundConfigs[round as 1 | 2 | 3] : null;
 
+  // Mobile audio prime function - call inside user tap to unlock audio
+  const primeRoundOrderAudio = async (roundNum: number) => {
+    if (audioUnlockedRef.current) return;
+
+    const config = roundConfigs[roundNum as 1 | 2 | 3];
+    if (!config?.audio) return;
+
+    const a = new Audio(config.audio);
+    a.preload = 'auto';
+    a.muted = true;
+
+    try {
+      await a.play();          // ✅ happens inside the user tap
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      orderAudioRef.current = a;
+      audioUnlockedRef.current = true;
+      console.log('🔓 Round audio primed for mobile');
+    } catch (e) {
+      console.warn('primeRoundOrderAudio failed', e);
+    }
+
+    // Also prime background music
+    try {
+      const musicFile = getMusicForRound(1);
+      const musicPrimer = new Audio(musicFile);
+      musicPrimer.muted = true;
+      await musicPrimer.play();
+      musicPrimer.pause();
+      musicPrimer.currentTime = 0;
+      console.log('🔓 Music primed for mobile');
+    } catch (e) {
+      console.warn('Music prime failed', e);
+    }
+
+    // Also nudge speech synthesis (helps on iOS)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+  };
+
   // Intro - Kokorobot walks to center-left, then mission fades in
   useEffect(() => {
     if (gameState === 'intro') {
@@ -283,6 +339,8 @@ export default function ConvosetTest() {
 
   // Bellagio-style fountain - vertical jets spread from left to right, shoot up, then go to balance
   const triggerCoinAnimation = (currentRound: number) => {
+    // Only trigger if investor background is ready (prevents race condition)
+    // Animation will be triggered by useEffect when investorBgReady becomes true
     const newCoins: Coin[] = [];
     
     // Number of vertical jets increases with round
@@ -333,6 +391,37 @@ export default function ConvosetTest() {
     setShowCoinAnimation(true);
     setTimeout(() => setShowCoinAnimation(false), 3500);
   };
+
+  // Reset investor background ready state when entering investor screen
+  // Also add timeout fallback in case image fails to load
+  useEffect(() => {
+    if (gameState === 'investor') {
+      setInvestorBgReady(false);
+      
+      // Fallback: if image doesn't load in 3 seconds, proceed anyway
+      const timeout = setTimeout(() => {
+        setInvestorBgReady(true);
+        triggerCoinAnimation(round);
+        console.warn('Investor image load timeout - proceeding anyway');
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [gameState, round]);
+
+  // Preload next investor image when round starts
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const nextRound = round + 1;
+      if (nextRound <= 5) {
+        const img = new Image();
+        img.src = `/NY-investor${nextRound}.webp`;
+        // Also preload mobile version
+        const imgMobile = new Image();
+        imgMobile.src = `/NY-investor${nextRound}-mobile.webp`;
+      }
+    }
+  }, [gameState, round]);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -415,7 +504,7 @@ export default function ConvosetTest() {
     }
   };
 
-  const playRoundOrder = (forceRound?: number) => {
+  const playRoundOrder = async (forceRound?: number, startMusicAfter?: boolean) => {
     // Only for rounds 1-3 (listen & select)
     const targetRound = forceRound || round;
     const config = roundConfigs[targetRound as 1 | 2 | 3];
@@ -428,46 +517,54 @@ export default function ConvosetTest() {
       audioRef.pause();
     }
     
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = config.audio;
-    audio.volume = 0.8;
-    setIsNpcSpeaking(true);
+    // Get or create audio element
+    let audio = orderAudioRef.current ?? new Audio(config.audio);
     
-    audio.oncanplay = () => {
-      console.log('Audio can play');
-      audio.play().then(() => {
-        console.log('Audio playing successfully');
-      }).catch(err => {
-        console.error('Play failed:', err);
-        speakTTS(config.npcOrder);
-      });
-    };
+    // If reusing primed audio, ensure it's the right file for this round
+    const desired = new URL(config.audio, window.location.href).toString();
+    if (audio.src !== desired) {
+      audio.src = config.audio;
+      audio.load();
+      console.log('Updated audio src for round', targetRound);
+    }
     
-    audio.onended = () => {
-      console.log('Audio ended');
+    orderAudioRef.current = audio;
+    
+    try {
+      audio.currentTime = 0;
+      audio.volume = 0.8;
+      setIsNpcSpeaking(true);
+      
+      // Set handlers BEFORE calling play (helps mobile reliability)
+      audio.onended = () => {
+        console.log('Audio ended');
+        setIsNpcSpeaking(false);
+        
+        // If this is Round 1 start, begin music now that voice is done
+        if (startMusicAfter) {
+          console.log('Starting music after Round 1 voice');
+          startBackgroundMusic(1);
+        } else if (audioRef && musicPlaying) {
+          // Just resume existing music if it was paused
+          audioRef.play().catch(() => {});
+        }
+      };
+      
+      await audio.play();
+      console.log('Audio playing successfully');
+      setNeedsOrderTap(false); // Audio worked, no fallback needed
+    } catch (err) {
+      console.warn('Order audio play blocked', err);
       setIsNpcSpeaking(false);
-      // DON'T start music here - it's already started in completeGame
-      // Just resume if it was paused
-      if (audioRef && musicPlaying) {
-        audioRef.play().catch(() => {});
+      
+      // Show tap-to-play fallback on mobile instead of auto TTS
+      setNeedsOrderTap(true);
+      
+      // Still start music if this was Round 1
+      if (startMusicAfter) {
+        startBackgroundMusic(1);
       }
-    };
-    
-    audio.onerror = (e) => {
-      console.error('Audio load error - trying fetch:', e);
-      fetch(config.audio)
-        .then(res => {
-          console.log('Fetch status:', res.status, res.statusText);
-          if (!res.ok) {
-            speakTTS(config.npcOrder);
-          }
-        })
-        .catch(fetchErr => {
-          console.error('Fetch also failed:', fetchErr);
-          speakTTS(config.npcOrder);
-        });
-    };
+    }
   };
 
   const getMusicForRound = (r: number) => {
@@ -632,7 +729,11 @@ export default function ConvosetTest() {
     }
   };
 
-  const startGame = () => {
+  const startGame = async () => {
+    // 🔑 PLAY REAL AUDIO IMMEDIATELY IN THE TAP - this is required for mobile
+    // The audio MUST start during the direct user gesture, not after animations
+    await playRoundOrder(1, true);
+    
     // Track mission started
     track('mission_started', { 
       level: 3, 
@@ -644,7 +745,7 @@ export default function ConvosetTest() {
     setShowTranscript(false);
     setIsWalking(true);
     
-    // Walk to center then transition
+    // Walk to center then transition (audio is already playing)
     const walkToCenter = setInterval(() => {
       setKokoroX(prev => {
         const target = window.innerWidth / 2 - 80;
@@ -675,10 +776,9 @@ export default function ConvosetTest() {
         setShowFullBody(false);
         setGameState('playing');
         setShowDialogue(true);
-        playRoundOrder();
-        startBackgroundMusic(1); // Start music for Round 1
         
-        // Track round started
+        // Audio already played in startGame (within the tap gesture)
+        // Just track round started
         track('round_started', { round: 1, level: 3 });
       }
     }, 25);
@@ -735,7 +835,7 @@ export default function ConvosetTest() {
       // Play celebration sound
       playAudio('/Audio/goodresult.mp3', () => {
         setCoins(prev => prev + coinReward);
-        triggerCoinAnimation(round);
+        // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
         const messages: Record<number, InvestorMessage> = {
           1: { title: "Well done!" },
           2: { title: "Great job!" },
@@ -839,7 +939,7 @@ export default function ConvosetTest() {
         
         playAudio('/Audio/goodresult.mp3', () => {
           setCoins(prev => prev + 80);
-          triggerCoinAnimation(round);
+          // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
           setInvestorMessage({ title: "Impressive!" });
           setGameState('investor');
           
@@ -1186,7 +1286,7 @@ export default function ConvosetTest() {
     // Play celebration sound and go straight to investor
     playAudio('/Audio/goodresult.mp3', () => {
       setCoins(prev => prev + 100);
-      triggerCoinAnimation(round);
+      // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
       setInvestorMessage({ title: "You're a natural!" });
       setGameState('investor');
       
@@ -1321,8 +1421,10 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* HUD - Responsive for mobile */}
-      <div className="absolute top-6 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30">
+      {/* HUD - Responsive for mobile, uses safe-area for iPhone notch/Android status bar */}
+      <div 
+        className="absolute top-6 md:top-4 left-3 right-3 md:left-4 md:right-4 flex justify-between items-center z-30"
+      >
         <div className="flex items-center gap-1 md:gap-3">
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
             <span className="text-zinc-100 font-sans text-xs md:text-sm">M31 · Lv.3 · {round}/5</span>
@@ -1350,6 +1452,8 @@ export default function ConvosetTest() {
           <button 
             onClick={() => alert('✅ Progress saved locally!')}
             className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+            title="Save Progress"
+            aria-label="Save Progress"
           >
             <span className="text-zinc-100 text-xs md:text-sm">✅</span>
           </button>
@@ -1362,6 +1466,8 @@ export default function ConvosetTest() {
               }
             }}
             className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+            title="Exit Game"
+            aria-label="Exit Game"
           >
             <span className="text-zinc-100 text-xs md:text-sm">✕</span>
           </button>
@@ -1453,7 +1559,7 @@ export default function ConvosetTest() {
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-3 border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-[3px] border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
                     <p className="text-amber-400 text-lg md:text-xl mb-1 font-sans font-medium">M31 Coffee Outpost</p>
@@ -1464,6 +1570,24 @@ export default function ConvosetTest() {
                       <div className="bg-black/60 rounded-xl p-3 border border-amber-500/30">
                         <p className="text-amber-300 mb-1 text-sm md:text-base font-medium">📋 Register Training</p>
                         <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokoro's exact order.</p>
+                        
+                        {/* Tap to hear order - fallback for mobile when autoplay blocked */}
+                        {needsOrderTap && (
+                          <div className="mb-3 bg-amber-500/15 border border-amber-400/30 rounded-xl p-3 text-center">
+                            <p className="text-amber-200 text-sm mb-2">
+                              Tap to hear Kokoro's order (mobile needs one extra tap).
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setNeedsOrderTap(false);
+                                replayVoice();
+                              }}
+                              className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold"
+                            >
+                              🔊 Play Order
+                            </button>
+                          </div>
+                        )}
                         
                         {/* Matching rounded buttons */}
                         <div className="flex gap-2 justify-center">
@@ -1659,13 +1783,13 @@ export default function ConvosetTest() {
             {/* Round 4 - Typing Order */}
             {round === 4 && (
               <>
-                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-left mb-1">M31 Coffee Outpost</h2>
                 <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
                   <div className="flex items-center gap-4 mb-4">
                     <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
                     <div>
-                      <p className="text-amber-400 font-sans font-medium text-xl">☕ Customer Training</p>
-                      <p className="text-lg text-white">Your turn to order! What would you like? She can only handle one order for now.</p>
+                      <p className="text-amber-400 font-sans font-medium text-base md:text-base mb-2" >☕ Customer Training</p>
+                      <p className="text-amber-100 text-sm md:text-sm">Your turn to order! What would you like? She can only take ONE order for now.</p>
                     </div>
                   </div>
                   
@@ -1728,7 +1852,7 @@ export default function ConvosetTest() {
                         }
                         playAudio('/Audio/goodresult.mp3', () => {
                           setCoins(prev => prev + 80);
-                          triggerCoinAnimation(round);
+                          // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
                           setInvestorMessage({ title: "Impressive!" });
                           setGameState('investor');
                         });
@@ -1779,16 +1903,16 @@ export default function ConvosetTest() {
             {/* Round 5 - Speaking Order */}
             {round === 5 && (
               <>
-                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-center mb-4">M31 Coffee Outpost</h2>
+                <h2 className="text-amber-400 font-sans font-semibold text-2xl text-left ml-4 mb-1">M31 Coffee Outpost</h2>
                 <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
                   <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
-                  <p className="text-amber-400 font-sans font-medium text-xl mb-1">☕ Customer Training</p>
-                  <p className="text-white text-lg mb-4">Now train her to take your order by voice!</p>
+                  <p className="text-amber-400 font-sans font-medium text-base md:text-base mb-1">☕ Customer Training</p>
+                  <p className="text-amber-100 text-sm md:text-sm mb-3">Now train her to take your order by voice!</p>
                   
                   <div className="flex justify-center mb-4">
                     <button
                       onClick={() => setShowMenu(true)}
-                      className="text-amber-400 hover:text-amber-300 text-sm transition flex items-center gap-1"
+                      className="text-amber-400 hover:text-amber-300 text-xs transition flex items-center gap-1"
                     >
                       📋 View Menu
                     </button>
@@ -1881,21 +2005,46 @@ export default function ConvosetTest() {
           {/* FRAME: everything pins to this box, not the viewport */}
           <div className="relative w-full h-full md:w-[min(96vw,1200px)] md:h-[min(92vh,800px)] md:rounded-2xl overflow-hidden bg-black">
             
-            {/* Background image - fills the frame */}
+            {/* Background image - fills the frame, triggers coin animation on load */}
             <img 
-              src={round === 1 ? "/ib.png" : `/NY-investor${round}.png`}
+              src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
+              srcSet={round === 1 
+                ? "/ib-mobile.webp 768w, /ib.webp 1920w"
+                : `/NY-investor${round}-mobile.webp 768w, /NY-investor${round}.webp 1920w`
+              }
+              sizes="(max-width: 768px) 768px, 1920px"
               alt="Earth Investor calling from spaceship" 
               className="absolute inset-0 w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="async"
+              onLoad={() => {
+                setInvestorBgReady(true);
+                // Now trigger the coin animation after image is loaded
+                triggerCoinAnimation(round);
+              }}
+              onError={() => {
+                // Fallback: don't hang forever if image fails to load
+                console.warn('Investor image failed to load');
+                setInvestorBgReady(true);
+                triggerCoinAnimation(round);
+              }}
             />
+            
+            {/* Loading placeholder - shows while image loads - MUST be above all other content */}
+            {!investorBgReady && (
+              <div className="absolute inset-0 z-[100] bg-black flex items-center justify-center">
+                <div className="text-amber-400 text-lg animate-pulse">Loading...</div>
+              </div>
+            )}
             
             {/* All overlays inside the same frame */}
             <div className="absolute inset-0 z-50 pointer-events-none">
               
-              {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
-              <div className="absolute top-0 left-0 right-0 h-27 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
+              {/* Lighter gradient overlay for HUD readability */}
+              <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/70 via-black/40 to-transparent pointer-events-none" />
               
-              {/* HUD - top bar - with margin from top on mobile */}
-              <div className="absolute left-4 right-4 md:left-6 md:right-6 top-5 md:top-2 flex justify-between items-center pointer-events-auto">
+              {/* HUD - top bar */}
+              <div className="absolute top-5 md:top-4 left-4 right-4 md:left-6 md:right-6 flex justify-between items-center pointer-events-auto">
                 <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
                   <span className="text-zinc-100 font-sans text-xs md:text-sm whitespace-nowrap">M31 · Lv.3 · {round}/5</span>
                 </div>
@@ -1909,6 +2058,8 @@ export default function ConvosetTest() {
                   <button 
                     onClick={() => alert('✅ Progress saved locally!')}
                     className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                    title="Save Progress"
+                    aria-label="Save Progress"
                   >
                     <span className="text-zinc-100 text-xs md:text-sm">✅ </span>
                   </button>
@@ -1921,6 +2072,8 @@ export default function ConvosetTest() {
                       }
                     }}
                     className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                    title="Exit Game"
+                    aria-label="Exit Game"
                   >
                     <span className="text-zinc-100 text-xs md:text-sm">✕</span>
                   </button>
@@ -1928,7 +2081,7 @@ export default function ConvosetTest() {
               </div>
 
               {/* LIVE indicator - just below HUD */}
-              <div className="absolute left-5 md:left-6 top-[72px] md:top-12 flex items-center gap-2 pointer-events-none">
+              <div className="absolute top-16 md:top-12 left-5 md:left-6 flex items-center gap-2 pointer-events-none">
                 <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
                 <span className="text-green-400 text-xs md:text-base font-sans font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                   {round === 5 
@@ -1993,13 +2146,15 @@ export default function ConvosetTest() {
               </div>
 
               {/* CTAs - positioned based on round */}
-              <div className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
-                round === 5
-                  ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
-                  : round === 3 || round === 4
-                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
-                  : 'bottom-30 md:bottom-[32%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end'
-              }`}>
+              <div 
+                className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
+                  round === 5
+                    ? 'bottom-20 md:bottom-[20%] right-8 md:right-24 items-end'
+                    : round === 3 || round === 4
+                    ? 'bottom-20 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
+                    : 'bottom-24 md:bottom-[30%] right-8 md:right-24 items-end'
+                }`}
+              >
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
                   <>
@@ -2622,7 +2777,7 @@ export default function ConvosetTest() {
               {coinBundles.map((bundle) => (
                 <div 
                   key={bundle.id}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-102 ${
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
                     bundle.best ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-600 bg-zinc-800/50 hover:border-purple-500'
                   }`}
                   onClick={() => {
