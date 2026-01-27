@@ -80,6 +80,13 @@ export default function ConvosetTest() {
   // Investor background loading state (prevents race condition)
   const [investorBgReady, setInvestorBgReady] = useState(false);
   
+  // Mobile audio unlock refs (fixes autoplay restrictions)
+  const orderAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+  
+  // Fallback for mobile audio if autoplay blocked
+  const [needsOrderTap, setNeedsOrderTap] = useState(false);
+  
   // Email capture modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
@@ -251,6 +258,52 @@ export default function ConvosetTest() {
   };
 
   const currentRoundConfig = round <= 3 ? roundConfigs[round as 1 | 2 | 3] : null;
+
+  // Mobile audio prime function - call inside user tap to unlock audio
+  const primeRoundOrderAudio = async (roundNum: number) => {
+    if (audioUnlockedRef.current) return;
+
+    const config = roundConfigs[roundNum as 1 | 2 | 3];
+    if (!config?.audio) return;
+
+    const a = new Audio(config.audio);
+    a.preload = 'auto';
+    a.muted = true;
+
+    try {
+      await a.play();          // ✅ happens inside the user tap
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      orderAudioRef.current = a;
+      audioUnlockedRef.current = true;
+      console.log('🔓 Round audio primed for mobile');
+    } catch (e) {
+      console.warn('primeRoundOrderAudio failed', e);
+    }
+
+    // Also prime background music
+    try {
+      const musicFile = getMusicForRound(1);
+      const musicPrimer = new Audio(musicFile);
+      musicPrimer.muted = true;
+      await musicPrimer.play();
+      musicPrimer.pause();
+      musicPrimer.currentTime = 0;
+      console.log('🔓 Music primed for mobile');
+    } catch (e) {
+      console.warn('Music prime failed', e);
+    }
+
+    // Also nudge speech synthesis (helps on iOS)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+  };
 
   // Intro - Kokorobot walks to center-left, then mission fades in
   useEffect(() => {
@@ -441,7 +494,7 @@ export default function ConvosetTest() {
     }
   };
 
-  const playRoundOrder = (forceRound?: number) => {
+  const playRoundOrder = async (forceRound?: number, startMusicAfter?: boolean) => {
     // Only for rounds 1-3 (listen & select)
     const targetRound = forceRound || round;
     const config = roundConfigs[targetRound as 1 | 2 | 3];
@@ -454,46 +507,54 @@ export default function ConvosetTest() {
       audioRef.pause();
     }
     
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = config.audio;
-    audio.volume = 0.8;
-    setIsNpcSpeaking(true);
+    // Get or create audio element
+    let audio = orderAudioRef.current ?? new Audio(config.audio);
     
-    audio.oncanplay = () => {
-      console.log('Audio can play');
-      audio.play().then(() => {
-        console.log('Audio playing successfully');
-      }).catch(err => {
-        console.error('Play failed:', err);
-        speakTTS(config.npcOrder);
-      });
-    };
+    // If reusing primed audio, ensure it's the right file for this round
+    const desired = new URL(config.audio, window.location.href).toString();
+    if (audio.src !== desired) {
+      audio.src = config.audio;
+      audio.load();
+      console.log('Updated audio src for round', targetRound);
+    }
     
-    audio.onended = () => {
-      console.log('Audio ended');
+    orderAudioRef.current = audio;
+    
+    try {
+      audio.currentTime = 0;
+      audio.volume = 0.8;
+      setIsNpcSpeaking(true);
+      
+      // Set handlers BEFORE calling play (helps mobile reliability)
+      audio.onended = () => {
+        console.log('Audio ended');
+        setIsNpcSpeaking(false);
+        
+        // If this is Round 1 start, begin music now that voice is done
+        if (startMusicAfter) {
+          console.log('Starting music after Round 1 voice');
+          startBackgroundMusic(1);
+        } else if (audioRef && musicPlaying) {
+          // Just resume existing music if it was paused
+          audioRef.play().catch(() => {});
+        }
+      };
+      
+      await audio.play();
+      console.log('Audio playing successfully');
+      setNeedsOrderTap(false); // Audio worked, no fallback needed
+    } catch (err) {
+      console.warn('Order audio play blocked', err);
       setIsNpcSpeaking(false);
-      // DON'T start music here - it's already started in completeGame
-      // Just resume if it was paused
-      if (audioRef && musicPlaying) {
-        audioRef.play().catch(() => {});
+      
+      // Show tap-to-play fallback on mobile instead of auto TTS
+      setNeedsOrderTap(true);
+      
+      // Still start music if this was Round 1
+      if (startMusicAfter) {
+        startBackgroundMusic(1);
       }
-    };
-    
-    audio.onerror = (e) => {
-      console.error('Audio load error - trying fetch:', e);
-      fetch(config.audio)
-        .then(res => {
-          console.log('Fetch status:', res.status, res.statusText);
-          if (!res.ok) {
-            speakTTS(config.npcOrder);
-          }
-        })
-        .catch(fetchErr => {
-          console.error('Fetch also failed:', fetchErr);
-          speakTTS(config.npcOrder);
-        });
-    };
+    }
   };
 
   const getMusicForRound = (r: number) => {
@@ -658,7 +719,11 @@ export default function ConvosetTest() {
     }
   };
 
-  const startGame = () => {
+  const startGame = async () => {
+    // 🔑 PLAY REAL AUDIO IMMEDIATELY IN THE TAP - this is required for mobile
+    // The audio MUST start during the direct user gesture, not after animations
+    await playRoundOrder(1, true);
+    
     // Track mission started
     track('mission_started', { 
       level: 3, 
@@ -670,7 +735,7 @@ export default function ConvosetTest() {
     setShowTranscript(false);
     setIsWalking(true);
     
-    // Walk to center then transition
+    // Walk to center then transition (audio is already playing)
     const walkToCenter = setInterval(() => {
       setKokoroX(prev => {
         const target = window.innerWidth / 2 - 80;
@@ -702,14 +767,8 @@ export default function ConvosetTest() {
         setGameState('playing');
         setShowDialogue(true);
         
-        // Play voice FIRST (important for mobile autoplay), then music after longer delay
-        playRoundOrder();
-        // Increased delay to 2000ms to ensure voice starts first on mobile
-        setTimeout(() => {
-          startBackgroundMusic(1);
-        }, 2000);
-        
-        // Track round started
+        // Audio already played in startGame (within the tap gesture)
+        // Just track round started
         track('round_started', { round: 1, level: 3 });
       }
     }, 25);
@@ -1352,8 +1411,15 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* HUD - Responsive for mobile */}
-      <div className="absolute top-6 md:top-4 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center z-30">
+      {/* HUD - Responsive for mobile, uses safe-area for iPhone notch/Android status bar */}
+      <div 
+        className="absolute flex justify-between items-center z-30" 
+        style={{ 
+          top: 'var(--hud-top, 44px)', 
+          left: 'calc(var(--sal, 0px) + 8px)', 
+          right: 'calc(var(--sar, 0px) + 8px)' 
+        }}
+      >
         <div className="flex items-center gap-1 md:gap-3">
           <div className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
             <span className="text-zinc-100 font-sans text-xs md:text-sm">M31 · Lv.3 · {round}/5</span>
@@ -1381,6 +1447,8 @@ export default function ConvosetTest() {
           <button 
             onClick={() => alert('✅ Progress saved locally!')}
             className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+            title="Save Progress"
+            aria-label="Save Progress"
           >
             <span className="text-zinc-100 text-xs md:text-sm">✅</span>
           </button>
@@ -1393,6 +1461,8 @@ export default function ConvosetTest() {
               }
             }}
             className="bg-black/60 backdrop-blur-sm rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/80 transition flex items-center"
+            title="Exit Game"
+            aria-label="Exit Game"
           >
             <span className="text-zinc-100 text-xs md:text-sm">✕</span>
           </button>
@@ -1495,6 +1565,24 @@ export default function ConvosetTest() {
                       <div className="bg-black/60 rounded-xl p-3 border border-amber-500/30">
                         <p className="text-amber-300 mb-1 text-sm md:text-base font-medium">📋 Register Training</p>
                         <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokoro's exact order.</p>
+                        
+                        {/* Tap to hear order - fallback for mobile when autoplay blocked */}
+                        {needsOrderTap && (
+                          <div className="mb-3 bg-amber-500/15 border border-amber-400/30 rounded-xl p-3 text-center">
+                            <p className="text-amber-200 text-sm mb-2">
+                              Tap to hear Kokoro's order (mobile needs one extra tap).
+                            </p>
+                            <button 
+                              onClick={() => {
+                                setNeedsOrderTap(false);
+                                replayVoice();
+                              }}
+                              className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold"
+                            >
+                              🔊 Play Order
+                            </button>
+                          </div>
+                        )}
                         
                         {/* Matching rounded buttons */}
                         <div className="flex gap-2 justify-center">
@@ -1922,9 +2010,17 @@ export default function ConvosetTest() {
                 src={round === 1 ? "/ib.webp" : `/NY-investor${round}.webp`}
                 alt="Earth Investor calling from spaceship" 
                 className="absolute inset-0 w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="async"
                 onLoad={() => {
                   setInvestorBgReady(true);
                   // Now trigger the coin animation after image is loaded
+                  triggerCoinAnimation(round);
+                }}
+                onError={() => {
+                  // Fallback: don't hang forever if image fails to load
+                  console.warn('Investor image failed to load');
+                  setInvestorBgReady(true);
                   triggerCoinAnimation(round);
                 }}
               />
@@ -1943,8 +2039,15 @@ export default function ConvosetTest() {
               {/* Black overlay for HUD/LIVE readability - MOBILE ONLY */}
               <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/100 via-black/85 to-transparent pointer-events-none" />
               
-              {/* HUD - top bar - with margin from top on mobile */}
-              <div className="absolute left-4 right-4 md:left-6 md:right-6 top-5 md:top-2 flex justify-between items-center pointer-events-auto">
+              {/* HUD - top bar - uses safe-area for iPhone notch/Android status bar */}
+              <div 
+                className="absolute flex justify-between items-center pointer-events-auto" 
+                style={{ 
+                  top: 'var(--hud-top, 44px)', 
+                  left: 'calc(var(--sal, 0px) + 16px)', 
+                  right: 'calc(var(--sar, 0px) + 16px)' 
+                }}
+              >
                 <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-1.5 border border-zinc-500/30 flex items-center">
                   <span className="text-zinc-100 font-sans text-xs md:text-sm whitespace-nowrap">M31 · Lv.3 · {round}/5</span>
                 </div>
@@ -1958,6 +2061,8 @@ export default function ConvosetTest() {
                   <button 
                     onClick={() => alert('✅ Progress saved locally!')}
                     className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                    title="Save Progress"
+                    aria-label="Save Progress"
                   >
                     <span className="text-zinc-100 text-xs md:text-sm">✅ </span>
                   </button>
@@ -1970,14 +2075,22 @@ export default function ConvosetTest() {
                       }
                     }}
                     className="bg-black/80 rounded-full px-2 md:px-3 py-1 md:py-1.5 border border-zinc-500/30 hover:bg-black/60 transition flex items-center"
+                    title="Exit Game"
+                    aria-label="Exit Game"
                   >
                     <span className="text-zinc-100 text-xs md:text-sm">✕</span>
                   </button>
                 </div>
               </div>
 
-              {/* LIVE indicator - just below HUD */}
-              <div className="absolute left-5 md:left-6 top-[72px] md:top-12 flex items-center gap-2 pointer-events-none">
+              {/* LIVE indicator - just below HUD, respects safe area */}
+              <div 
+                className="absolute flex items-center gap-2 pointer-events-none" 
+                style={{ 
+                  top: 'calc(var(--hud-top, 44px) + 44px)', 
+                  left: 'calc(var(--sal, 0px) + 20px)' 
+                }}
+              >
                 <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
                 <span className="text-green-400 text-xs md:text-base font-sans font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                   {round === 5 
@@ -2041,14 +2154,20 @@ export default function ConvosetTest() {
                 )}
               </div>
 
-              {/* CTAs - positioned based on round */}
-              <div className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
-                round === 5
-                  ? 'bottom-16 md:bottom-[20%] right-12 md:right-80 items-end'
-                  : round === 3 || round === 4
-                  ? 'bottom-16 md:bottom-[25%] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-24 items-center md:items-end w-[min(92%,360px)] md:w-auto'
-                  : 'bottom-28 md:bottom-[32%] right-12 md:right-24 items-center md:items-end'
-              }`}>
+              {/* CTAs - positioned based on round, uses safe-area for bottom */}
+              <div 
+                className={`absolute flex gap-2 md:gap-3 flex-col pointer-events-auto ${
+                  round === 3 || round === 4
+                    ? 'left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 items-center md:items-end w-[min(92%,360px)] md:w-auto'
+                    : 'items-end'
+                }`}
+                style={{ 
+                  bottom: round === 3 || round === 4 || round === 5
+                    ? 'calc(var(--hud-bottom, 18px) + clamp(120px, 14vh, 220px))'
+                    : 'calc(var(--hud-bottom, 18px) + clamp(140px, 16vh, 240px))',
+                  right: round === 3 || round === 4 ? undefined : 'calc(var(--sar, 0px) + 24px)'
+                } as React.CSSProperties}
+              >
                 {/* Rounds 3 and 4: Build Your Café + Next Round */}
                 {(round === 3 || round === 4) && (
                   <>
