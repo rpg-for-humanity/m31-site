@@ -305,35 +305,22 @@ export default function ConvosetTest() {
     }
   };
 
-  // Intro - Kokorobot walks to center-left, then mission fades in
+  // Intro - Kokorobot appears at position, mission fades in
   useEffect(() => {
     if (gameState === 'intro') {
-      setKokoroX(-200);
-      setIsWalking(true);
+      // Skip walking - just place Kokoro at final position
+      const isMobile = window.innerWidth < 768;
+      const targetX = isMobile ? window.innerWidth * 0.30 : window.innerWidth * 0.40;
+      setKokoroX(targetX);
+      setIsWalking(false);
       setIntroReady(false);
       setMissionVisible(false);
       
-      const walkIn = setInterval(() => {
-        setKokoroX(prev => {
-          // Walk more toward center - responsive target
-          // Mobile: ~30% from left, Desktop: ~40% from left (closer to center)
-          const isMobile = window.innerWidth < 768;
-          const target = isMobile ? window.innerWidth * 0.30 : window.innerWidth * 0.40;
-          if (prev >= target) {
-            clearInterval(walkIn);
-            setIsWalking(false);
-            // Mission fades in after Kokorobot stops
-            setTimeout(() => {
-              setMissionVisible(true);
-              setTimeout(() => setIntroReady(true), 400);
-            }, 200);
-            return target;
-          }
-          return prev + 10;
-        });
-      }, 20);
-      
-      return () => clearInterval(walkIn);
+      // Mission fades in after short delay
+      setTimeout(() => {
+        setMissionVisible(true);
+        setTimeout(() => setIntroReady(true), 400);
+      }, 300);
     }
   }, [gameState]);
 
@@ -2011,13 +1998,6 @@ export default function ConvosetTest() {
               fetchPriority="high"
               decoding="async"
             />
-            
-            {/* Loading placeholder - shows while image loads - MUST be above all other content */}
-            {!investorBgReady && (
-              <div className="absolute inset-0 z-[100] bg-black flex items-center justify-center">
-                <div className="text-amber-400 text-lg animate-pulse">Loading...</div>
-              </div>
-            )}
             
             {/* All overlays inside the same frame */}
             <div className="absolute inset-0 z-50 pointer-events-none">
