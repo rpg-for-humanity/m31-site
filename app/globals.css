@@ -39,3 +39,35 @@ body {
   animation: subtle-sparkle 2s ease-in-out infinite;
   display: inline-block;
 }
+
+/* Coin fountain animation for celebration */
+@keyframes fountain-jet {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(0) scale(0.1);
+  }
+  5% {
+    opacity: 1;
+    transform: translateX(calc(var(--jx) * 0.3)) translateY(-30px) scale(0.3);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(var(--jx)) translateY(var(--jy)) scale(var(--s));
+  }
+  45% {
+    opacity: 1;
+    transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.6)) scale(var(--s)) rotate(90deg);
+  }
+  70% {
+    opacity: 0.9;
+    transform: translateX(calc(var(--jx) * 0.6 + 20vw)) translateY(calc(var(--jy) * 0.3 - 15vh)) scale(calc(var(--s) * 0.7)) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30vw) translateY(-85vh) scale(0.1) rotate(270deg);
+  }
+}
+
+.animate-fountain-jet {
+  animation: fountain-jet 2.8s ease-out forwards;
+}
