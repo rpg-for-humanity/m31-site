@@ -331,43 +331,39 @@ export default function ConvosetTest() {
     const newCoins: Coin[] = [];
     
     // Number of vertical jets increases with round
-    const jetCounts = { 1: 12, 2: 18, 3: 24, 4: 30, 5: 36 };
-    const coinsPerJet = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 };
+    const jetCounts = { 1: 10, 2: 14, 3: 18, 4: 22, 5: 26 };
+    const coinsPerJet = { 1: 3, 2: 4, 3: 5, 4: 6, 5: 7 };
     // Heights increase per round
     const maxHeightMultipliers = { 1: 0.4, 2: 0.55, 3: 0.7, 4: 0.85, 5: 1.0 };
     
-    const numJets = jetCounts[currentRound as keyof typeof jetCounts] || 20;
-    const coinsInJet = coinsPerJet[currentRound as keyof typeof coinsPerJet] || 5;
+    const numJets = jetCounts[currentRound as keyof typeof jetCounts] || 16;
+    const coinsInJet = coinsPerJet[currentRound as keyof typeof coinsPerJet] || 4;
     const heightMult = maxHeightMultipliers[currentRound as keyof typeof maxHeightMultipliers] || 1;
-    
-    // Create jets spread across the screen width (left to right)
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const jetSpacing = screenWidth / (numJets + 1);
     
     let coinId = 0;
     
     for (let jet = 0; jet < numJets; jet++) {
       // Center jets are taller, edge jets are shorter
       const centerDistance = Math.abs(jet - numJets / 2) / (numJets / 2);
-      const jetHeightVariation = 1 - (centerDistance * 0.5);
+      const jetHeightVariation = 1 - (centerDistance * 0.4);
       
       // Add some randomness
-      const randomHeightBoost = 0.8 + Math.random() * 0.4;
-      const jetMaxHeight = 300 + (200 * jetHeightVariation * randomHeightBoost * heightMult);
+      const randomHeightBoost = 0.85 + Math.random() * 0.3;
+      const jetMaxHeight = 250 + (150 * jetHeightVariation * randomHeightBoost * heightMult);
       
-      // X position for this jet (spread across screen from left to right)
-      const jetX = (jet * jetSpacing) - (screenWidth / 2) + jetSpacing;
+      // X position as percentage (-45% to +45% from center) to fill screen
+      const jetXPercent = ((jet / (numJets - 1)) - 0.5) * 90; // -45% to +45%
       
       // Create multiple coins in each jet
       for (let c = 0; c < coinsInJet; c++) {
         const coinHeight = jetMaxHeight * (0.5 + (c / coinsInJet) * 0.5);
         newCoins.push({
           id: coinId++,
-          x: jetX + (Math.random() * 10 - 5), // Slight wobble
+          x: jetXPercent, // Now a percentage, not pixels
           y: -coinHeight, // negative = up
           rotation: Math.random() * 360,
-          scale: 0.25 + Math.random() * 0.2,
-          delay: (c * 0.08) + (Math.random() * 0.1),
+          scale: 0.3 + Math.random() * 0.25,
+          delay: (c * 0.06) + (Math.random() * 0.08),
           jetIndex: jet,
           coinInJet: c
         });
@@ -812,24 +808,23 @@ export default function ConvosetTest() {
         passed: true
       });
       
-      // Play celebration sound
-      playAudio('/Audio/goodresult.mp3', () => {
-        setCoins(prev => prev + coinReward);
-        // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
-        const messages: Record<number, InvestorMessage> = {
-          1: { title: "Well done!" },
-          2: { title: "Great job!" },
-          3: { title: "Excellent!", subtitle: "Can she take your orders too?" },
-          4: { title: "Impressive!" },
-          5: { title: "You're a natural!" }
-        };
-
-        setInvestorMessage(messages[round] ?? { title: "Great job!" });
-        setGameState("investor");
-        
-        // Track reward screen viewed
-        track('reward_screen_viewed', { round, level: 3, coins_earned: coinReward });
-      });
+      // Set investor message and transition immediately
+      const messages: Record<number, InvestorMessage> = {
+        1: { title: "Well done!" },
+        2: { title: "Great job!" },
+        3: { title: "Excellent!", subtitle: "Can she take your orders too?" },
+        4: { title: "Impressive!" },
+        5: { title: "You're a natural!" }
+      };
+      setInvestorMessage(messages[round] ?? { title: "Great job!" });
+      setGameState("investor");
+      setCoins(prev => prev + coinReward);
+      
+      // Play celebration sound (doesn't block transition)
+      playAudio('/Audio/goodresult.mp3');
+      
+      // Track reward screen viewed
+      track('reward_screen_viewed', { round, level: 3, coins_earned: coinReward });
 
     } else {
       // Wrong answer - play error sound and show friendly feedback
@@ -917,15 +912,12 @@ export default function ConvosetTest() {
           passed: true
         });
         
-        playAudio('/Audio/goodresult.mp3', () => {
-          setCoins(prev => prev + 80);
-          // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
-          setInvestorMessage({ title: "Impressive!" });
-          setGameState('investor');
-          
-          // Track reward screen viewed
-          track('reward_screen_viewed', { round: 4, level: 3, coins_earned: 80 });
-        });
+        // Transition immediately, play sound in parallel
+        setInvestorMessage({ title: "Impressive!" });
+        setGameState('investor');
+        setCoins(prev => prev + 80);
+        playAudio('/Audio/goodresult.mp3');
+        track('reward_screen_viewed', { round: 4, level: 3, coins_earned: 80 });
         return;
       } else if (input.includes('no') || input.includes('change') || input.includes('actually') || input.includes('wait') || input.includes('wrong')) {
         setRound2ConfirmStep(false);
@@ -1263,16 +1255,12 @@ export default function ConvosetTest() {
       timestamp: new Date().toISOString()
     });
     
-    // Play celebration sound and go straight to investor
-    playAudio('/Audio/goodresult.mp3', () => {
-      setCoins(prev => prev + 100);
-      // Note: triggerCoinAnimation is now called when investor image loads (prevents race condition)
-      setInvestorMessage({ title: "You're a natural!" });
-      setGameState('investor');
-      
-      // Track reward screen viewed
-      track('reward_screen_viewed', { round: 5, level: 3, coins_earned: 100 });
-    });
+    // Transition immediately, play sound in parallel
+    setInvestorMessage({ title: "You're a natural!" });
+    setGameState('investor');
+    setCoins(prev => prev + 100);
+    playAudio('/Audio/goodresult.mp3');
+    track('reward_screen_viewed', { round: 5, level: 3, coins_earned: 100 });
   };
 
   const completeGame = () => {
@@ -1378,28 +1366,7 @@ export default function ConvosetTest() {
       {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-amber-900 to-transparent" />
 
-      {/* Bellagio-style Gold Coin Fountain Animation - from center */}
-      {showCoinAnimation && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden flex items-center justify-center">
-          {animatedCoins.map((coin) => (
-            <div
-              key={coin.id}
-              className="absolute animate-fountain-jet"
-              style={{
-                '--jx': `${coin.x}px`,
-                '--jy': `${coin.y}px`,
-                '--s': coin.scale,
-                animationDelay: `${coin.delay}s`
-              } as React.CSSProperties}
-            >
-              <div className="relative">
-                <KokoroCoin size={36} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
-                <div className="absolute inset-0 w-9 h-9 bg-yellow-400/40 rounded-full blur-md -z-10" />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Coin fountain animation moved to investor overlay only - removed duplicate here */}
 
       {/* HUD - Responsive for mobile, uses safe-area for iPhone notch/Android status bar */}
       <div 
@@ -1479,7 +1446,7 @@ export default function ConvosetTest() {
 
             {/* Name badge */}
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-              <span className="text-xs text-amber-400 font-sans font-medium bg-black/70 px-2 py-1 rounded-full border border-amber-500/30 whitespace-nowrap">
+              <span className="text-xs text-amber-400 font-sans font-medium bg-black/70 px-2 py-1 rounded-full border border-zinc-400/30 whitespace-nowrap">
                 Kokoro
               </span>
             </div>
@@ -1491,7 +1458,7 @@ export default function ConvosetTest() {
       {gameState === 'intro' && missionVisible && (
         <div className="absolute inset-0 z-30 flex items-center justify-center px-4 pt-20 pb-32 md:pt-0 md:pb-0">
           <div 
-            className={`bg-black/70 backdrop-blur-md rounded-3xl p-5 md:p-8 max-w-sm md:max-w-md w-full border border-amber-500/30 text-center transition-opacity transition-transform duration-500 ${
+            className={`bg-black/70 backdrop-blur-md rounded-3xl p-5 md:p-8 max-w-sm md:max-w-md w-full border border-zinc-400/30 text-center transition-opacity transition-transform duration-500 ${
               missionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
@@ -1534,12 +1501,12 @@ export default function ConvosetTest() {
             
             {/* Listen & Select UI - Rounds 1-3 */}
             {(round === 1 || round === 2 || round === 3) && currentRoundConfig && (
-              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-4 md:p-6 shadow-2xl">
+              <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-zinc-400/40 p-4 md:p-6 shadow-2xl">
                 <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
                   <img 
                     src="/kokorobot-closeup.png" 
                     alt="Kokorobot" 
-                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-[3px] border-amber-500/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
+                    className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-full border-[3px] border-zinc-400/60 shadow-lg animate-pop-in ${isNpcSpeaking ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-black animate-pulse' : ''}`}
                   />
                   <div className="flex-1">
                     <p className="text-amber-400 text-lg md:text-xl mb-1 font-sans font-medium">M31 Coffee Outpost</p>
@@ -1547,7 +1514,7 @@ export default function ConvosetTest() {
                     {showTranscript ? (
                       <p className="text-base md:text-xl leading-relaxed text-white">{currentRoundConfig.npcOrder}</p>
                     ) : (
-                      <div className="bg-black/60 rounded-xl p-3 border border-amber-500/30">
+                      <div className="bg-black/60 rounded-xl p-3 border border-zinc-400/30">
                         <p className="text-amber-300 mb-1 text-sm md:text-base font-medium">📋 Register Training</p>
                         <p className="text-amber-100 text-xs md:text-sm mb-3">You're on register. Enter Kokoro's exact order.</p>
                         
@@ -1573,7 +1540,7 @@ export default function ConvosetTest() {
                         <div className="flex gap-2 justify-center">
                           <button 
                             onClick={replayVoice}
-                            className="px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center bg-transparent hover:bg-amber-900/50 text-amber-400 text-sm border border-amber-500/40 min-w-[100px]"
+                            className="px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center bg-transparent hover:/50 text-amber-400 text-sm border border-zinc-400/40 min-w-[100px]"
                           >
                             <span>🔊 Replay</span>
                             <span className="text-xs text-amber-400/60">(Free)</span>
@@ -1583,7 +1550,7 @@ export default function ConvosetTest() {
                             disabled={coins < 10}
                             className={`px-4 py-2 rounded-xl transition font-medium flex flex-col items-center justify-center text-sm border min-w-[100px] ${
                               coins >= 10 
-                                ? 'bg-transparent hover:bg-amber-900/50 text-amber-400 border-amber-500/40' 
+                                ? 'bg-transparent hover:/50 text-amber-400 border-zinc-400/40' 
                                 : 'bg-transparent text-slate-500 border-slate-600 cursor-not-allowed'
                             }`}
                           >
@@ -1603,7 +1570,7 @@ export default function ConvosetTest() {
                 <p className="text-amber-400/60 text-xs text-center mb-3">Tap Type → Size → Milk → Syrup → Add Item → Submit.</p>
                 
                 {/* Order Builder - Mobile Responsive */}
-                <div className="border-t border-amber-500/30 pt-4">
+                <div className="border-t border-zinc-400/30 pt-4">
                   {/* Current Order Summary */}
                   <div className="flex flex-wrap gap-2 mb-4 min-h-[40px]">
                     {round1Selections.length > 0 ? (
@@ -1611,32 +1578,32 @@ export default function ConvosetTest() {
                         <button
                           key={i}
                           onClick={() => removeFromOrder(i)}
-                          className="bg-amber-500/30 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm hover:bg-red-500/30 hover:border-red-500/60 transition text-amber-200 font-medium"
-                        >
-                          {item.size} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ✕
+                          className="bg-transparent border border-zinc-500 rounded-lg px-3 py-1.5 text-sm text-amber-100 hover:bg-red-500/30 hover:border-red-400 transition cursor-pointer"
+                  >
+                    {item.size} {item.type} {item.milk && `(${item.milk})`} {item.syrup && `+ ${item.syrup}`} ×
                         </button>
                       ))
                     ) : (
-                      <p className="text-amber-400/50 text-sm">Receipt preview</p>
+                      <p className="text-zinc-400 text-sm">Receipt preview</p>
                     )}
                   </div>
 
                   {/* Progress Indicator */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <div className="flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className={`w-2 h-2 rounded-full ${currentItem.type ? 'bg-amber-400' : ''}`} />
                       <span className="text-xs text-amber-400/60">Type</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className={`w-2 h-2 rounded-full ${currentItem.size ? 'bg-amber-400' : ''}`} />
                       <span className="text-xs text-amber-400/60">Size</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className={`w-2 h-2 rounded-full ${currentItem.milk ? 'bg-amber-400' : ''}`} />
                       <span className="text-xs text-amber-400/60">Milk</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : 'bg-amber-900'}`} />
+                      <span className={`w-2 h-2 rounded-full ${currentItem.syrup ? 'bg-amber-400' : ''}`} />
                       <span className="text-xs text-amber-400/60">Syrup</span>
                     </div>
                   </div>
@@ -1654,7 +1621,7 @@ export default function ConvosetTest() {
                             className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
                               currentItem.type === type 
                                 ? 'bg-amber-500 text-black' 
-                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                                : '/50 hover:/70 text-amber-200'
                             }`}
                           >
                             {type}
@@ -1674,7 +1641,7 @@ export default function ConvosetTest() {
                             className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
                               currentItem.size === size 
                                 ? 'bg-amber-500 text-black' 
-                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                                : '/50 hover:/70 text-amber-200'
                             }`}
                           >
                             {size}
@@ -1694,7 +1661,7 @@ export default function ConvosetTest() {
                             className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
                               (currentItem.milk === milk || (!currentItem.milk && milk === 'None')) 
                                 ? 'bg-amber-500 text-black' 
-                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                                : '/50 hover:/70 text-amber-200'
                             }`}
                           >
                             {milk}
@@ -1714,7 +1681,7 @@ export default function ConvosetTest() {
                             className={`py-1.5 px-2 rounded-lg text-xs transition font-medium ${
                               (currentItem.syrup === syrup || (!currentItem.syrup && syrup === 'None')) 
                                 ? 'bg-amber-500 text-black' 
-                                : 'bg-amber-900/50 hover:bg-amber-900/70 text-amber-200'
+                                : '/50 hover:/70 text-amber-200'
                             }`}
                           >
                             {syrup}
@@ -1726,7 +1693,7 @@ export default function ConvosetTest() {
 
                   {/* Current Selection Preview */}
                   {(currentItem.type || currentItem.size) && (
-                    <div className="bg-amber-900/30 rounded-lg p-2 mb-3 text-center">
+                    <div className="/30 rounded-lg p-2 mb-3 text-center">
                       <p className="text-amber-200 text-sm">
                         Building: <span className="font-semibold">
                           {currentItem.size || '___'} {currentItem.type || '___'}
@@ -1743,7 +1710,7 @@ export default function ConvosetTest() {
                       <button
                         onClick={addToOrder}
                         disabled={!currentItem.type || !currentItem.size || round1Selections.length >= currentRoundConfig.itemCount}
-                        className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="flex-1 py-3 rounded-xl font-semibold text-sm md:text-base transition /60 hover:/80 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         + Add Item
                       </button>
@@ -1764,9 +1731,9 @@ export default function ConvosetTest() {
             {round === 4 && (
               <>
                 <h2 className="text-amber-400 font-sans font-semibold text-2xl text-left mb-1">M31 Coffee Outpost</h2>
-                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl">
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-zinc-400/40 p-8 shadow-2xl">
                   <div className="flex items-center gap-4 mb-4">
-                    <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-amber-500/50" />
+                    <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-20 h-20 rounded-full object-cover border-2 border-zinc-400/50" />
                     <div>
                       <p className="text-amber-400 font-sans font-medium text-base md:text-base mb-2" >☕ Customer Training</p>
                       <p className="text-amber-100 text-sm md:text-sm">Your turn to order! What would you like? She can only take ONE order for now.</p>
@@ -1789,7 +1756,7 @@ export default function ConvosetTest() {
                         <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-12 h-12 rounded-full mr-2 object-cover" />
                       )}
                       <span className={`inline-block rounded-xl px-5 py-3 max-w-[80%] text-lg ${
-                        msg.role === 'player' ? 'bg-purple-500 text-white' : 'bg-amber-900/60 text-amber-200'
+                      msg.role === 'player' ? 'bg-zinc-800 text-white' : '/60 text-white'
                       }`}>
                         {msg.text}
                       </span>
@@ -1799,7 +1766,7 @@ export default function ConvosetTest() {
 
                 <div className="flex gap-3 mb-4">
                   {[{key: 'type', label: '☕ Type'}, {key: 'size', label: '📏 Size'}, {key: 'temp', label: '🧊 Temp'}, {key: 'milk', label: '🥛 Milk'}].map(({key, label}) => (
-                    <span key={key} className={`px-4 py-2 rounded-full text-base font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : 'bg-amber-900/50 text-amber-400/60'}`}>
+                    <span key={key} className={`px-4 py-2 rounded-full text-base font-medium ${round2Order[key as keyof typeof round2Order] ? 'bg-green-500/30 text-green-400 border border-green-500/50' : '/50 text-amber-400/60'}`}>
                       {label} {round2Order[key as keyof typeof round2Order] && '✓'}
                     </span>
                   ))}
@@ -1817,7 +1784,7 @@ export default function ConvosetTest() {
                         setRound2Chat(prev => [...prev, { role: 'npc', text: response }]);
                         playAudio('/Audio/kokorobot-greeting.mp3');
                       }}
-                      className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40"
+                      className="flex-1 bg-transparent hover:bg-green-500/20 text-green-400 font-semibold py-4 rounded-xl text-xl border border-green-500"
                     >
                       ✏️ Modify
                     </button>
@@ -1850,7 +1817,7 @@ export default function ConvosetTest() {
                       onChange={(e) => setRound2Input(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && processRound2Input()}
                       placeholder="Type your order..."
-                      className="flex-1 bg-amber-900/40 border border-amber-500/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-amber-500 text-white placeholder-amber-400/50"
+                      className="flex-1 /40 border border-zinc-400/40 rounded-xl px-5 py-4 text-xl focus:outline-none focus:border-zinc-400 text-white placeholder-amber-400/50"
                     />
                     <button onClick={processRound2Input} className="bg-purple-500 hover:bg-purple-400 text-white font-semibold px-10 rounded-xl text-xl">
                       Send
@@ -1859,7 +1826,7 @@ export default function ConvosetTest() {
                 )}
                 
                 {/* Skip option with coin info */}
-                <div className="mt-4 pt-4 border-t border-amber-500/20 text-center">
+                <div className="mt-4 pt-4 border-t border-zinc-400/20 text-center">
                   <p className="text-amber-400/60 text-xs mb-2">Round 4: Type your order · Earn +80 coins</p>
                   <button
                     onClick={() => {
@@ -1884,8 +1851,8 @@ export default function ConvosetTest() {
             {round === 5 && (
               <>
                 <h2 className="text-amber-400 font-sans font-semibold text-2xl text-left ml-4 mb-1">M31 Coffee Outpost</h2>
-                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-amber-500/40 p-8 shadow-2xl text-center">
-                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/50 mx-auto mb-2" />
+                <div className="bg-black/85 backdrop-blur-lg rounded-2xl border border-zinc-400/40 p-8 shadow-2xl text-center">
+                  <img src="/kokorobot-closeup.png" alt="Kokorobot" className="w-24 h-24 rounded-full object-cover border-2 border-zinc-400/50 mx-auto mb-2" />
                   <p className="text-amber-400 font-sans font-medium text-base md:text-base mb-1">☕ Customer Training</p>
                   <p className="text-amber-100 text-sm md:text-sm mb-3">Now train her to take your order by voice!</p>
                   
@@ -1911,14 +1878,14 @@ export default function ConvosetTest() {
                     </button>
 
                     {round3Transcript && (
-                      <div className="bg-amber-900/40 rounded-xl p-5 mb-5 text-left border border-amber-500/30">
+                      <div className="/40 rounded-xl p-5 mb-5 text-left border border-zinc-400/30">
                         <p className="text-base text-amber-400/80 mb-1">You said:</p>
                         <p className="text-2xl text-white">"{round3Transcript}"</p>
                       </div>
                     )}
 
                     {round3CurrentQuestion && !round3ConfirmStep && (
-                      <div className="bg-amber-900/40 rounded-xl p-5 text-left border border-amber-500/30">
+                      <div className="/40 rounded-xl p-5 text-left border border-zinc-400/30">
                         <p className="text-yellow-400 text-xl mb-4">🎤 {round3CurrentQuestion}</p>
                         <p className="text-amber-400/60 text-base mb-4">Tap the mic to answer</p>
                       </div>
@@ -1941,7 +1908,7 @@ export default function ConvosetTest() {
                             setRound3Transcript('');
                             setRound3CurrentQuestion('');
                           }}
-                          className="flex-1 bg-amber-900/60 hover:bg-amber-900/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-amber-500/40"
+                          className="flex-1 /60 hover:/80 text-amber-200 font-semibold py-4 rounded-xl text-xl border border-zinc-400/40"
                         >
                           ✏️ Modify
                         </button>
@@ -1957,7 +1924,7 @@ export default function ConvosetTest() {
                 )}
                 
                 {/* Skip option with coin info */}
-                <div className="mt-4 pt-4 border-t border-amber-500/20">
+                <div className="mt-4 pt-4 border-t border-zinc-400/20">
                   <p className="text-amber-400/60 text-xs mb-2">Round 5: Speak your order · Earn +100 coins</p>
                   <button
                     onClick={() => {
@@ -2058,34 +2025,30 @@ export default function ConvosetTest() {
 
               {/* Bellagio-style fountain jets */}
               {showCoinAnimation && (
-                <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 overflow-hidden">
                   {animatedCoins.map((coin) => (
                     <div
                       key={coin.id}
                       className="absolute animate-fountain-jet"
                       style={{
-                        '--jx': `${coin.x}px`,
+                        '--jx': `${coin.x}vw`,
                         '--jy': `${coin.y}px`,
                         '--s': coin.scale,
-                        animationDelay: `${coin.delay}s`
+                        animationDelay: `${coin.delay}s`,
+                        left: '49%',
+                        bottom: '45%',
+                        opacity: 0
                       } as React.CSSProperties}
                     >
-                      <div className="relative">
-                        <KokoroCoin size={32} className="drop-shadow-[0_0_15px_rgba(255,215,0,0.9)]" />
-                        <div className="absolute inset-0 w-8 h-8 bg-yellow-400/40 rounded-full blur-md -z-10" />
+                        <div className="relative">
+                        <KokoroCoin size={28} className="drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]" />
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Coin flying animation */}
-              <div className="absolute top-[55%] left-1/2 animate-fly-to-balance">
-                <div className="flex items-center gap-1 md:gap-2 bg-black/70 px-3 md:px-4 py-1 md:py-2 rounded-full">
-                  <KokoroCoin size={24} className="md:w-8 md:h-8" />
-                  <span className="text-yellow-400 font-semibold text-lg md:text-2xl">+{round === 1 ? 20 : round === 2 ? 30 : round === 3 ? 50 : round === 4 ? 80 : 100}</span>
-                </div>
-              </div>
+
 
               {/* Title/Subtitle - centered */}
               <div className={`absolute left-[55%] -translate-x-1/2 w-[min(92%,520px)] text-center pointer-events-none ${
@@ -2186,37 +2149,8 @@ export default function ConvosetTest() {
         </div>
       )}
 
-      {/* Custom animation styles */}
+      {/* Custom animation styles - fountain-jet moved to globals.css */}
       <style jsx>{`
-        @keyframes fountain-jet {
-          0% {
-            opacity: 0;
-            transform: translateX(var(--jx)) translateY(50px) scale(0.3);
-          }
-          15% {
-            opacity: 1;
-            transform: translateX(var(--jx)) translateY(var(--jy)) scale(var(--s));
-          }
-          35% {
-            opacity: 1;
-            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.7)) scale(var(--s)) rotate(90deg);
-          }
-          55% {
-            opacity: 1;
-            transform: translateX(var(--jx)) translateY(calc(var(--jy) * 0.4)) scale(var(--s)) rotate(180deg);
-          }
-          75% {
-            opacity: 0.8;
-            transform: translateX(calc(var(--jx) * 0.3 + 40%)) translateY(calc(var(--jy) * 0.1 - 45%)) scale(calc(var(--s) * 0.6)) rotate(270deg);
-          }
-          100% {
-            opacity: 0;
-            transform: translateX(45%) translateY(-48%) scale(0.15);
-          }
-        }
-        .animate-fountain-jet {
-          animation: fountain-jet 2.8s ease-out forwards;
-        }
         @keyframes walk {
           0% { transform: translateY(0) rotate(0deg); }
           25% { transform: translateY(-6px) rotate(-2deg); }
@@ -2299,7 +2233,7 @@ export default function ConvosetTest() {
       {/* Cafe Shop */}
       {showCafeShop && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-amber-500/30">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-6 max-w-4xl w-full border border-zinc-400/30">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-medium text-amber-400" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>🏪 Choose Your Café</h2>
               <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full">
@@ -2316,7 +2250,7 @@ export default function ConvosetTest() {
                   <div 
                     key={cafe.id}
                     className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                      owned ? 'border-green-500 cursor-pointer hover:scale-105' : canAfford ? 'border-amber-500 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'
+                      owned ? 'border-green-500 cursor-pointer hover:scale-105' : canAfford ? 'border-zinc-400 hover:border-amber-400 cursor-pointer hover:scale-105' : 'border-zinc-600 opacity-50'
                     }`}
                     onClick={() => {
                       if (owned) {
@@ -2454,12 +2388,12 @@ export default function ConvosetTest() {
       {/* Purchase Confirmation Popup */}
       {showPurchaseConfirm && selectedCafe && (
         <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-amber-500/50 text-center">
+          <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl p-8 max-w-md w-full border border-zinc-400/50 text-center">
             <h3 className="text-2xl font-medium text-amber-400 mb-4">🏪 Purchase Café?</h3>
             <img 
               src={selectedCafe.image} 
               alt={selectedCafe.name} 
-              className="w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-amber-500/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
+              className="w-48 h-48 object-cover rounded-xl mx-auto mb-4 border-2 border-zinc-400/30 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/90"
             />
             <p className="text-white text-xl font-semibold mb-2">{selectedCafe.name}</p>
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -2861,7 +2795,7 @@ export default function ConvosetTest() {
                             className={`relative rounded-xl overflow-hidden cursor-pointer transition-all transform hover:scale-105 ${
                               isSelected 
                                 ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-zinc-800' 
-                                : 'border-2 border-zinc-600 hover:border-amber-500/50'
+                                : 'border-2 border-zinc-600 hover:border-zinc-400/50'
                             }`}
                           >
                             <img 
@@ -2889,7 +2823,7 @@ export default function ConvosetTest() {
                           setShowInventory(false);
                           setShowCafeShop(true);
                         }}
-                        className="rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 cursor-pointer transition-all flex flex-col items-center justify-center aspect-square bg-zinc-800/50 hover:bg-zinc-800"
+                        className="rounded-xl border-2 border-dashed border-zinc-600 hover:border-zinc-400/50 cursor-pointer transition-all flex flex-col items-center justify-center aspect-square bg-zinc-800/50 hover:bg-zinc-800"
                       >
                         <span className="text-4xl mb-2">+</span>
                         <span className="text-zinc-400 font-medium">Buy More</span>
